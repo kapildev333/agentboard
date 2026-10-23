@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, rename } from "node:fs/promises";
 import { dirname } from "node:path";
 import { BoardSchema, type Board, type BoardNode } from "@agentboard/shared";
 import { boardPath } from "./paths.js";
@@ -71,7 +71,14 @@ export class StateStore {
     for (const [repoPath, entry] of [...this.pending]) {
       const file = boardPath(repoPath);
       await mkdir(dirname(file), { recursive: true, mode: 0o700 });
-      await writeFile(`${file}.tmp`, JSON.stringify(entry.board, null, 2));
+      // sync before the rename so a power loss cannot leave an empty board in place of the old one
+      const fh = await open(`${file}.tmp`, "w");
+      try {
+        await fh.writeFile(JSON.stringify(entry.board, null, 2));
+        await fh.sync();
+      } finally {
+        await fh.close();
+      }
       await rename(`${file}.tmp`, file);
       if (this.pending.get(repoPath) === entry) this.pending.delete(repoPath);
     }

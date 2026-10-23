@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, rename, rm } from "node:fs/promises";
 import { dirname } from "node:path";
 import { DaemonInfoSchema, type DaemonInfo } from "@agentboard/shared";
 import { daemonFilePath } from "./paths.js";
@@ -18,7 +18,13 @@ export class DaemonFile {
     await mkdir(dirname(file), { recursive: true, mode: 0o700 });
     // mode only applies on create, so a stale .tmp is removed first; rename keeps readers from seeing a partial file
     await rm(`${file}.tmp`, { force: true });
-    await writeFile(`${file}.tmp`, JSON.stringify(info), { mode: 0o600 });
+    const fh = await open(`${file}.tmp`, "w", 0o600);
+    try {
+      await fh.writeFile(JSON.stringify(info));
+      await fh.sync();
+    } finally {
+      await fh.close();
+    }
     await rename(`${file}.tmp`, file);
   }
 
