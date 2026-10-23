@@ -145,3 +145,21 @@ it("clicking a row focuses the node", () => {
   fireEvent.click(screen.getByRole("button"));
   expect(onFocus).toHaveBeenCalledWith("a");
 });
+
+it("two pointerdowns request permission once", () => {
+  const N = fakeNotification();
+  Object.assign(N, { permission: "default" });
+  renderHook(() => useNotifications({ onFocus: () => {} }));
+  window.dispatchEvent(new Event("pointerdown"));
+  window.dispatchEvent(new Event("pointerdown"));
+  expect(N.requestPermission).toHaveBeenCalledTimes(1);
+});
+
+it("a visible tab creates no Notification", () => {
+  const N = fakeNotification();
+  hidden(false);
+  renderHook(() => useNotifications({ onFocus: () => {} }));
+  act(() => setStatuses({ c1: "needs_you", c2: "idle" }));
+  expect(N).not.toHaveBeenCalled();
+  expect(document.title).toBe("(1) AgentBoard");
+});
