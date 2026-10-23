@@ -18,6 +18,7 @@ export interface LaunchContext {
 
 function build(agent: AgentId, ctx: LaunchContext, resume: boolean): Launch {
   const { consoleId, daemonUrl, token, sessionId, name, prompt } = ctx;
+  if (resume && !sessionId) throw new Error("resume needs a session id");
   const input = { consoleId, daemonUrl, token, sessionId, resume };
   // `--` (claude, codex) and the `--flag=value` form (gemini and opencode, which parse with yargs and drop a
   // separate value that starts with a dash) keep a prompt that starts with a dash from being read as a flag.

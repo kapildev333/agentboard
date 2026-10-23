@@ -38,7 +38,7 @@ async function scan({ path = process.env.PATH ?? "", exec = execFile, custom = [
   const version = (file: string) =>
     new Promise<string | null>((resolve) => {
       const timer = setTimeout(() => resolve(null), 3000);
-      exec(file, ["--version"], { timeout: 3000, killSignal: "SIGKILL" }, (err, stdout) => {
+      exec(file, ["--version"], { timeout: 3000, killSignal: "SIGKILL", env: { ...process.env, PATH: path } }, (err, stdout) => {
         clearTimeout(timer);
         resolve(err ? null : String(stdout).trim().split("\n")[0] || null);
       });

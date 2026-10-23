@@ -2,6 +2,7 @@ import { relayPath, type Launch } from "../codex/index.js";
 
 export const CLAUDE_HOOK_EVENTS = [
   "Stop",
+  "PreToolUse",
   "Notification",
   "UserPromptSubmit",
   "PermissionRequest",
