@@ -25,6 +25,9 @@ for _ in $(seq 1 40); do
   else GIT_EDITOR=true git rebase --continue >>/tmp/rebase-$lane.log 2>&1; fi
 done
 if [ -d "$(git rev-parse --git-path rebase-merge)" ]; then git rebase --abort; echo "CONFLICT unresolved, see /tmp/rebase-$lane.log"; exit 2; fi
+# A replayed lockfile commit can drop entries main added since; regenerate and commit the difference.
+npm install --ignore-scripts >/dev/null 2>&1
+if ! git diff --quiet -- package-lock.json; then git add package-lock.json && git commit -q -m "chore: lockfile regenerated after rebase"; fi
 npm ci --prefer-offline >/dev/null 2>&1 && npm run -s fix-pty --if-present >/dev/null 2>&1
 if scripts/gate.sh >/tmp/gate-$lane.log 2>&1; then
   git push -q --force-with-lease origin HEAD && echo "REBASED $(git rev-parse HEAD) gate=PASS"

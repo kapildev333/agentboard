@@ -1,0 +1,11 @@
+# gitleaks configuration for the gate (scripts/gate.sh). Default rules apply; the allowlist below names
+# public constants that look like secrets to the entropy rules but are not.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public constants that are not secrets"
+regexes = [
+  # The Sec-WebSocket-Key sample value from RFC 6455 section 1.3, used by the server tests.
+  '''dGhlIHNhbXBsZSBub25jZQ==''',
+]
