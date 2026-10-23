@@ -145,6 +145,14 @@ test("a detached checkout records no base, so an unpushed commit still blocks re
   await expect(svc().worktreeRemove(path, { force: false })).rejects.toMatchObject({ code: "unpushed" });
 });
 
+test("worktreeAdd succeeds while another git process holds the config lock", async () => {
+  const repo = makeRepo();
+  writeFileSync(join(repo, ".git", "config.lock"), "");
+  const { path } = await svc().worktreeAdd(repo, "feat-lock", "main");
+  commitFile(path, "b.txt");
+  expect(await svc().status(path)).toMatchObject({ ahead: 1, behind: 0 });
+});
+
 test("diff lists a changed file and returns a patch", async () => {
   const repo = makeRepo();
   writeFileSync(join(repo, "a.txt"), "one\ntwo\n");
