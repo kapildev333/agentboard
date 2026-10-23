@@ -24,6 +24,17 @@ test("clicking VS Code posts editor code and the path", () => {
   ]);
 });
 
+test("each button posts its own editor", () => {
+  const sent: string[] = [];
+  const doFetch = (async (_url: string, init?: RequestInit) => {
+    sent.push(JSON.parse(String(init?.body)).editor);
+    return new Response(null, { status: 200 });
+  }) as typeof fetch;
+  render(<OpenInButtons path="/work/repo" doFetch={doFetch} />);
+  for (const name of ["VS Code", "Zed", "Finder"]) fireEvent.click(screen.getByRole("button", { name }));
+  expect(sent).toEqual(["code", "zed", "finder"]);
+});
+
 test("a daemon error shows as one line inline", async () => {
   const doFetch = (async () =>
     new Response(JSON.stringify({ error: 'not a directory: "/x"' }), { status: 400 })) as typeof fetch;
