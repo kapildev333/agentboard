@@ -133,6 +133,19 @@ describe("Board wiring", () => {
     expect(useBoard.getState().board.workspaces[0]!.nodes).toMatchObject([{ id: "n1", x: 7, y: 8 }]);
   });
 
+  it("a top-left resize keeps its new width mid-gesture", () => {
+    useBoard.getState().addNode(note("n1"));
+    render(<Board nodeTypes={nodeTypes} />);
+    act(() =>
+      (seen.props.onNodesChange as (c: unknown) => void)([
+        { type: "dimensions", id: "n1", dimensions: { width: 300, height: 100 }, resizing: true, setAttributes: true },
+        { type: "position", id: "n1", position: { x: -100, y: 0 } },
+      ]),
+    );
+    expect(seen.props.nodes[0]).toMatchObject({ width: 300, position: { x: -100, y: 0 } });
+    expect(useBoard.getState().board.workspaces[0]!.nodes[0]).toMatchObject({ w: 200, x: 0 });
+  });
+
   it("move end writes the viewport", () => {
     render(<Board nodeTypes={nodeTypes} />);
     act(() => (seen.props.onMoveEnd as (...a: unknown[]) => void)(null, { x: 1, y: 2, zoom: 1.5 }));
