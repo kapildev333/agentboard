@@ -219,3 +219,16 @@ test("a request target the URL parser rejects is answered 400 and the server sta
   expect(up).not.toMatch(/101/);
   expect((await fetch(`${s.origin}/api/status`)).status).toBe(401);
 });
+
+test("a refused upgrade whose client resets early does not crash the server", async () => {
+  const s = await start();
+  const request = `GET /ws HTTP/1.1\r\nHost: 127.0.0.1:${s.port}\r\nOrigin: https://evil.example\r\n`
+    + `Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\n`
+    + `Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n`;
+  await Promise.all(Array.from({ length: 50 }, () => new Promise<void>((resolve) => {
+    const socket = net.connect(s.port, "127.0.0.1", () => socket.write(request, () => { socket.resetAndDestroy(); resolve(); }));
+    socket.on("error", () => resolve());
+  })));
+  await new Promise((r) => setTimeout(r, 100));
+  expect((await fetch(`${s.origin}/api/status`)).status).toBe(401);
+});
