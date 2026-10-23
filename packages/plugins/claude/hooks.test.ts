@@ -3,6 +3,7 @@ import http from "node:http";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
+import { CLAUDE_HOOK_EVENTS } from "../../daemon/src/agents/claude/index.js";
 
 const script = fileURLToPath(new URL("hooks/post.mjs", import.meta.url));
 const stdin = JSON.stringify({ hook_event_name: "Stop", session_id: "s1" });
@@ -125,7 +126,8 @@ test("exits 0 when the daemon is down", async () => {
 
 test("hooks.json names every event with the post script", () => {
   const { hooks } = JSON.parse(readFileSync(new URL("hooks/hooks.json", import.meta.url), "utf8"));
-  const events = ["Stop", "Notification", "UserPromptSubmit", "PermissionRequest", "PreToolUse", "SessionEnd"];
+  // the same events the daemon's launcher injects into board consoles (L14)
+  const events = [...CLAUDE_HOOK_EVENTS];
   expect(Object.keys(hooks).sort()).toEqual([...events].sort());
   for (const e of events)
     expect(hooks[e][0].hooks[0]).toMatchObject({

@@ -102,3 +102,13 @@ describe("agentboard_spawn", () => {
     expect(await tool.execute({ agent: "claude", cwd: "/x" }, {})).toBe("AgentBoard is not running");
   });
 });
+
+it("the spawn tool's args are pinned to the shared spawn request: agent ids, cwd, worktree, prompt (L26)", async () => {
+  const { AgentIdSchema, SpawnConsoleRequestSchema } = await import("@agentboard/shared");
+  const { AgentBoard } = await import("../opencode/agentboard.js");
+  const { args } = ((await AgentBoard()) as unknown as { tool: { agentboard_spawn: { args: Record<string, { safeParse(v: unknown): { success: boolean } }> } } }).tool.agentboard_spawn;
+  expect(Object.keys(args)).toEqual(["agent", "cwd", "worktree", "prompt"]);
+  for (const id of AgentIdSchema.options) expect(args.agent!.safeParse(id).success).toBe(true);
+  expect(args.agent!.safeParse("vim").success).toBe(false);
+  for (const k of Object.keys(args)) expect(Object.keys(SpawnConsoleRequestSchema.shape)).toContain(k);
+});
