@@ -4,13 +4,33 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { extname, resolve, sep } from "node:path";
 import type { Duplex } from "node:stream";
+import * as shared from "@agentboard/shared";
+import { routes as table, type SchemaName } from "@agentboard/shared";
 import { WebSocketServer } from "ws";
+
+type Route = (typeof table)[number];
+type Parsed<N> = N extends SchemaName ? ReturnType<(typeof shared)[N]["parse"]> : undefined;
+export type RouteHandlers = {
+  [R in Route as `${R["method"]} ${R["path"]}`]?: (
+    input: Parsed<R["request"]>, params: Record<string, string>,
+  ) => Promise<Parsed<R["response"]>>;
+};
+export type RouteKey = keyof RouteHandlers;
+type Schema = { safeParse(v: unknown): { success: true; data: unknown } | { success: false } };
+const schema = (name: SchemaName) => shared[name] as unknown as Schema;
+
+const compiled = table.map((r) => ({
+  ...r,
+  key: `${r.method} ${r.path}` as RouteKey,
+  pattern: new RegExp("^" + r.path.replace(/:(\w+)/g, "(?<$1>[^/]+)") + "$"),
+}));
+const MAX_BODY = 1 << 20;
 
 export type ServerOptions = {
   port: number;
   token: string;
   staticDir: string;
-  routes: Record<string, unknown>;
+  routes: RouteHandlers;
 };
 
 export async function createServer(opts: ServerOptions) {
@@ -29,6 +49,8 @@ export async function createServer(opts: ServerOptions) {
     }
     const refused = refuse(req, req.method !== "GET");
     if (refused) return end(res, refused);
+    const route = compiled.find((r) => r.method === req.method && r.pattern.test(url.pathname));
+    if (route) return void handle(route, opts.routes, req, url, res);
     if (req.method === "GET") return void serveStatic(opts.staticDir, url.pathname, res);
     end(res, 404);
   });
@@ -101,6 +123,55 @@ async function serveStatic(dir: string, pathname: string, res: http.ServerRespon
 function same(a: string, b: string): boolean {
   const x = Buffer.from(a), y = Buffer.from(b);
   return x.length === y.length && timingSafeEqual(x, y);
+}
+
+async function handle(
+  route: (typeof compiled)[number], handlers: RouteHandlers, req: http.IncomingMessage, url: URL, res: http.ServerResponse,
+): Promise<void> {
+  const handler = handlers[route.key] as ((input: unknown, params: Record<string, string>) => Promise<unknown>) | undefined;
+  if (!handler) return json(res, 404, { error: "not found" });
+  let raw: unknown, params: Record<string, string>;
+  try {
+    params = Object.fromEntries(
+      Object.entries(route.pattern.exec(url.pathname)!.groups ?? {}).map(([k, v]) => [k, decodeURIComponent(v)]),
+    );
+    raw = route.method === "GET" ? Object.fromEntries(url.searchParams) : await readJson(req);
+  } catch (err) {
+    return json(res, err === tooLarge ? 413 : 400, { error: "invalid request" });
+  }
+  let input: unknown;
+  if (route.request) {
+    const parsed = schema(route.request).safeParse(raw);
+    if (!parsed.success) return json(res, 400, { error: "invalid request" });
+    input = parsed.data;
+  }
+  let result: unknown;
+  try {
+    result = await handler(input, params);
+  } catch {
+    return json(res, 500, { error: "internal error" });
+  }
+  const out = schema(route.response).safeParse(result);
+  if (!out.success) return json(res, 500, { error: "invalid response" });
+  json(res, 200, out.data);
+}
+
+const tooLarge = new Error("body too large");
+
+async function readJson(req: http.IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of req as AsyncIterable<Buffer>) {
+    size += chunk.length;
+    if (size > MAX_BODY) throw tooLarge;
+    chunks.push(chunk);
+  }
+  const text = Buffer.concat(chunks).toString("utf8");
+  return text === "" ? undefined : JSON.parse(text);
+}
+
+function json(res: http.ServerResponse, status: number, body: unknown): void {
+  res.writeHead(status, { "content-type": "application/json; charset=utf-8" }).end(JSON.stringify(body));
 }
 
 function end(res: http.ServerResponse, status: number): void {
