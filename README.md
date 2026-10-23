@@ -10,7 +10,7 @@ AgentBoard is for a developer who runs several agent sessions a day across a few
 
 ## Quick start
 
-You need Node 22, git and a browser. On macOS or Linux:
+You need macOS, Node 22, git and a browser. Linux has not been tested. node-pty ships no Linux prebuild, so on Linux you need a C++ toolchain, and `npm rebuild node-pty --ignore-scripts=false` replaces `npm run fix-pty`. On macOS:
 
 ```sh
 git clone https://github.com/kapildev333/agentboard.git
@@ -73,7 +73,7 @@ Never run `npx agentboard`. That npm name belongs to an unrelated package. Agent
   - Pressing Backspace with a node selected removes it, and that ends a console.
 - **Workspaces.** Tabs in the top bar, each with its own consoles and view:
   - Click a tab to switch to it. Double-click it to rename it.
-  - `+` adds a workspace. `×` deletes the active one; the last workspace cannot be deleted.
+  - `+` adds a workspace. `×` deletes the active one at once, with no confirmation, and ends every console on it. The last workspace cannot be deleted.
 - **Status badges and notifications.** Each console shows Starting, Working, Idle, Needs you, Exited or Stopped. The mission map groups the active workspace's consoles by status; click one to focus its terminal.
   - The tab title reads `(2) AgentBoard` while two consoles need you.
   - While the tab is hidden, a console that turns "needs you" raises a browser notification. Clicking the notification focuses that console.
@@ -87,6 +87,11 @@ Never run `npx agentboard`. That npm name belongs to an unrelated package. Agent
   - **Open PR** runs `gh pr create` with the last commit's subject as the title and shows a link to the new pull request.
 - **Open in VS Code, Zed or Finder.** These buttons sit under the git card. They run `code <path>`, `zed <path>`, or on macOS `open -R <path>`, which reveals the folder in Finder.
 - **Notes.** `agentboard note "text"` or the MCP `add_note` tool adds a yellow note card to the active workspace. This version cannot create or edit notes from the page.
+  - An open board does not show the new note, because the daemon tells no page about it.
+  - The page's next save also deletes the note.
+  - Reload the board right after adding a note, before you pan, zoom or drag anything.
+
+  Lane L1B is fixing this.
 - **Settings.**
   - **Font size** sets the terminal font size, 10 to 24.
   - **Custom agents** each have a name, a command, space-separated arguments and an optional "needs you" regular expression. Output that matches the expression marks the console as needing you.
