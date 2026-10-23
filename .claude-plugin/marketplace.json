@@ -1,0 +1,11 @@
+{
+  "name": "agentboard",
+  "owner": { "name": "agentboard" },
+  "plugins": [
+    {
+      "name": "agentboard",
+      "description": "Shows Claude Code sessions as live nodes on the AgentBoard board and adds a /board command.",
+      "source": "./packages/plugins/claude"
+    }
+  ]
+}
