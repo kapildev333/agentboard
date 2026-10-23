@@ -42,4 +42,20 @@ describe("SpawnDialog", () => {
     expect(post[0]).toBe("/api/consoles");
     expect(JSON.parse(post[1]!.body as string)).toEqual({ agent: "codex", cwd: "/r" });
   });
+
+  it("unavailable agents cannot be selected", async () => {
+    render(<SpawnDialog fetch={fakeFetch()} cwd="/r" onSpawned={vi.fn()} />);
+    const gemini = (await screen.findByLabelText(/gemini/)) as HTMLInputElement;
+    expect(gemini.disabled).toBe(true);
+    expect((screen.getByLabelText(/claude/) as HTMLInputElement).disabled).toBe(false);
+  });
+
+  it("a failed spawn shows the error", async () => {
+    const onSpawned = vi.fn();
+    render(<SpawnDialog fetch={fakeFetch(() => json({ error: "no such repo" }, 500))} cwd="/r" onSpawned={onSpawned} />);
+    fireEvent.click(await screen.findByLabelText(/claude/));
+    fireEvent.click(screen.getByRole("button", { name: "Spawn" }));
+    expect((await screen.findByRole("alert")).textContent).toBe("no such repo");
+    expect(onSpawned).not.toHaveBeenCalled();
+  });
 });
