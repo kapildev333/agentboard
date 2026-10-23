@@ -94,7 +94,8 @@ test("GET /api/agents scans the given PATH and lists the custom agents from sett
   const s = setup();
   const d = await start(s);
   const { body } = await d.call("GET", "/api/agents");
-  expect(body).toContainEqual({ id: "claude", command: "claude", version: "9.9.9 (stub)", available: true });
+  // the scan never runs a binary (D38): no version until a console has run it
+  expect(body).toContainEqual({ id: "claude", command: "claude", version: null, available: true });
   expect(body).toContainEqual({ id: "codex", command: "codex", version: null, available: false });
   expect(body).toContainEqual({ id: "custom", command: process.execPath, version: null, available: true, customId: "fake", name: "Fake" });
 });
@@ -226,4 +227,27 @@ test("hook posts reach the console and unknown consoles answer 404", async () =>
   const node = (await d.call("POST", "/api/consoles", { agent: "custom", customId: "fake", cwd: s.repo })).body as ConsoleNode;
   expect((await d.call("POST", `/hook/${node.id}`, { agent: "custom", event: "x" })).body).toEqual({ ok: true });
   expect((await d.call("POST", "/hook/nope", { agent: "custom", event: "x" })).status).toBe(404);
+});
+
+test("spawning an agent runs the binary found on agentPath and reads its version then, once (D38)", async () => {
+  const s = setup();
+  const d = await start(s);
+  const sock = socket(d);
+  await sock.opened;
+  const node = (await d.call("POST", "/api/consoles", { agent: "claude", cwd: s.repo })).body as ConsoleNode;
+  sock.send({ t: "attach", consoleId: node.id });
+  // the stub prints its version whatever the arguments, so this output proves the stub ran, not a real claude
+  await until(() => sock.output(node.id).includes("9.9.9 (stub)"));
+  const agents = await until(async () => {
+    const list = (await d.call("GET", "/api/agents")).body as { id: string; version: string | null }[];
+    return list.find((a) => a.id === "claude" && a.version) && list;
+  });
+  expect(agents).toContainEqual({ id: "claude", command: "claude", version: "9.9.9 (stub)", available: true });
+});
+
+test("an agent missing from agentPath is not spawned (D38)", async () => {
+  const s = setup();
+  const d = await start(s);
+  const res = await d.call("POST", "/api/consoles", { agent: "codex", cwd: s.repo });
+  expect(res).toEqual({ status: 400, body: { error: "codex is not on the agent PATH" } });
 });
