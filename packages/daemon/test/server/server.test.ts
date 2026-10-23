@@ -399,3 +399,24 @@ test("a wrong X-AgentBoard-Token is never rescued by a correct Bearer", async ()
   const res = await fetch(`${s.origin}/api/status`, { headers: { "x-agentboard-token": "wrong", authorization: `Bearer ${token}` } });
   expect(res.status).toBe(401);
 });
+
+test("a handler error carrying a 4xx status answers that status with its message; any other error stays a bare 500", async () => {
+  const s = await start({
+    routes: {
+      "POST /api/open": async () => { throw Object.assign(new Error("not a directory: \"/x\""), { status: 400 }); },
+      "GET /api/status": async () => { throw Object.assign(new Error("secret detail"), { status: 503 }); },
+    },
+  });
+  const headers = { "x-agentboard-token": token, origin: s.origin, "content-type": "application/json" };
+  const bad = await fetch(`${s.origin}/api/open`, { method: "POST", headers, body: JSON.stringify({ editor: "code", path: "/x" }) });
+  expect(bad.status).toBe(400);
+  expect(await bad.json()).toEqual({ error: "not a directory: \"/x\"" });
+  const other = await fetch(`${s.origin}/api/status`, { headers });
+  expect(other.status).toBe(500);
+  expect(await other.json()).toEqual({ error: "internal error" });
+});
+
+test("a busy port rejects createServer instead of crashing the process (L12)", async () => {
+  const s = await start();
+  await expect(createServer({ port: s.port, token, staticDir: tmpdir(), routes: {} })).rejects.toThrow(/EADDRINUSE/);
+});
