@@ -60,6 +60,42 @@ test("an exec that never calls back gives up after 3 seconds", async () => {
   }
 });
 
+test("scan runs the CLI with the scanned PATH so an env-shebang CLI finds its interpreter", async () => {
+  const path = stubDir({ claude: "x" });
+  let env: Record<string, string> | undefined;
+  const exec = ((_f: string, _a: string[], o: { env: Record<string, string> }, cb: (e: null, out: string) => void) => {
+    env = o.env;
+    cb(null, "1\n");
+  }) as never;
+  await AgentCatalog.scan({ path, exec });
+  expect(env?.PATH).toBe(path);
+});
+
+test("only the first line of --version output is kept", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "agentboard-path-"));
+  writeFileSync(join(dir, "codex"), "#!/bin/sh\necho 1.2.3\necho extra\n");
+  chmodSync(join(dir, "codex"), 0o755);
+  const codex = (await AgentCatalog.scan({ path: dir })).find((a) => a.id === "codex");
+  expect(codex?.version).toBe("1.2.3");
+});
+
+test("a non-executable stub stays unavailable", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "agentboard-path-"));
+  writeFileSync(join(dir, "gemini"), "#!/bin/sh\necho 1\n");
+  chmodSync(join(dir, "gemini"), 0o644);
+  const gemini = (await AgentCatalog.scan({ path: dir })).find((a) => a.id === "gemini");
+  expect(gemini).toMatchObject({ available: false, version: null });
+});
+
+test("a custom agent can be given by absolute path", async () => {
+  const dir = stubDir({ mytool: "1" });
+  const command = join(dir, "mytool");
+  const [entry] = (await AgentCatalog.scan({ path: "", custom: [{ id: "a", name: "A", command, args: [] }] })).filter(
+    (a) => a.id === "custom",
+  );
+  expect(entry).toMatchObject({ command, available: true, customId: "a" });
+});
+
 test("custom agents are available when their command resolves", async () => {
   const path = stubDir({ mytool: "1" });
   const custom = [

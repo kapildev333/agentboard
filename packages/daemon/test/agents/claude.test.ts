@@ -12,14 +12,14 @@ const base = {
 
 const after = (args: string[], flag: string) => args[args.indexOf(flag) + 1];
 
-test("claudeLaunch passes a session id and five command hooks that run the relay", () => {
+test("claudeLaunch passes a session id and six command hooks that run the relay", () => {
   const { command, args } = claudeLaunch(base);
   expect(command).toBe("claude");
   expect(after(args, "--session-id")).toBe(base.sessionId);
   expect(after(args, "--name")).toBe(base.name);
   const settings = JSON.parse(after(args, "--settings"));
   expect(Object.keys(settings.hooks).sort()).toEqual(
-    ["Notification", "PermissionRequest", "SessionEnd", "Stop", "UserPromptSubmit"],
+    ["Notification", "PermissionRequest", "PreToolUse", "SessionEnd", "Stop", "UserPromptSubmit"],
   );
   expect([...CLAUDE_HOOK_EVENTS].sort()).toEqual(Object.keys(settings.hooks).sort());
   for (const event of CLAUDE_HOOK_EVENTS) {
