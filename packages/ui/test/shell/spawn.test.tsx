@@ -20,6 +20,7 @@ const node: ConsoleNode = {
 const agents = [
   { id: "claude", command: "claude", version: "2.1.0", available: true },
   { id: "codex", command: "codex", version: "0.9.1", available: true },
+  { id: "opencode", command: "opencode", version: null, available: true },
   { id: "gemini", command: "gemini", version: null, available: false },
 ];
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -110,5 +111,11 @@ describe("SpawnDialog", () => {
     render(<SpawnDialog fetch={fakeFetch()} cwd="/r" onSpawned={vi.fn()} />);
     await screen.findByLabelText(/claude/);
     expect(screen.getByRole("group", { name: "Agent" })).toBeTruthy();
+  });
+
+  it("not installed shows only for unavailable agents", async () => {
+    render(<SpawnDialog fetch={fakeFetch()} cwd="/r" onSpawned={vi.fn()} />);
+    expect((await screen.findByLabelText(/gemini/)).parentElement!.textContent).toContain("not installed");
+    expect(screen.getByLabelText(/opencode/).parentElement!.textContent).not.toContain("not installed");
   });
 });
