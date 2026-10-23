@@ -26,3 +26,11 @@ describe("pty-ws spike", () => {
     await srv.close();
   });
 });
+
+describe("latency stats", () => {
+  it("percentile picks nearest-rank values", async () => {
+    const { percentile } = await import("./latency.ts");
+    const xs = Array.from({ length: 100 }, (_, i) => i + 1);
+    expect([percentile(xs, 50), percentile(xs, 95), percentile(xs, 100)]).toEqual([50, 95, 100]);
+  });
+});
