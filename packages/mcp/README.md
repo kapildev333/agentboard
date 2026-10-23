@@ -5,7 +5,7 @@ An MCP server over stdio. It lets a coding agent open the board, spawn consoles,
 The package is private and unpublished, so register the linked bin and never a bare `npx agentboard-mcp` (that name on the public registry is not ours):
 
 ```
-npm run build -w @agentboard/mcp
+npm run build                  # the whole workspace: shared and cli need a dist before mcp
 npm link -w @agentboard/mcp    # puts agentboard-mcp on PATH
 ```
 
