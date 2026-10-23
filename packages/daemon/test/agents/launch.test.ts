@@ -28,6 +28,7 @@ test("launchArgs for opencode sets the plugin environment", () => {
   expect(args).toEqual([]);
   expect(env).toMatchObject({
     AGENTBOARD_URL: ctx.daemonUrl,
+    AGENTBOARD_TOKEN: ctx.token,
     AGENTBOARD_CONSOLE_ID: "c1",
     AGENTBOARD_AGENT: "opencode",
   });
@@ -66,7 +67,7 @@ test("a custom agent runs its configured command", () => {
   const { command, args, env } = launchArgs("custom", { ...ctx, custom });
   expect(command).toBe("mytool");
   expect(args).toEqual(["--fast"]);
-  expect(env).toMatchObject({ AGENTBOARD_AGENT: "custom", AGENTBOARD_CONSOLE_ID: "c1", AGENTBOARD_URL: ctx.daemonUrl });
+  expect(env).toMatchObject({ AGENTBOARD_AGENT: "custom", AGENTBOARD_CONSOLE_ID: "c1", AGENTBOARD_URL: ctx.daemonUrl, AGENTBOARD_TOKEN: ctx.token });
 });
 
 test("resumeArgs for a custom agent throws rather than start a fresh session", () => {
@@ -76,4 +77,12 @@ test("resumeArgs for a custom agent throws rather than start a fresh session", (
 
 test("launchArgs for a custom agent without a configured command throws", () => {
   expect(() => launchArgs("custom", ctx)).toThrow(/custom/);
+});
+
+test("resumeArgs ignores the prompt", () => {
+  expect(resumeArgs("claude", ctx.sessionId, { ...ctx, prompt: "p" }).args).not.toContain("p");
+});
+
+test("resumeArgs without a session id throws instead of starting fresh", () => {
+  expect(() => resumeArgs("claude", "", ctx)).toThrow(/session id/);
 });
