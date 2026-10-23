@@ -36,4 +36,44 @@ describe("PtyManager", () => {
     await until(() => out, "30 100");
     await m.kill("r");
   });
+
+  it("kill ends the process", async () => {
+    const m = new PtyManager();
+    sh(m, "k");
+    let code: number | undefined;
+    m.onExit("k", (c) => (code = c));
+    await m.kill("k");
+    expect(code).toBeTypeOf("number");
+    expect(m.list()).toEqual([]);
+  });
+
+  it("kill escalates to SIGKILL after 5 seconds when SIGHUP is ignored", async () => {
+    let fire: (() => void) | undefined;
+    let delay = 0;
+    const m = new PtyManager({
+      set: (fn, ms) => ((fire = fn), (delay = ms), 1),
+      clear: () => {},
+    });
+    m.spawn({
+      id: "s",
+      command: "/bin/sh",
+      args: ["-c", "trap '' HUP; echo ready; while :; do sleep 1; done"],
+      cwd: "/tmp",
+      env: { PATH: process.env.PATH ?? "" },
+      cols: 80,
+      rows: 24,
+    });
+    let out = "";
+    let exited = false;
+    m.onData("s", (d) => (out += d));
+    m.onExit("s", () => (exited = true));
+    await until(() => out, "ready");
+    const done = m.kill("s");
+    await new Promise((r) => setTimeout(r, 300));
+    expect(exited).toBe(false);
+    expect(delay).toBe(5000);
+    fire!();
+    await done;
+    expect(exited).toBe(true);
+  });
 });
