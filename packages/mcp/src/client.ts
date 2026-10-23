@@ -20,15 +20,16 @@ export class DaemonClient {
   private repo: string | undefined;
 
   constructor(
-    private info: z.infer<typeof DaemonInfoSchema>,
+    private loadInfo: () => z.infer<typeof DaemonInfoSchema>,
     private fetchFn: typeof fetch = fetch,
     private env: Env = process.env,
   ) {}
 
   private async call(method: Route["method"], path: Route["path"], input?: unknown): Promise<unknown> {
     const route = routes.find((r) => r.method === method && r.path === path)!;
-    const url = new URL(`http://127.0.0.1:${this.info.port}${path}`);
-    const headers: Record<string, string> = { "x-agentboard-token": this.info.token };
+    const info = this.loadInfo(); // per request, so a restarted daemon is picked up and a missing one is an error result
+    const url = new URL(`http://127.0.0.1:${info.port}${path}`);
+    const headers: Record<string, string> = { "x-agentboard-token": info.token };
     let body: string | undefined;
     if (route.request) {
       const parsed = schema(route.request).parse(input);

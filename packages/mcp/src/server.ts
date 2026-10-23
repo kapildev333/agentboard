@@ -45,4 +45,3 @@ export function createServer(client: DaemonClient) {
   );
   return server;
 }
-
