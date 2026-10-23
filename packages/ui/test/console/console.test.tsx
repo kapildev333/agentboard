@@ -154,4 +154,24 @@ describe("ConsoleNode", () => {
     fireEvent.focusOut(root);
     expect(root.className).not.toMatch(/nowheel/);
   });
+
+  it("exit shows the marker", () => {
+    const { getByText, queryByText } = mount();
+    act(() => sockets[0]!.open());
+    expect(queryByText(/exited/)).toBeNull();
+    act(() => sockets[0]!.receive({ t: "exit", consoleId: "c1", code: 0 }));
+    expect(getByText(/exited/)).toBeTruthy();
+  });
+
+  it("copies the selection and pastes on Cmd or Ctrl V", async () => {
+    const clip = { writeText: vi.fn(), readText: vi.fn().mockResolvedValue("pasted") };
+    Object.defineProperty(navigator, "clipboard", { value: clip, configurable: true });
+    mount();
+    const key = (k: string) => x.term.keyHandler({ type: "keydown", key: k, metaKey: true, ctrlKey: false } as KeyboardEvent);
+    x.term.selection = "sel";
+    expect(key("c")).toBe(false);
+    expect(clip.writeText).toHaveBeenCalledWith("sel");
+    expect(key("v")).toBe(false);
+    await vi.waitFor(() => expect(x.term.pasted).toBe("pasted"));
+  });
 });
