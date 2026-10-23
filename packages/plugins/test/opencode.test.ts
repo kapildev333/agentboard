@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildHookPost } from "../opencode/hook";
+import { buildHookPost } from "../opencode/hook.js";
 
 const env = { AGENTBOARD_URL: "http://127.0.0.1:4321", AGENTBOARD_CONSOLE_ID: "c1" };
 
@@ -16,7 +16,7 @@ describe("buildHookPost", () => {
 
 describe("AgentBoard plugin", () => {
   it("registers nothing without env and never throws when the daemon is down", async () => {
-    const { AgentBoard } = await import("../opencode/agentboard");
+    const { AgentBoard } = await import("../opencode/agentboard.js");
     vi.stubEnv("AGENTBOARD_URL", "");
     vi.stubEnv("AGENTBOARD_CONSOLE_ID", "");
     expect(await AgentBoard()).toEqual({});
@@ -25,7 +25,7 @@ describe("AgentBoard plugin", () => {
     vi.stubEnv("AGENTBOARD_CONSOLE_ID", "c1");
     const fetchMock = vi.fn().mockRejectedValue(new Error("refused"));
     vi.stubGlobal("fetch", fetchMock);
-    const hooks = (await AgentBoard()) as any;
+    const hooks = (await AgentBoard()) as Required<Awaited<ReturnType<typeof AgentBoard>>>;
     await hooks.event({ event: { type: "permission.asked", properties: { id: "p" } } });
     await hooks.event({ event: { type: "message.updated", properties: {} } });
     await hooks["tool.execute.before"]({ tool: "bash" });

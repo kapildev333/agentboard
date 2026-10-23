@@ -1,20 +1,5 @@
 // OpenCode plugin: forwards session events to the AgentBoard daemon's hook endpoint.
-type Env = Record<string, string | undefined>;
-export interface OpencodeEvent {
-  type: string;
-  properties?: unknown;
-}
-
-const WATCHED = new Set(["session.status", "session.idle", "permission.asked", "tool.execute.before"]);
-
-export function buildHookPost(env: Env, event: OpencodeEvent) {
-  const { AGENTBOARD_URL: base, AGENTBOARD_CONSOLE_ID: id } = env;
-  if (!base || !id) return null;
-  return {
-    url: `${base}/hook/${id}`,
-    body: { agent: "opencode", event: event.type, payload: event.properties ?? {} },
-  };
-}
+import { buildHookPost, WATCHED, type OpencodeEvent } from "./hook.js";
 
 export const AgentBoard = async () => {
   if (!buildHookPost(process.env, { type: "" })) return {};
