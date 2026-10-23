@@ -14,8 +14,11 @@ git fetch -q origin || exit 1
 IFS=: read -ra scopes <<<"$scope"
 inscope() { case "$1" in package-lock.json) return 0;; esac; for s in "${scopes[@]}"; do case "$1" in "$s"|"$s"/*) return 0;; esac; done; return 1; }
 keep=()
+basesubjects="$(git log "$onto" --format=%s -500)"
 for c in $(git rev-list --reverse "$onto"..HEAD); do
   ok=1
+  # a copy of a commit already on the base (same subject) is never the lane's own work
+  if grep -qxF -- "$(git log -1 --format=%s "$c")" <<<"$basesubjects"; then ok=0; fi
   for f in $(git show --name-only --format= "$c"); do inscope "$f" || { ok=0; break; }; done
   if [ $ok = 1 ]; then keep+=("$c"); else echo "drop: $(git log -1 --format='%h %ae %s' "$c" | cut -c1-80)"; fi
 done
