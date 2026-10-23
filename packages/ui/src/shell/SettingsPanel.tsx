@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import type { CustomAgent, Settings } from "@agentboard/shared";
 
-export type CustomAgent = { name: string; command: string; needsYou?: string };
-export type Settings = { fontSize: number; customAgents: CustomAgent[] };
+export type { CustomAgent, Settings };
 
 export function SettingsPanel({ settings, onChange }: { settings: Settings; onChange: (s: Settings) => void }) {
   const [size, setSize] = useState(String(settings.fontSize));
@@ -21,9 +21,15 @@ export function SettingsPanel({ settings, onChange }: { settings: Settings; onCh
         <input type="number" min={10} max={24} value={size} onChange={(e) => setSize(e.target.value)} onBlur={commitSize} />
       </label>
       {settings.customAgents.map((a, i) => (
-        <div key={i}>
+        <div key={a.id}>
           <input aria-label={`name ${i + 1}`} value={a.name} onChange={(e) => setAgent(i, { name: e.target.value })} />
           <input aria-label={`command ${i + 1}`} value={a.command} onChange={(e) => setAgent(i, { command: e.target.value })} />
+          {/* uncontrolled, so a trailing space survives while typing the next argument */}
+          <input
+            aria-label={`args ${i + 1}`}
+            defaultValue={a.args.join(" ")}
+            onChange={(e) => setAgent(i, { args: e.target.value.split(/\s+/).filter(Boolean) })}
+          />
           <input
             aria-label={`needs-you regex ${i + 1}`}
             value={a.needsYou ?? ""}
@@ -38,7 +44,7 @@ export function SettingsPanel({ settings, onChange }: { settings: Settings; onCh
           </button>
         </div>
       ))}
-      <button type="button" onClick={() => onChange({ ...settings, customAgents: [...settings.customAgents, { name: "", command: "" }] })}>
+      <button type="button" onClick={() => onChange({ ...settings, customAgents: [...settings.customAgents, { id: crypto.randomUUID(), name: "", command: "", args: [] }] })}>
         Add agent
       </button>
     </div>
