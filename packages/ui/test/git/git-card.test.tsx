@@ -21,29 +21,36 @@ it("the card renders a status fixture", async () => {
   expect(screen.getByText(/wire the thing/)).toBeTruthy();
 });
 
-const router = (routes: Record<string, () => Response>, calls: [string, RequestInit | undefined][] = []) =>
+type Call = [key: string, init: RequestInit | undefined, url: string];
+
+const router = (routes: Record<string, () => Response>, calls: Call[] = []) =>
   (async (url: string | URL | Request, init?: RequestInit) => {
     const key = `${init?.method ?? "GET"} ${String(url).split("?")[0]}`;
-    calls.push([key, init]);
+    calls.push([key, init, String(url)]);
     return routes[key]?.() ?? json({ error: "nope" }, 404);
   }) as typeof globalThis.fetch;
 
 it("clicking Diff loads and renders the patch", async () => {
-  const fetch = router({
-    "GET /api/git/status": () => json(status),
-    "GET /api/git/diff": () =>
-      json({ files: [{ path: "a.ts", status: "M" }], patch: "@@ -1 +1 @@\n-old\n+new" }),
-  });
+  const calls: Call[] = [];
+  const fetch = router(
+    {
+      "GET /api/git/status": () => json(status),
+      "GET /api/git/diff": () =>
+        json({ files: [{ path: "a.ts", status: "M" }], patch: "@@ -1 +1 @@\n-old\n+new" }),
+    },
+    calls,
+  );
   render(<GitCard fetch={fetch} path="/r" />);
   fireEvent.click(await screen.findByText("Diff"));
   expect(await screen.findByText("a.ts")).toBeTruthy();
+  expect(calls.some(([, , url]) => url === "/api/git/diff?path=%2Fr")).toBe(true);
   expect(screen.getByText("M")).toBeTruthy();
   expect(screen.getByText("+new").className).toBe("added");
   expect(screen.getByText("-old").className).toBe("removed");
 });
 
 it("commit posts the message", async () => {
-  const calls: [string, RequestInit | undefined][] = [];
+  const calls: Call[] = [];
   const fetch = router({ "GET /api/git/status": () => json(status), "POST /api/git/commit": () => json({ sha: "def" }) }, calls);
   render(<GitCard fetch={fetch} path="/r" />);
   fireEvent.click(await screen.findByText("Commit"));
@@ -55,17 +62,22 @@ it("commit posts the message", async () => {
 });
 
 it("a failed push shows the error", async () => {
-  const fetch = router({
-    "GET /api/git/status": () => json(status),
-    "POST /api/git/push": () => json({ error: "remote rejected" }, 500),
-  });
+  const calls: Call[] = [];
+  const fetch = router(
+    {
+      "GET /api/git/status": () => json(status),
+      "POST /api/git/push": () => json({ error: "remote rejected" }, 500),
+    },
+    calls,
+  );
   render(<GitCard fetch={fetch} path="/r" />);
   fireEvent.click(await screen.findByText("Push"));
   expect((await screen.findByRole("alert")).textContent).toBe("remote rejected");
+  expect(JSON.parse(calls.find(([k]) => k === "POST /api/git/push")![1]!.body as string)).toEqual({ path: "/r" });
 });
 
 it("open PR posts and opens the url", async () => {
-  const calls: [string, RequestInit | undefined][] = [];
+  const calls: Call[] = [];
   const open = vi.fn();
   const fetch = router({ "GET /api/git/status": () => json(status), "POST /api/git/pr": () => json({ url: "https://x/pr/1" }) }, calls);
   render(<GitCard fetch={fetch} path="/r" open={open} />);
@@ -155,4 +167,49 @@ it("a failing poll after a good status shows the alert and keeps the card", asyn
   render(<GitCard fetch={fetch} path="/r" intervalMs={20} />);
   expect((await screen.findByRole("alert")).textContent).toBe("gone");
   expect(screen.getByText(/feat-x/)).toBeTruthy();
+});
+
+it("a reply that fails its schema shows an alert for status, diff and push", async () => {
+  const empty = () => json({});
+  const { unmount } = render(<GitCard fetch={router({ "GET /api/git/status": empty })} path="/r" />);
+  expect(await screen.findByRole("alert")).toBeTruthy();
+  unmount();
+
+  const ok = router({ "GET /api/git/status": () => json(status), "GET /api/git/diff": empty, "POST /api/git/push": empty });
+  render(<GitCard fetch={ok} path="/r" />);
+  fireEvent.click(await screen.findByText("Push"));
+  await screen.findByRole("alert");
+  fireEvent.click(screen.getByText("Diff"));
+  await vi.waitFor(() => expect(screen.getAllByRole("alert")).toHaveLength(2));
+});
+
+it("an action error clears after a good action", async () => {
+  let ok = false;
+  const fetch = router({
+    "GET /api/git/status": () => json(status),
+    "POST /api/git/push": () => (ok ? json({ ok: true }) : json({ error: "remote rejected" }, 500)),
+  });
+  render(<GitCard fetch={fetch} path="/r" />);
+  fireEvent.click(await screen.findByText("Push"));
+  await screen.findByRole("alert");
+  ok = true;
+  fireEvent.click(screen.getByText("Push"));
+  await vi.waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
+});
+
+it("a status error clears after a good poll", async () => {
+  let calls = 0;
+  const fetch = router({ "GET /api/git/status": () => (calls++ === 1 ? json({ error: "blip" }, 500) : json(status)) });
+  render(<GitCard fetch={fetch} path="/r" intervalMs={20} />);
+  await screen.findByRole("alert");
+  await vi.waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
+});
+
+it("the commit form closes after a successful commit", async () => {
+  const fetch = router({ "GET /api/git/status": () => json(status), "POST /api/git/commit": () => json({ sha: "def" }) });
+  render(<GitCard fetch={fetch} path="/r" />);
+  fireEvent.click(await screen.findByText("Commit"));
+  fireEvent.change(screen.getByLabelText("Commit message"), { target: { value: "fix it" } });
+  fireEvent.click(screen.getByText("Submit"));
+  await vi.waitFor(() => expect(screen.queryByLabelText("Commit message")).toBeNull());
 });
