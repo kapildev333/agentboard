@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useConsoleSocket, type SocketFactory } from "./useConsoleSocket";
 
 export interface ConsoleNodeProps {
-  data: { consoleId: string; title?: string };
+  data: { node: { id: string; title: string } };
   socketFactory?: SocketFactory;
   fontSize?: number;
   statusBadge?: ReactNode;
@@ -18,7 +18,7 @@ export const CONSOLE_DRAG_HANDLE = ".console-drag-handle";
 export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }: ConsoleNodeProps) {
   const el = useRef<HTMLDivElement>(null);
   const term = useRef<Terminal | null>(null);
-  const { sendInput, sendResize, exited } = useConsoleSocket(data.consoleId, socketFactory, (d) => term.current?.write(d));
+  const { sendInput, sendResize, exited } = useConsoleSocket(data.node.id, socketFactory, (d) => term.current?.write(d));
   const io = useRef({ sendInput, sendResize });
   io.current = { sendInput, sendResize };
   const zoom = useStore((s) => s.transform[2]);
@@ -32,14 +32,9 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
     t.open(el.current!);
     t.attachCustomKeyEventHandler((e) => {
       if (e.type !== "keydown" || !(e.metaKey || e.ctrlKey)) return true;
-      if (e.key === "c" && t.hasSelection()) {
-        void navigator.clipboard.writeText(t.getSelection());
-        return false;
-      }
-      if (e.key === "v") {
-        void navigator.clipboard.readText().then((text) => t.paste(text));
-        return false;
-      }
+      if (e.key === "c" && t.hasSelection()) return false; // browser copies the selection
+      // false stops xterm only; the browser's own paste event still reaches xterm's textarea.
+      if (e.key === "v") return false;
       return true;
     });
     t.onData((d) => io.current.sendInput(d));
@@ -54,11 +49,18 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
       term.current = null;
       t.dispose();
     };
+  }, []);
+
+  useEffect(() => {
+    if (!term.current) return;
+    term.current.options.fontSize = fontSize;
+    fit.current?.fit();
   }, [fontSize]);
 
   // One renderer (xterm's DOM) at every zoom: WebGL floors cell width, so swapping reflowed running agents.
   useEffect(() => {
-    fit.current?.fit();
+    const id = setTimeout(() => fit.current?.fit(), 150);
+    return () => clearTimeout(id);
   }, [zoom]);
 
   return (
@@ -66,7 +68,7 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
       style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}
     >
       <header className="console-drag-handle">
-        {data.title} {statusBadge}
+        {data.node.title} {statusBadge}
       </header>
       <div
         ref={el}

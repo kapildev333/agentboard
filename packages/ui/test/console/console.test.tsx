@@ -17,7 +17,9 @@ vi.mock("@xterm/xterm", () => ({
     keyHandler?: (e: KeyboardEvent) => boolean;
     selection = "";
     pasted = "";
-    constructor(public opts: any) {
+    options: any;
+    constructor(opts: any) {
+      this.options = { ...opts };
       x.term = this;
     }
     loadAddon(a: any) {
@@ -98,7 +100,7 @@ afterEach(() => {
 const mount = (extra: object = {}) =>
   render(
     <ReactFlowProvider>
-      <ConsoleNode {...({ id: "n1", data: { consoleId: "c1", title: "Claude" }, socketFactory: factory, ...extra } as any)} />
+      <ConsoleNode {...({ id: "n1", data: { node: { id: "c1", title: "Claude" } }, socketFactory: factory, ...extra } as any)} />
     </ReactFlowProvider>,
   );
 
@@ -151,16 +153,29 @@ describe("ConsoleNode", () => {
     expect(getByText(/exited/)).toBeTruthy();
   });
 
-  it("copies the selection and pastes on Cmd or Ctrl V", async () => {
-    const clip = { writeText: vi.fn(), readText: vi.fn().mockResolvedValue("pasted") };
-    Object.defineProperty(navigator, "clipboard", { value: clip, configurable: true });
+  it("Cmd+C with a selection and Cmd+V are left to the browser, so paste happens once", () => {
     mount();
     const key = (k: string) => x.term.keyHandler({ type: "keydown", key: k, metaKey: true, ctrlKey: false } as KeyboardEvent);
+    expect(key("v")).toBe(false);
     x.term.selection = "sel";
     expect(key("c")).toBe(false);
-    expect(clip.writeText).toHaveBeenCalledWith("sel");
-    expect(key("v")).toBe(false);
-    await vi.waitFor(() => expect(x.term.pasted).toBe("pasted"));
+    x.term.selection = "";
+    expect(key("c")).toBe(true);
+    expect(x.term.pasted).toBe("");
+  });
+
+  it("changing fontSize keeps the same terminal and refits", () => {
+    const { rerender } = mount({ fontSize: 13 });
+    const term = x.term;
+    x.fit.fit.mockClear();
+    rerender(
+      <ReactFlowProvider>
+        <ConsoleNode {...({ id: "n1", data: { node: { id: "c1", title: "Claude" } }, socketFactory: factory, fontSize: 18 } as any)} />
+      </ReactFlowProvider>,
+    );
+    expect(x.term).toBe(term);
+    expect(term.options.fontSize).toBe(18);
+    expect(x.fit.fit).toHaveBeenCalled();
   });
 
   it("reconnects once after a close, and attaches again", () => {
@@ -168,6 +183,7 @@ describe("ConsoleNode", () => {
     act(() => sockets[0]!.onclose!());
     expect(sockets).toHaveLength(2);
     act(() => sockets[1]!.open());
+    expect(x.term.written).toEqual(["\x1bc"]);
     expect(sockets[1]!.sent[0]).toBe(JSON.stringify({ t: "attach", consoleId: "c1" }));
     act(() => sockets[1]!.onclose!());
     expect(sockets).toHaveLength(2);
