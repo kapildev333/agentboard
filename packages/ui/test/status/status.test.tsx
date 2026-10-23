@@ -60,6 +60,48 @@ it("needs_you while the tab is hidden shows a notification and badges the title"
   expect(document.title).toBe("(1) AgentBoard");
 });
 
+it("the notification is tagged by node, and its click focuses the window, closes it, then focuses the node", () => {
+  const N = fakeNotification();
+  const order: string[] = [];
+  vi.spyOn(window, "focus").mockImplementation(() => void order.push("window"));
+  hidden(true);
+  const onFocus = vi.fn(() => void order.push("node"));
+  renderHook(() => useNotifications({ onFocus }));
+  act(() => setStatuses({ c1: "needs_you", c2: "idle" }));
+  expect(N.mock.calls[0]![1]).toEqual({ body: "claude", tag: "c1" });
+  const note = N.mock.instances[0] as unknown as { onclick: () => void; close: () => void };
+  note.close = vi.fn(() => void order.push("close"));
+  note.onclick();
+  expect(order).toEqual(["window", "close", "node"]);
+  expect(onFocus).toHaveBeenCalledWith("c1");
+});
+
+it("an inline onFocus does not resubscribe, and the latest one is called", () => {
+  const N = fakeNotification();
+  hidden(true);
+  const spy = vi.spyOn(useBoard, "subscribe");
+  const a = vi.fn();
+  const b = vi.fn();
+  const { rerender } = renderHook(({ f }) => useNotifications({ onFocus: f }), { initialProps: { f: a } });
+  rerender({ f: b });
+  expect(spy).toHaveBeenCalledTimes(1);
+  act(() => setStatuses({ c1: "needs_you", c2: "idle" }));
+  vi.spyOn(window, "focus").mockImplementation(() => {});
+  const note = N.mock.instances[0] as unknown as { onclick: () => void; close: () => void };
+  note.close = vi.fn();
+  note.onclick();
+  expect(b).toHaveBeenCalledWith("c1");
+  expect(a).not.toHaveBeenCalled();
+});
+
+it("unmounting restores the title", () => {
+  setStatuses({ c1: "needs_you" });
+  const { unmount } = renderHook(() => useNotifications({ onFocus: () => {} }));
+  expect(document.title).toBe("(1) AgentBoard");
+  unmount();
+  expect(document.title).toBe("AgentBoard");
+});
+
 it("the title returns to AgentBoard when nothing needs you", () => {
   hidden(true);
   setStatuses({ c1: "needs_you" });
@@ -88,7 +130,8 @@ it("the badge renders every status with its label", () => {
 it("the mission map groups consoles by status in order", () => {
   setStatuses({ a: "exited", b: "idle", c: "needs_you", d: "working", e: "starting", f: "stopped" });
   render(<MissionMap onFocus={() => {}} />);
-  const groups = screen.getAllByRole("group").map((g) => g.getAttribute("data-status"));
+  const groups = screen.getAllByRole("group").map((g) => g.querySelector("[data-status]")!.getAttribute("data-status"));
+  expect(document.querySelectorAll('[data-status="needs_you"]')).toHaveLength(1);
   expect(groups).toEqual(["needs_you", "working", "idle", "starting", "stopped", "exited"]);
   const row = within(screen.getByRole("group", { name: /Needs you/ })).getByRole("button");
   expect(row.textContent).toContain("T-c");
