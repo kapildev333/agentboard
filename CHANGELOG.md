@@ -15,23 +15,13 @@ Phases 0 to 2 of the [build plan](docs/superpowers/plans/2026-10-23-multi-agent-
 - **L11** PTY manager (#39): spawn, write, resize, kill (SIGHUP, then SIGKILL after 5 s), a 200 KB replay buffer, and the login-shell environment read once.
 - **L12** Server (#47): HTTP and WebSocket on 127.0.0.1; the token as a header or Bearer; one-time codes swapped for a port-named session cookie; Host, Origin and Sec-Fetch-Site checks; no CORS; static files.
 - **L13** Status tracker (#51): hook events through the shared map, the 20 s quiet timer, needs-you rules, Codex armed by Enter, hooks taking over from output after the first event (D20), and only a process exit being final.
-- **L14** Agent catalog and launch arguments (#62): finds claude, codex, gemini and opencode on PATH with versions; builds the launch and resume arguments for each, plus custom agents; Claude reports through the notify relay (D15).
+- **L14** Agent catalog and launch arguments (#62): finds claude, codex, gemini and opencode on PATH; builds the launch and resume arguments for each, plus custom agents; Claude reports through the notify relay (D15).
 - **L15** Board canvas and workspaces (#38): React Flow with zoom 25% to 200%, minimap, drag and resize; workspace tabs with create, rename and delete; debounced autosave.
 - **L16** Console node (#53): xterm.js (DOM renderer) with fit, 10,000 lines of scrollback, copy and paste, font size, a drag handle on the title bar, and mouse input unscaled for zoom.
 - **L17** Status badges, mission map, notifications (#48): a WCAG AA badge per status, the mission map grouped by status, and a web notification plus an `(N)` tab title when a console needs you.
 - **L18** Shell (#50): the repo picker with recent repositories, the spawn dialog from the agent catalog with worktree and first prompt, and the settings panel with font size and custom agents.
 - **L19** CLI start, open, status (#41): the `agentboard` bin; `open` starts a detached daemon when none answers and logs the browser in with a one-time code, never the token.
-- **L1A** Integration (stacked branch `worktree-L1A`, not merged when this was written):
-  - `startDaemon` and the `agentboard-daemon` bin wire state, PTYs, server, status, hooks, agents, git, open-in and settings.
-  - The React app loads the board, merges the daemon's updates, and wires consoles, status, the shell, the git card and open-in.
-  - The rule for nested sessions (D34).
-  - Playwright end-to-end tests: six consoles, p95 echo under load, daemon memory, foreign-origin refusal, reload and restart.
-  - Reviewers' follow-ups across lanes:
-    - A custom agent's needs-you holds until you type.
-    - The CLI and MCP share one daemon.json reader and fail fast when the daemon exits.
-    - The CLI checks names and folders before starting a daemon.
-    - The git card links the new PR and refreshes after commit and push.
-    - OpenCode consoles load the plugin bundle from the checkout.
+- **L1A** Integration (#74): `startDaemon`, the `agentboard-daemon` bin and the React app wire every lane together; the agent catalog lists agents by PATH presence only and never runs one to scan (D38); Playwright tests cover six consoles, echo under load, memory, foreign-origin refusal, reload and restart.
 - **L20** Git service (#43): worktrees under `.worktrees/<branch>` with an exclude entry; removal refusing dirty or unpushed work; status, diff, commit, push and `gh pr create`.
 - **L21** Git card and diff view (#49): branch, ahead, behind, dirty count and last commit, refreshed every 10 s, with Diff, Commit, Push and Open PR.
 - **L22** Open in VS Code, Zed or Finder (#65): `code`, `zed` and `open -R` (D23) on absolute, resolved directories only, with the buttons on the console.
