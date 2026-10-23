@@ -45,7 +45,8 @@ export async function createServer(opts: ServerOptions) {
   if (!/^[\w-]{32,}$/.test(opts.token)) throw new Error("token must be at least 32 characters of [A-Za-z0-9_-]");
   let port = 0;
   const server = http.createServer((req, res) => {
-    const url = new URL(req.url ?? "/", "http://x");
+    const url = target(req);
+    if (!url) return end(res, 400);
     if (req.method === "GET" && isIndex(url.pathname) && url.searchParams.has("token")) {
       if (!ownHost(req, port)) return end(res, 403);
       if (!same(url.searchParams.get("token")!, opts.token)) return end(res, 401);
@@ -82,7 +83,9 @@ export async function createServer(opts: ServerOptions) {
       .catch(() => {});
   };
   server.on("upgrade", (req: http.IncomingMessage, socket: Duplex, head: Buffer) => {
-    const status = new URL(req.url ?? "/", "http://x").pathname !== "/ws" ? 404 : refuse(req, true);
+    const url = target(req);
+    if (!url) return void socket.destroy();
+    const status = url.pathname !== "/ws" ? 404 : refuse(req, true);
     if (status) {
       socket.end(`HTTP/1.1 ${status} ${http.STATUS_CODES[status]}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
       return;
@@ -111,6 +114,12 @@ export async function createServer(opts: ServerOptions) {
       server.close(() => resolve());
     }),
   };
+}
+
+// Origin-form only; prefixing keeps "//host/x" a path instead of a URL with a host, and "//" from throwing.
+function target(req: http.IncomingMessage): URL | null {
+  if (!req.url?.startsWith("/")) return null;
+  try { return new URL("http://x" + req.url); } catch { return null; }
 }
 
 function ownHost(req: http.IncomingMessage, port: number): boolean {
