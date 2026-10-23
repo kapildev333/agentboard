@@ -1,8 +1,10 @@
 import "@xterm/xterm/css/xterm.css";
 import { FitAddon } from "@xterm/addon-fit";
+import { useReactFlow } from "@xyflow/react";
 import { Terminal } from "@xterm/xterm";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CONSOLE_DRAG_HANDLE } from "./dragHandle";
+import { unscaleMouse } from "./zoomMouse";
 import { useConsoleSocket, type SocketFactory } from "./useConsoleSocket";
 
 export interface ConsoleNodeProps {
@@ -18,14 +20,18 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
   const { sendInput, sendResize, exited } = useConsoleSocket(data.node.id, socketFactory, (d) => term.current?.write(d));
   const io = useRef({ sendInput, sendResize });
   io.current = { sendInput, sendResize };
+  const { getZoom } = useReactFlow();
+  const zoom = useRef(getZoom);
+  zoom.current = getZoom;
   const [focused, setFocused] = useState(false);
   const fit = useRef<FitAddon | null>(null);
 
   useEffect(() => {
-    const t = new Terminal({ fontFamily: "Menlo, monospace", fontSize, scrollback: 5000, cursorBlink: false, allowProposedApi: false });
+    const t = new Terminal({ fontFamily: "Menlo, monospace", fontSize, scrollback: 10000, cursorBlink: false, allowProposedApi: false });
     const f = new FitAddon();
     t.loadAddon(f);
     t.open(el.current!);
+    unscaleMouse(t, () => zoom.current());
     t.attachCustomKeyEventHandler((e) => {
       if (e.type !== "keydown" || !(/Mac/.test(navigator.userAgent) ? e.metaKey : e.ctrlKey)) return true;
       if (e.key === "c" && t.hasSelection()) return false; // browser copies the selection
@@ -38,6 +44,8 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
     term.current = t;
     fit.current = f;
     f.fit();
+    // onResize does not fire when the first fit equals xterm's default 80x24.
+    io.current.sendResize(t.cols, t.rows);
     const ro = new ResizeObserver(() => f.fit());
     ro.observe(el.current!);
     return () => {
