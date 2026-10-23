@@ -18,12 +18,14 @@ test.each([{}, { startDaemon: undefined }])("start exits 1 with one line when th
   expect(err.mock.calls[0]![0]).toMatch(/^agentboard: cannot load the daemon: [^\n]+$/);
 });
 
-test("start calls startDaemon with the cwd and prints the URL", async () => {
-  const startDaemon = vi.fn(async () => "http://127.0.0.1:1/");
+test("start calls startDaemon with the cwd and prints the origin, never the token (L19)", async () => {
+  const token = "secret-token-0123456789abcdef0123456789";
+  const startDaemon = vi.fn(async () => ({ origin: "http://127.0.0.1:1", port: 1, token, close: async () => {} }));
   vi.doMock("@agentboard/daemon", () => ({ startDaemon }));
   const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  vi.spyOn(process, "once").mockImplementation(() => process);
   const { startCommand } = await import("../src/commands/start.js");
   await startCommand();
   expect(startDaemon).toHaveBeenCalledWith({ repoPath: process.cwd() });
-  expect(log).toHaveBeenCalledWith("http://127.0.0.1:1/");
+  expect(log.mock.calls).toEqual([["http://127.0.0.1:1"]]);
 });
