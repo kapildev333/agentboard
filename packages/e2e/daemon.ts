@@ -85,7 +85,11 @@ export function rss(pid: number): { own: number; tree: number } {
   const tree = new Set([pid]);
   for (let grew = true; grew; ) {
     grew = false;
-    for (const [p, pp] of rows) if (tree.has(pp) && !tree.has(p)) (tree.add(p), (grew = true));
+    for (const [p, pp] of rows)
+      if (tree.has(pp) && !tree.has(p)) {
+        tree.add(p);
+        grew = true;
+      }
   }
   const kb = (p: number) => rows.find((r) => r[0] === p)?.[2] ?? 0;
   return { own: kb(pid) * 1024, tree: [...tree].reduce((sum, p) => sum + kb(p), 0) * 1024 };
