@@ -12,7 +12,7 @@ export function createGitHandlers(svc: GitService) {
   return {
     async status(query: unknown) {
       const { lastCommit, ...rest } = await svc.status(GitPathQuerySchema.parse(query).path);
-      return { ...rest, lastCommit: { sha: lastCommit.sha, subject: lastCommit.subject } };
+      return { ...rest, lastCommit: lastCommit && { sha: lastCommit.sha, subject: lastCommit.subject } };
     },
     async diff(query: unknown) {
       return svc.diff(GitPathQuerySchema.parse(query).path);
