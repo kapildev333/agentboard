@@ -29,7 +29,8 @@ export function makeHome(cues: (h: Home) => Record<string, Cue> = () => ({})): H
   symlinkSync(agentboardBin, join(bin, "agentboard"));
   symlinkSync(mcpBin, join(bin, "agentboard-mcp"));
   const h: Home = { root, home, repo, path, cues: join(root, "cues.json"), cleanup: () => rmSync(root, { recursive: true, force: true }) };
-  const env = { AGENTBOARD_HOME: home, PATH: [bin, dirname(process.execPath), process.env.PATH].join(":") };
+  // AGENTBOARD_AGENT_PATH too, so a daemon the CLI auto-starts (if this one stops answering) scans no real agent.
+  const env = { AGENTBOARD_HOME: home, AGENTBOARD_AGENT_PATH: path, PATH: [bin, dirname(process.execPath), process.env.PATH].join(":") };
   writeFileSync(h.cues, JSON.stringify({ env, cues: cues(h) }));
   const settings = {
     fontSize: 13,
