@@ -7,6 +7,7 @@ echo "== gate: $(git rev-parse --short HEAD) on $(git branch --show-current 2>/d
 command -v gitleaks >/dev/null || { echo "gate: gitleaks missing (brew install gitleaks)"; exit 1; }
 if [ -f package-lock.json ]; then
   npm ci --prefer-offline >/dev/null
+  npm run -s fix-pty --if-present   # node-pty's spawn-helper ships without the execute bit when install scripts are off
   npm run -s lint
   npm run -s typecheck
   npm test -s -- --run
