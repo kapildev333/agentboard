@@ -12,7 +12,7 @@ usage: agentboard <start | open [path] | status | spawn <agent> | note <text>>
 
 Any other first word prints that line and exits 2. Only `status` takes `--json`. `spawn` and `note` always print one line of JSON, and `open` and `start` print a URL.
 
-`open`, `spawn` and `note` start the daemon when none answers. They run `agentboard start` detached in the target folder and wait up to 10 seconds; after that they fail with `daemon did not start within 10 seconds`. `status` never starts one.
+`open`, `spawn` and `note` start the daemon when none answers. First they check that the target folder exists, so a typo never starts a daemon. Then they run `agentboard start` detached in that folder and wait up to 10 seconds. If it exits first, they fail with `daemon exited (<code>); run agentboard start to see why`, and if it never answers, with `daemon did not start within 10 seconds`. `status` never starts one.
 
 ### `agentboard open [path]`
 
@@ -61,11 +61,12 @@ $ agentboard spawn claude --worktree fix-login --prompt "reproduce the login bug
 {"id":"…","type":"console","title":"Claude: fix-login","agent":"claude","cwd":"/…/app/.worktrees/fix-login","worktree":{"path":"…","branch":"fix-login","base":"main"},"status":"starting",…}
 ```
 
-- **Parent console.** Inside a board console, `AGENTBOARD_CONSOLE_ID` is set. `spawn` passes it as `callerConsoleId`, so the new console opens in the same workspace, to the right of its parent.
+- **Parent console.** Inside a board console, `AGENTBOARD_CONSOLE_ID` is set. `spawn` passes it as `callerConsoleId`, so the new console opens in the same workspace, to the right of its parent. An empty value is ignored.
 - **Board.** Outside the board, the console goes to the loaded board whose repository contains the working directory.
 - **Errors** print `{"error":"…"}` and exit 1:
   - A wrong number of arguments prints the usage line.
-  - An unknown agent prints the validation message.
+  - An unknown agent prints `unknown agent: <name> (claude|codex|gemini|opencode|custom)`.
+  - A `--repo` that is not a directory prints `not a directory: <path>`.
   - A missing binary prints `could not start <command>: …`.
 - **Custom agents** cannot be spawned from the CLI in this version: `agentboard spawn custom` answers `{"error":"unknown custom agent: undefined"}`. Use the spawn dialog.
 
