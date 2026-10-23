@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { expect, test } from "vitest";
 import { OpenInMenu, postOpen } from "../../src/open/OpenInButtons.js";
 
@@ -28,4 +29,13 @@ test("clicking VS Code posts editor code and the path", () => {
       },
     },
   ]);
+});
+
+test("a daemon error shows as one line inline", async () => {
+  const doFetch = (async () => new Response(JSON.stringify({ error: "not a directory: /x" }), { status: 400 })) as typeof fetch;
+  const message = await postOpen("zed", "/x", doFetch);
+  expect(message).toBe("not a directory: /x");
+  expect(renderToStaticMarkup(OpenInMenu({ error: message, onOpen: () => {} }))).toContain(
+    '<p role="alert">not a directory: /x</p>',
+  );
 });
