@@ -6,6 +6,10 @@ import { join } from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { openCommand } from "../src/commands/open.js";
 
+const noSpawn = (() => {
+  throw new Error("must not spawn");
+}) as never;
+
 let server: Server;
 let home: string;
 const token = "tok";
@@ -50,10 +54,7 @@ test("open with no daemon spawns one and prints the URL", async () => {
 });
 
 test("open fails with one line when the path is not a directory", async () => {
-  const spawn = (() => {
-    throw new Error("must not spawn");
-  }) as never;
-  await expect(openCommand([join(home, "missing")], { spawn, openBrowser: () => {}, log: () => {} })).rejects.toThrow(
+  await expect(openCommand([join(home, "missing")], { spawn: noSpawn, openBrowser: () => {}, log: () => {} })).rejects.toThrow(
     /not a directory/,
   );
 });
@@ -75,6 +76,6 @@ test("open URL-encodes the token", async () => {
   const port = (server.address() as AddressInfo).port;
   writeFileSync(join(home, "daemon.json"), JSON.stringify({ port, token: odd, pid: 1 }));
   const lines: string[] = [];
-  await openCommand([home], { openBrowser: () => {}, log: (s) => lines.push(s) });
+  await openCommand([home], { spawn: noSpawn, openBrowser: () => {}, log: (s) => lines.push(s) });
   expect(lines[0]).toContain(`token=${encodeURIComponent(odd)}&`);
 });
