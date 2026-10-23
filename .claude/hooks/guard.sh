@@ -70,6 +70,7 @@ case "$mode" in
     echo "$cmd" | grep -qE 'pkill +-f|killall ' && deny "refused: pattern kills; stop processes by PID or port"
     if [ "$role" = worker ]; then
       echo "$cmd" | grep -qE '(^|[;&|(] *)(claude|gh +pr +merge|gh +repo|gh +api|git +merge|git +checkout +main|git +switch +main)( |$)' && deny "refused for workers: merging, repo admin or starting sessions"
+      echo "$cmd" | grep -qE 'command +-v +claude|which +claude|/claude( |$|")|\$\([^)]*claude' && deny "refused for workers: running claude through a path or substitution"
     fi
     ;;
   edit)
