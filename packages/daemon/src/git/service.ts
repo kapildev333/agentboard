@@ -38,6 +38,48 @@ export class GitService {
     await simpleGit(dirname(common)).raw(["worktree", "remove", ...(opts.force ? ["--force"] : []), path]);
   }
 
+  async status(path: string) {
+    const g = simpleGit(path);
+    const st = await g.status();
+    const [sha, subject, when] = (await g.raw(["log", "-1", "--format=%H%x00%s%x00%cI"])).trim().split("\0");
+    return {
+      branch: st.current ?? "HEAD",
+      ahead: st.ahead,
+      behind: st.behind,
+      dirty: st.files.length,
+      lastCommit: { sha, subject, when },
+    };
+  }
+
+  // ponytail: tracked changes only; untracked files appear after `commit` stages them.
+  async diff(path: string) {
+    const g = simpleGit(path);
+    const files = (await g.raw(["diff", "HEAD", "--name-status"]))
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => {
+        const [status, ...rest] = l.split("\t");
+        return { path: rest[rest.length - 1], status: status[0] };
+      });
+    return { files, patch: await g.raw(["diff", "HEAD"]) };
+  }
+
+  async commit(path: string, message: string) {
+    const g = simpleGit(path);
+    await g.add("-A");
+    await g.commit(message);
+    return { sha: (await g.revparse(["HEAD"])).trim() };
+  }
+
+  async push(path: string): Promise<void> {
+    await simpleGit(path).raw(["push", "-u", "origin", "HEAD"]);
+  }
+
+  async createPr(path: string, pr: { title: string; body?: string }) {
+    const out = await this.deps.exec("gh", ["pr", "create", "--title", pr.title, "--body", pr.body ?? ""], { cwd: path });
+    return { url: out.trim() };
+  }
+
   private async hasUnpushed(g: SimpleGit): Promise<boolean> {
     const count = async (...a: string[]) => Number((await g.raw(["rev-list", "--count", ...a])).trim());
     try {
