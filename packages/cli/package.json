@@ -13,6 +13,7 @@
     "agentboard": "bin/agentboard.js"
   },
   "dependencies": {
-    "@agentboard/shared": "0.0.0"
+    "@agentboard/shared": "0.0.0",
+    "@agentboard/daemon": "0.0.0"
   }
 }
