@@ -11,13 +11,15 @@ export async function spawnCommand(args: string[], deps: { log?: (line: string) 
     const { values, positionals } = parseArgs({
       args,
       allowPositionals: true,
-      options: { worktree: { type: "string" }, prompt: { type: "string" }, repo: { type: "string" } },
+      options: { worktree: { type: "string" }, prompt: { type: "string" }, repo: { type: "string" }, id: { type: "string" } },
     });
-    if (positionals.length !== 1) throw new Error("usage: agentboard spawn <agent> [--worktree <name>] [--prompt <text>] [--repo <path>]");
+    if (positionals.length !== 1) throw new Error("usage: agentboard spawn <agent> [--worktree <name>] [--prompt <text>] [--repo <path>] [--id <customId>]");
     const agent = positionals[0]!;
     if (!AgentIdSchema.safeParse(agent).success) throw new Error(`unknown agent: ${agent} (${AgentIdSchema.options.join("|")})`);
+    if (agent === "custom" && !values.id) throw new Error("custom agents need --id <id> (see agentboard status --json for the ids)");
     const body = SpawnConsoleRequestSchema.parse({
       agent,
+      customId: values.id,
       cwd: resolve(values.repo ?? process.cwd()),
       worktree: values.worktree,
       prompt: values.prompt,
