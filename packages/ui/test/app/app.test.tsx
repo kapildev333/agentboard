@@ -142,4 +142,24 @@ describe("App", () => {
     render(<App fetch={api.fetch} search="?repo=%2Fr" connect={fakeSocket} />);
     expect((await screen.findByRole("alert")).textContent).toMatch(/agentboard open/);
   });
+
+  it("when the daemon goes away the page says so instead of showing stale statuses", async () => {
+    const api = fakeApi(boardWith(consoleNode("c1", "working")));
+    const sockets: ReturnType<typeof fakeSocket>[] = [];
+    const connect = () => {
+      const s = fakeSocket();
+      sockets.push(s);
+      return s;
+    };
+    render(<App fetch={api.fetch} search="?repo=%2Fr" connect={connect} />);
+    await screen.findByTestId("node-c1");
+    api.fetch.mockImplementation(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    act(() => sockets[0]!.onclose?.());
+    expect((await screen.findByRole("alert")).textContent).toMatch(/daemon stopped.*agentboard open/i);
+    expect(screen.queryByTestId("node-c1")).toBeNull();
+    await new Promise((r) => setTimeout(r, 1200));
+    expect(sockets).toHaveLength(1);
+  });
 });
