@@ -15,6 +15,11 @@ beforeEach(() =>
 );
 afterEach(cleanup);
 
+it("tabs are buttons, reachable from the keyboard", () => {
+  render(<WorkspaceTabs />);
+  expect(screen.getByRole("tab", { name: "B" }).tagName).toBe("BUTTON");
+});
+
 it("clicking a tab switches workspace", () => {
   render(<WorkspaceTabs />);
   fireEvent.click(screen.getByText("B"));

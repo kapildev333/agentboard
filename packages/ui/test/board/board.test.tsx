@@ -1,16 +1,28 @@
+import { useEffect } from "react";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { autosaveBoard } from "../../src/board/store";
 import type { Board as BoardData, BoardNode } from "@agentboard/shared";
 import { Board, useBoard } from "../../src/board";
 
-const seen = vi.hoisted(() => ({ props: undefined as Record<string, unknown> | undefined }));
+type Fn = (...a: never[]) => void;
+type Props = Record<string, unknown> & Record<"onNodeDragStop" | "onMoveEnd" | "onNodesChange", Fn>;
+const seen = vi.hoisted(() => ({
+  props: undefined as unknown as Props,
+  resizer: undefined as unknown as { onResizeEnd: (e: unknown, p: unknown) => void },
+  mounts: 0,
+}));
 vi.mock("@xyflow/react", async (orig) => {
   const mod = await orig<typeof import("@xyflow/react")>();
   return {
     ...mod,
-    ReactFlow: (p: Record<string, unknown>) => {
+    NodeResizer: (p: typeof seen.resizer) => {
+      seen.resizer = p;
+      return null;
+    },
+    ReactFlow: (p: Props) => {
       seen.props = p;
+      useEffect(() => void seen.mounts++, []);
       return <mod.ReactFlow {...(p as object)} />;
     },
   };
@@ -42,7 +54,10 @@ const board = (): BoardData => ({
 const NoteView = () => <div>note</div>;
 const nodeTypes = { note: NoteView };
 
-beforeEach(() => useBoard.getState().setBoard(board()));
+beforeEach(() => {
+  seen.mounts = 0;
+  useBoard.getState().setBoard(board());
+});
 afterEach(cleanup);
 
 describe("Board", () => {
@@ -62,6 +77,57 @@ describe("Board", () => {
   it("the zoom bounds are 0.25 and 2", () => {
     render(<Board nodeTypes={nodeTypes} />);
     expect(seen.props).toMatchObject({ minZoom: 0.25, maxZoom: 2 });
+  });
+});
+
+
+describe("Board wiring", () => {
+  it("renders the minimap and the fit-view control", () => {
+    const { container } = render(<Board nodeTypes={nodeTypes} />);
+    expect(container.querySelector(".react-flow__minimap")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /fit view/i })).toBeTruthy();
+  });
+
+  it("remounts the canvas per workspace", () => {
+    render(<Board nodeTypes={nodeTypes} />);
+    expect(seen.mounts).toBe(1);
+    act(() => useBoard.getState().switchWorkspace("b"));
+    expect(seen.mounts).toBe(2);
+  });
+
+  it("drag stop saves every dragged node, not only one", () => {
+    const st = useBoard.getState();
+    st.addNode(note("n1"));
+    st.addNode(note("n2"));
+    render(<Board nodeTypes={nodeTypes} />);
+    const dragged = [
+      { id: "n1", position: { x: 10, y: 20 } },
+      { id: "n2", position: { x: 30, y: 40 } },
+    ];
+    act(() => (seen.props.onNodeDragStop as (...a: unknown[]) => void)({}, dragged[0], dragged));
+    const nodes = useBoard.getState().board.workspaces[0]!.nodes;
+    expect(nodes.map((n) => [n.x, n.y])).toEqual([[10, 20], [30, 40]]);
+  });
+
+  it("move end writes the viewport", () => {
+    render(<Board nodeTypes={nodeTypes} />);
+    act(() => (seen.props.onMoveEnd as (...a: unknown[]) => void)(null, { x: 1, y: 2, zoom: 1.5 }));
+    expect(useBoard.getState().board.workspaces[0]!.viewport).toEqual({ x: 1, y: 2, zoom: 1.5 });
+  });
+
+  it("resize end writes size and origin", () => {
+    useBoard.getState().addNode(note("n1"));
+    render(<Board nodeTypes={nodeTypes} />);
+    act(() => seen.resizer.onResizeEnd({}, { x: 5, y: 6, width: 300, height: 150 }));
+    expect(useBoard.getState().board.workspaces[0]!.nodes[0]).toMatchObject({ x: 5, y: 6, w: 300, h: 150 });
+  });
+
+  it("selection survives a store update", async () => {
+    useBoard.getState().addNode(note("n1"));
+    render(<Board nodeTypes={nodeTypes} />);
+    act(() => (seen.props.onNodesChange as (c: unknown) => void)([{ type: "select", id: "n1", selected: true }]));
+    act(() => useBoard.getState().moveNode("n1", 50, 50));
+    expect((await screen.findByTestId("node-n1")).closest(".react-flow__node")!.classList).toContain("selected");
   });
 });
 
@@ -89,5 +155,37 @@ describe("store", () => {
     expect(useBoard.getState().board.activeWorkspaceId).toBe("b");
     s.deleteWorkspace("b");
     expect(useBoard.getState().board.workspaces).toHaveLength(1);
+  });
+
+  it("resizeNode and removeNode edit the active workspace", () => {
+    const s = useBoard.getState();
+    s.addNode(note("n1"));
+    s.addNode(note("n2"));
+    s.resizeNode("n1", 400, 300);
+    s.removeNode("n2");
+    expect(useBoard.getState().board.workspaces[0]!.nodes).toMatchObject([{ id: "n1", w: 400, h: 300 }]);
+  });
+
+  it("each workspace keeps its own viewport", () => {
+    const s = useBoard.getState();
+    s.setViewport({ x: 1, y: 2, zoom: 1.5 });
+    s.switchWorkspace("b");
+    s.setViewport({ x: 9, y: 9, zoom: 0.5 });
+    s.switchWorkspace("a");
+    const vp = (id: string) => useBoard.getState().board.workspaces.find((w) => w.id === id)!.viewport;
+    expect(vp("a")).toEqual({ x: 1, y: 2, zoom: 1.5 });
+    expect(vp("b")).toEqual({ x: 9, y: 9, zoom: 0.5 });
+  });
+
+  it("setBoard is not saved, and cancels a pending save", () => {
+    vi.useFakeTimers();
+    const save = vi.fn();
+    const stop = autosaveBoard(save);
+    useBoard.getState().moveNode("nb", 1, 1);
+    useBoard.getState().setBoard(board());
+    vi.advanceTimersByTime(1000);
+    expect(save).not.toHaveBeenCalled();
+    stop();
+    vi.useRealTimers();
   });
 });
