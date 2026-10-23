@@ -78,4 +78,5 @@ test("p95 keystroke echo stays under 50 ms while five other consoles print, and 
   metrics.daemonRssMb = Math.round(mem.own / 2 ** 20);
   metrics.daemonPlusAgentsRssMb = Math.round(mem.tree / 2 ** 20);
   expect(mem.own).toBeLessThan(2 ** 30);
+  expect(mem.tree).toBeLessThan(2 ** 30);
 });
