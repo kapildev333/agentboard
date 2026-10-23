@@ -276,3 +276,16 @@ it("a successful commit or push reloads the status so the counts refresh (L21)",
   fireEvent.click(screen.getByText("Submit"));
   await vi.waitFor(() => expect(calls.filter(([k]) => k === "GET /api/git/status")).toHaveLength(3));
 });
+
+it("the action buttons are disabled while an action is in flight (L21)", async () => {
+  let release!: () => void;
+  const fetch = (async (_: string | URL | Request, init?: RequestInit) => {
+    if (init?.method === "POST") await new Promise<void>((r) => (release = r));
+    return json(init?.method === "POST" ? { ok: true } : status);
+  }) as typeof globalThis.fetch;
+  render(<GitCard fetch={fetch} path="/r" />);
+  fireEvent.click(await screen.findByText("Push"));
+  for (const name of ["Push", "Open PR"]) await vi.waitFor(() => expect((screen.getByText(name) as HTMLButtonElement).disabled).toBe(true));
+  release();
+  await vi.waitFor(() => expect((screen.getByText("Push") as HTMLButtonElement).disabled).toBe(false));
+});
