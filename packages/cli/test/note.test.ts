@@ -12,7 +12,7 @@ const box = { x: 0, w: 300, h: 200 };
 const board = {
   version: 1,
   repoPath: "/r",
-  activeWorkspaceId: "w1",
+  activeWorkspaceId: "w2",
   workspaces: [
     {
       id: "w1",
@@ -21,6 +21,12 @@ const board = {
       nodes: [
         { ...box, id: "c1", type: "console", title: "claude", y: 100, agent: "claude", cwd: "/r", status: "idle", createdAt: "t", lastActiveAt: "t" },
       ],
+    },
+    {
+      id: "w2",
+      name: "second",
+      viewport: { x: 0, y: 0, zoom: 1 },
+      nodes: [{ ...box, id: "n1", type: "note", title: "note", text: "old", y: 500, h: 100 }],
     },
   ],
 };
@@ -57,19 +63,22 @@ test("note appends a node through GET and PUT", async () => {
   const lines: string[] = [];
   expect(await noteCommand(["remember", "this", "--repo", "/r"], { log: (s) => lines.push(s) })).toBe(0);
   expect(getUrl).toBe("/api/board?repo=%2Fr");
-  const nodes = (put as typeof board).workspaces[0]!.nodes;
+  const saved = (put as typeof board).workspaces;
+  expect(saved[0]!.nodes).toHaveLength(1); // the inactive workspace is untouched
+  const nodes = saved[1]!.nodes;
   expect(nodes).toHaveLength(2);
   const added = nodes[1] as unknown as { id: string; type: string; text: string; y: number };
   expect(added).toMatchObject({ type: "note", text: "remember this" });
-  expect(added.y).toBeGreaterThanOrEqual(300);
+  expect(added.y).toBeGreaterThanOrEqual(640);
   expect(JSON.parse(lines[0]!)).toEqual({ id: added.id });
 });
 
 test("status --json lists consoles", async () => {
   const lines: string[] = [];
   expect(await statusCommand(["--json"], (s) => lines.push(s))).toBe(0);
-  expect(JSON.parse(lines[0]!)).toMatchObject({
+  expect(JSON.parse(lines[0]!)).toEqual({
     alive: true,
+    port: expect.any(Number),
     pid: 4242,
     consoles: [{ id: "c1", title: "claude", agent: "claude", status: "idle" }],
   });
@@ -92,4 +101,17 @@ test("note defaults to the main repo root from a linked worktree", async () => {
   execFileSync("git", ["worktree", "add", "-q", linked, "-b", "wt"], { cwd: root });
   expect(await noteCommand(["hi"], { cwd: linked, log: () => {} })).toBe(0);
   expect(getUrl).toBe(`/api/board?repo=${encodeURIComponent(root)}`);
+});
+
+test("note with no text prints a usage error and returns 1", async () => {
+  const lines: string[] = [];
+  expect(await noteCommand([], { log: (s) => lines.push(s) })).toBe(1);
+  expect(JSON.parse(lines[0]!).error).toMatch(/usage/);
+  expect(put).toBeUndefined();
+});
+
+test("note outside a git repo defaults to the current directory", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "ab-plain-"));
+  expect(await noteCommand(["hi"], { cwd: dir, log: () => {} })).toBe(0);
+  expect(getUrl).toBe(`/api/board?repo=${encodeURIComponent(dir)}`);
 });
