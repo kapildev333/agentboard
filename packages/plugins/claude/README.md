@@ -5,6 +5,6 @@ claude plugin marketplace add kapildev333/agentboard
 claude plugin install agentboard@agentboard
 ```
 
-Then run a plain `claude` session while the AgentBoard daemon is running: it appears as a node on the board, and its Stop, Notification, UserPromptSubmit, PermissionRequest, PreToolUse and SessionEnd events update the node's status. `/board` opens the current repo on the board.
+The hooks report Stop, Notification, UserPromptSubmit, PermissionRequest, PreToolUse and SessionEnd status for consoles the board launched, because only those carry `AGENTBOARD_URL` and `AGENTBOARD_CONSOLE_ID`. A plain `claude` session started elsewhere does not appear as a node yet: adopting an outside session is deferred to a later lane. Repeated posts are harmless, since the status tracker ignores a repeated status. `/board` opens the current repo on the board.
 
-The hooks exit silently when the daemon is not running (or `AGENTBOARD_URL` / `AGENTBOARD_CONSOLE_ID` are unset), so the plugin never slows or breaks a session.
+The hooks exit silently when the daemon is not running (or those variables are unset), so the plugin never slows or breaks a session.

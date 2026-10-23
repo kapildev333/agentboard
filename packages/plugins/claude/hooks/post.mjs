@@ -6,6 +6,7 @@ const { AGENTBOARD_URL: url, AGENTBOARD_CONSOLE_ID: id, AGENTBOARD_TOKEN: token 
 if (!url || !id) process.exit(0);
 
 let raw = "";
+process.stdin.setEncoding("utf8");
 for await (const chunk of process.stdin) raw += chunk;
 try {
   const payload = JSON.parse(raw);
