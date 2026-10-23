@@ -19,6 +19,11 @@ else
 fi
 if git rev-parse --verify -q "$base" >/dev/null; then
   gitleaks detect --no-banner --redact --source . --log-opts="$base..HEAD"
+  # Every commit that would land carries the owner's noreply identity and no attribution line (D11).
+  bad="$(git log "$base..HEAD" --format='%h %ae' | grep -v '47056817+kapildev333@users.noreply.github.com' || true)"
+  [ -z "$bad" ] || { echo "== gate: FAIL, commits with a foreign author: $bad"; exit 1; }
+  trailers="$(git log "$base..HEAD" --format=%B | grep -iE '^(Co-Authored-By|Generated with|Signed-off-by)' || true)"
+  [ -z "$trailers" ] || { echo "== gate: FAIL, attribution lines in commit messages"; exit 1; }
 else
   gitleaks detect --no-banner --redact --source .
 fi

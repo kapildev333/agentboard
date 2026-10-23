@@ -9,7 +9,13 @@ lane="$1"; base="$2"; onto="${3:-origin/main}"; wt=".claude/worktrees/$lane"
 cd "$wt" || exit 1
 git fetch -q origin || exit 1
 git clean -fq -- packages/shared/src 2>/dev/null
-git rebase --onto "$onto" "$base" >/tmp/rebase-$lane.log 2>&1
+# --onto replays everything after <base>; if <base> is no longer an ancestor (the worker rebased on its
+# own), that would replay main's own history as copies. Then a plain rebase is the right move.
+if git merge-base --is-ancestor "$base" HEAD 2>/dev/null; then
+  git rebase --onto "$onto" "$base" >/tmp/rebase-$lane.log 2>&1
+else
+  git rebase "$onto" >/tmp/rebase-$lane.log 2>&1
+fi
 for _ in $(seq 1 40); do
   [ -d "$(git rev-parse --git-path rebase-merge)" ] || break
   for f in $(git diff --name-only --diff-filter=U); do
@@ -28,6 +34,16 @@ if [ -d "$(git rev-parse --git-path rebase-merge)" ]; then git rebase --abort; e
 # A replayed lockfile commit can drop entries main added since; regenerate and commit the difference.
 npm install --ignore-scripts >/dev/null 2>&1
 if ! git diff --quiet -- package-lock.json; then git add package-lock.json && git commit -q -m "chore: lockfile regenerated after rebase"; fi
+# Copies of main's own chore commits can ride along on a lane branch (a stale rebase base made them);
+# they carry a foreign author and never touch lane files, so they are dropped from the branch.
+drop="$(git log "$onto"..HEAD --format='%h %ae' | grep -v '47056817+kapildev333@users.noreply.github.com' | cut -d' ' -f1 | tr '\n' ' ')"
+if [ -n "$drop" ]; then
+  DROP="$drop" GIT_SEQUENCE_EDITOR="$(cd "$(dirname "$0")/.." 2>/dev/null; pwd)/scripts/drop-picks.sh" GIT_EDITOR=true git rebase -i "$onto" >>/tmp/rebase-$lane.log 2>&1 \
+    || { git rebase --abort; echo "CONFLICT while dropping foreign commits ($drop), see /tmp/rebase-$lane.log"; exit 2; }
+  echo "dropped foreign-author commits: $drop"
+fi
+bad="$(git log "$onto"..HEAD --format='%h %ae' | grep -v '47056817+kapildev333@users.noreply.github.com' || true)"
+if [ -n "$bad" ]; then echo "REFUSED: commits with a foreign author on the branch: $bad"; exit 4; fi
 npm ci --prefer-offline >/dev/null 2>&1 && npm run -s fix-pty --if-present >/dev/null 2>&1
 if scripts/gate.sh >/tmp/gate-$lane.log 2>&1; then
   git push -q --force-with-lease origin HEAD && echo "REBASED $(git rev-parse HEAD) gate=PASS"
