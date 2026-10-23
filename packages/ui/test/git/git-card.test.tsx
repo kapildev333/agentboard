@@ -41,3 +41,15 @@ it("clicking Diff loads and renders the patch", async () => {
   expect(screen.getByText("+new").className).toBe("added");
   expect(screen.getByText("-old").className).toBe("removed");
 });
+
+it("commit posts the message", async () => {
+  const calls: [string, RequestInit | undefined][] = [];
+  const fetch = router({ "GET /api/git/status": () => json(status), "POST /api/git/commit": () => json({ sha: "def" }) }, calls);
+  render(<GitCard fetch={fetch} path="/r" />);
+  fireEvent.click(await screen.findByText("Commit"));
+  fireEvent.change(screen.getByLabelText("Commit message"), { target: { value: "fix it" } });
+  fireEvent.click(screen.getByText("Submit"));
+  await vi.waitFor(() => expect(calls.some(([k]) => k === "POST /api/git/commit")).toBe(true));
+  const post = calls.find(([k]) => k === "POST /api/git/commit")!;
+  expect(JSON.parse(post[1]!.body as string)).toEqual({ path: "/r", message: "fix it" });
+});
