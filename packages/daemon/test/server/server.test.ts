@@ -156,8 +156,12 @@ test("no CORS header is ever present", async () => {
     }),
     await fetch(`${s.origin}/?code=${s.issueCode()}`, { headers: evil, redirect: "manual" }),
     await fetch(`${s.origin}/`, { headers: { ...evil, "x-agentboard-token": token } }),
+    await fetch(`${s.origin}/api/status`, { headers: { "x-agentboard-token": token } }),
+    await fetch(`${s.origin}/api/status`),
+    await fetch(`${s.origin}/?code=${s.issueCode()}`, { headers: { "sec-fetch-site": "none" }, redirect: "manual" }),
+    await fetch(`${s.origin}/`, { headers: { "x-agentboard-token": token } }),
   ];
-  expect(responses.map((r) => r.status)).toEqual([200, 401, 403, 302, 200]);
+  expect(responses.map((r) => r.status)).toEqual([403, 403, 403, 403, 403, 200, 401, 302, 200]);
   for (const r of responses) expect([...r.headers.keys()].filter((k) => k.startsWith("access-control-"))).toEqual([]);
 });
 
@@ -268,4 +272,32 @@ test("the cookie carries a random session named with the port, never the token",
   expect((await api(`agentboard_${s.port}=${token}`)).status).toBe(401);
   expect((await api(`agentboard=${value}`)).status).toBe(401);
   expect((await api(`agentboard_1=${value}`)).status).toBe(401);
+});
+
+test("a foreign Origin or a cross-site fetch is refused on every method and the board cannot be framed", async () => {
+  const s = await start({ routes: { "GET /api/status": async () => ({ consoles: [] }) } });
+  const nav = { "sec-fetch-site": "none" };
+  const cookie = (await fetch(`${s.origin}/?code=${s.issueCode()}`, { redirect: "manual", headers: nav }))
+    .headers.get("set-cookie")!.split(";")[0];
+  const api = (headers: Record<string, string>) => fetch(`${s.origin}/api/status`, { headers: { cookie, ...headers } });
+
+  expect((await api({ "sec-fetch-site": "same-origin" })).status).toBe(200);
+  expect((await api({ "sec-fetch-site": "same-origin", origin: s.origin })).status).toBe(200);
+  expect((await api({ "sec-fetch-site": "same-site", origin: "http://127.0.0.1:1" })).status).toBe(403);
+  expect((await api({ origin: "http://127.0.0.1:1" })).status).toBe(403);
+  expect((await api({ "sec-fetch-site": "same-site" })).status).toBe(403);
+  expect((await api({ "sec-fetch-site": "cross-site" })).status).toBe(403);
+  const tokenCrossSite = { "x-agentboard-token": token, "sec-fetch-site": "cross-site" };
+  expect((await fetch(`${s.origin}/api/status`, { headers: tokenCrossSite })).status).toBe(403);
+  const fromPage = { "sec-fetch-site": "cross-site" };
+  expect((await fetch(`${s.origin}/?code=${s.issueCode()}`, { redirect: "manual", headers: fromPage })).status).toBe(403);
+  expect(await upgrade(`${s.origin.replace("http", "ws")}/ws`, { cookie, origin: s.origin, "sec-fetch-site": "same-site" }))
+    .toEqual({ opened: false, status: 403 });
+
+  const pages = [
+    await api({ "sec-fetch-site": "same-origin" }),
+    await fetch(`${s.origin}/`, { headers: { cookie, ...nav } }),
+    await fetch(`${s.origin}/`),
+  ];
+  for (const res of pages) expect(res.headers.get("content-security-policy")).toMatch(/frame-ancestors 'none'/);
 });
