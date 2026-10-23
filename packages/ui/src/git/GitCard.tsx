@@ -31,7 +31,7 @@ export function GitCard({
   const [prUrl, setPrUrl] = useState<string>();
   // A ref, not state, so a second click in the same tick already sees the first one in flight.
   const busy = useRef(false);
-  const [, setBusy] = useState(false);
+  const [busyShown, setBusy] = useState(false);
   const load = useCallback(async () => {
     try {
       const res = await fetch(`/api/git/status?path=${encodeURIComponent(path)}`);
@@ -77,8 +77,9 @@ export function GitCard({
       <div>
         <button onClick={() => setShowDiff(!showDiff)}>Diff</button>
         <button onClick={() => setCommitting(!committing)}>Commit</button>
-        <button onClick={() => post("push", PushRequestSchema, OkSchema, { path })}>Push</button>
+        <button disabled={busyShown} onClick={() => post("push", PushRequestSchema, OkSchema, { path })}>Push</button>
         <button
+          disabled={busyShown}
           onClick={async () => {
             const pr = await post("pr", PrRequestSchema, PrResponseSchema, {
               path,
@@ -103,7 +104,7 @@ export function GitCard({
           }}
         >
           <input required aria-label="Commit message" value={message} onChange={(e) => setMessage(e.target.value)} />
-          <button type="submit">Submit</button>
+          <button type="submit" disabled={busyShown}>Submit</button>
         </form>
       )}
       {prUrl && (
