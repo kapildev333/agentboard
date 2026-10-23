@@ -111,6 +111,40 @@ test("worktreeRemove is allowed once the commits are on the base, even with an o
   expect(existsSync(path)).toBe(false);
 });
 
+test("no remote: a worktree with an unmerged commit can still be removed", async () => {
+  const repo = makeRepo();
+  const { path } = await svc().worktreeAdd(repo, "feat-nr", "main");
+  commitFile(path, "b.txt");
+  expect(await svc().status(path)).toMatchObject({ ahead: 1 });
+  await svc().worktreeRemove(path, { force: false });
+  expect(existsSync(path)).toBe(false);
+});
+
+test("a deleted base falls back to the upstream counts and removal still checks remotes", async () => {
+  const repo = makeRepo();
+  git(repo, "branch", "topic");
+  const { path } = await svc().worktreeAdd(repo, "feat-db", "topic");
+  commitFile(path, "b.txt");
+  git(repo, "branch", "-D", "topic");
+  expect(await svc().status(path)).toMatchObject({ branch: "feat-db", ahead: 0, behind: 0 });
+  const remote = tmp("remote");
+  git(remote, "init", "--bare", "-b", "main");
+  git(repo, "remote", "add", "origin", remote);
+  await expect(svc().worktreeRemove(path, { force: false })).rejects.toMatchObject({ code: "unpushed" });
+});
+
+test("a detached checkout records no base, so an unpushed commit still blocks removal", async () => {
+  const repo = makeRepo();
+  const remote = tmp("remote");
+  git(remote, "init", "--bare", "-b", "main");
+  git(repo, "remote", "add", "origin", remote);
+  git(repo, "push", "-u", "origin", "main");
+  git(repo, "checkout", "--detach");
+  const { path } = await svc().worktreeAdd(repo, "feat-dt", "HEAD");
+  commitFile(path, "never-pushed.txt");
+  await expect(svc().worktreeRemove(path, { force: false })).rejects.toMatchObject({ code: "unpushed" });
+});
+
 test("diff lists a changed file and returns a patch", async () => {
   const repo = makeRepo();
   writeFileSync(join(repo, "a.txt"), "one\ntwo\n");
