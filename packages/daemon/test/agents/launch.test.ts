@@ -79,8 +79,11 @@ test("launchArgs for a custom agent without a configured command throws", () => 
   expect(() => launchArgs("custom", ctx)).toThrow(/custom/);
 });
 
-test("resumeArgs ignores the prompt", () => {
-  expect(resumeArgs("claude", ctx.sessionId, { ...ctx, prompt: "p" }).args).not.toContain("p");
+test("resumeArgs ignores the prompt for every agent", () => {
+  for (const agent of ["claude", "codex", "gemini", "opencode"] as const) {
+    const { args } = resumeArgs(agent, ctx.sessionId, { ...ctx, prompt: "zz-prompt" });
+    expect(args.some((a) => a.includes("zz-prompt"))).toBe(false);
+  }
 });
 
 test("resumeArgs without a session id throws instead of starting fresh", () => {

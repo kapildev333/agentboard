@@ -1,12 +1,22 @@
-import { chmodSync, mkdtempSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { AgentInfoListSchema } from "@agentboard/shared";
 import { AgentCatalog } from "../../src/agents/index.js";
 
-function stubDir(versions: Record<string, string>): string {
+const made: string[] = [];
+afterEach(() => {
+  for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
+const tmp = () => {
   const dir = mkdtempSync(join(tmpdir(), "agentboard-path-"));
+  made.push(dir);
+  return dir;
+};
+
+function stubDir(versions: Record<string, string>): string {
+  const dir = tmp();
   for (const [name, v] of Object.entries(versions)) {
     const file = join(dir, name);
     writeFileSync(file, `#!/bin/sh\necho ${v}\n`);
@@ -72,7 +82,7 @@ test("scan runs the CLI with the scanned PATH so an env-shebang CLI finds its in
 });
 
 test("only the first line of --version output is kept", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "agentboard-path-"));
+  const dir = tmp();
   writeFileSync(join(dir, "codex"), "#!/bin/sh\necho 1.2.3\necho extra\n");
   chmodSync(join(dir, "codex"), 0o755);
   const codex = (await AgentCatalog.scan({ path: dir })).find((a) => a.id === "codex");
@@ -80,7 +90,7 @@ test("only the first line of --version output is kept", async () => {
 });
 
 test("a non-executable stub stays unavailable", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "agentboard-path-"));
+  const dir = tmp();
   writeFileSync(join(dir, "gemini"), "#!/bin/sh\necho 1\n");
   chmodSync(join(dir, "gemini"), 0o644);
   const gemini = (await AgentCatalog.scan({ path: dir })).find((a) => a.id === "gemini");
