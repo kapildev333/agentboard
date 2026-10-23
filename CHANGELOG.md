@@ -29,4 +29,4 @@ Phases 0 to 2 of the [build plan](docs/superpowers/plans/2026-10-23-multi-agent-
 - **L24** MCP server (#42): `agentboard-mcp` over stdio with `open_board`, `spawn_console`, `list_consoles`, `add_note` and `get_status`, plus registration snippets for Claude Code, Codex, Gemini CLI and OpenCode.
 - **L25** Claude Code plugin (#66): a `/board` command and status hooks for board-launched consoles (D28), installable from `.claude-plugin/marketplace.json`.
 - **L26** OpenCode plugin (#67): status events with the token header and an `agentboard_spawn` tool, shipped as one esbuild bundle (D27).
-- **L27** Integration e2e (a console spawned from the CLI, two worktrees, a merge from the board): not started when this was written; it begins after L1A merges (D32).
+- **L27** Integration e2e (a console spawned from the CLI, two worktrees, a merge from the board): in review as PR #79 when this was written.
