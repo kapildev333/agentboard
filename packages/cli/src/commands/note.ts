@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { dirname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { BoardSchema, type NoteNode } from "@agentboard/shared";
 import { api } from "../api.js";
@@ -9,8 +9,10 @@ import { ensureDaemon } from "../daemonFile.js";
 // Boards are keyed by the exact repo path, so default to the main repo root, not a subdirectory or linked worktree.
 function mainRepoRoot(cwd: string): string {
   try {
-    const common = execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
-    return dirname(common.trim());
+    const out = execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir", "--show-toplevel"], { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    const [common = "", top = ""] = out.trim().split("\n");
+    // A submodule's common dir lives under the parent's .git/modules, so its own top level is the root.
+    return basename(common) === ".git" ? dirname(common) : top;
   } catch {
     return cwd; // not a git repo
   }
