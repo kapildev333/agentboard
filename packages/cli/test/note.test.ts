@@ -29,11 +29,14 @@ const board = {
       nodes: [
         { ...box, id: "n1", type: "note", title: "note", text: "old", y: 500, h: 100 },
         { ...box, id: "n2", type: "note", title: "note", text: "high", x: -20, y: 0, h: 100 },
+        // the largest y but not the lowest bottom, so max(y) + h cannot pass for max(y + h) (L23)
+        { ...box, id: "n3", type: "note", title: "note", text: "low", y: 520, h: 10 },
       ],
     },
   ],
 };
 
+const repoDir = mkdtempSync(join(tmpdir(), "ab-repo-"));
 let current: typeof board;
 let server: Server;
 let put: unknown;
@@ -66,13 +69,13 @@ afterEach(() => {
 
 test("note appends a node through GET and PUT", async () => {
   const lines: string[] = [];
-  expect(await noteCommand(["remember", "this", "--repo", "/r"], { log: (s) => lines.push(s) })).toBe(0);
-  expect(getUrl).toBe("/api/board?repo=%2Fr");
+  expect(await noteCommand(["remember", "this", "--repo", repoDir], { log: (s) => lines.push(s) })).toBe(0);
+  expect(getUrl).toBe(`/api/board?repo=${encodeURIComponent(repoDir)}`);
   const saved = (put as typeof board).workspaces;
   expect(saved[0]!.nodes).toHaveLength(1); // the inactive workspace is untouched
   const nodes = saved[1]!.nodes;
-  expect(nodes).toHaveLength(3);
-  const added = nodes[2] as unknown as { id: string; type: string; text: string; y: number };
+  expect(nodes).toHaveLength(4);
+  const added = nodes[3] as unknown as { id: string; type: string; text: string; y: number };
   expect(added).toMatchObject({ type: "note", text: "remember this" });
   // leftmost x (-20, not 0) and lowest bottom (600, not 100) plus the 40 gap
   expect(added).toMatchObject({ x: -20, y: 640 });
@@ -124,7 +127,7 @@ test("note outside a git repo defaults to the current directory", async () => {
 
 test("note on an empty active workspace is placed at the origin", async () => {
   current.workspaces[1]!.nodes = [];
-  expect(await noteCommand(["first", "--repo", "/r"], { log: () => {} })).toBe(0);
+  expect(await noteCommand(["first", "--repo", repoDir], { log: () => {} })).toBe(0);
   expect((put as typeof board).workspaces[1]!.nodes[0]).toMatchObject({ x: 0, y: 0, text: "first" });
 });
 
@@ -146,4 +149,11 @@ test("note inside a git submodule defaults to the submodule root", async () => {
   git(parent, "submodule", "add", "-q", lib, "sub");
   expect(await noteCommand(["hi"], { cwd: join(parent, "sub"), log: () => {} })).toBe(0);
   expect(getUrl).toBe(`/api/board?repo=${encodeURIComponent(join(parent, "sub"))}`);
+});
+
+test("note with a missing --repo fails before reaching for a daemon (L23)", async () => {
+  const lines: string[] = [];
+  expect(await noteCommand(["hi", "--repo", join(repoDir, "missing")], { log: (s) => lines.push(s) })).toBe(1);
+  expect(JSON.parse(lines[0]!).error).toMatch(/^not a directory: /);
+  expect(getUrl).toBeUndefined();
 });
