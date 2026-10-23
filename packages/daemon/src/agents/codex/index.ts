@@ -18,10 +18,10 @@ export const relayPath = fileURLToPath(new URL("../notify-relay.js", import.meta
 
 // Codex appends the notify JSON as the last argv entry; `-c` overrides config.toml for this launch only.
 export function codexLaunch({ consoleId, daemonUrl, token, sessionId, resume }: LaunchInput): Launch {
-  const notify = `notify=${JSON.stringify(["node", relayPath])}`;
+  const notify = `notify=${JSON.stringify([process.execPath, relayPath])}`;
   return {
     command: "codex",
     args: [...(resume && sessionId ? ["resume", sessionId] : []), "-c", notify],
-    env: { AGENTBOARD_URL: daemonUrl, AGENTBOARD_CONSOLE_ID: consoleId, AGENTBOARD_TOKEN: token },
+    env: { AGENTBOARD_URL: daemonUrl, AGENTBOARD_CONSOLE_ID: consoleId, AGENTBOARD_TOKEN: token, AGENTBOARD_AGENT: "codex" },
   };
 }
