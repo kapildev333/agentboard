@@ -5,8 +5,13 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { CONSOLE_DRAG_HANDLE, ConsoleNode } from "../../src/console";
 
 const x = vi.hoisted(() => ({
+  zoom: 1,
   term: undefined as any,
   fit: undefined as any,
+}));
+vi.mock("@xyflow/react", async (orig) => ({
+  ...(await orig<typeof import("@xyflow/react")>()),
+  useReactFlow: () => ({ getZoom: () => x.zoom }),
 }));
 vi.mock("@xterm/xterm", () => ({
   Terminal: class {
@@ -18,6 +23,8 @@ vi.mock("@xterm/xterm", () => ({
     selection = "";
     pasted = "";
     options: any;
+    mouse = { getCoords: vi.fn(), getMouseReportCoords: vi.fn() };
+    _core = { _mouseService: { ...this.mouse } };
     constructor(opts: any) {
       this.options = { ...opts };
       x.term = this;
@@ -99,6 +106,7 @@ afterEach(() => {
   cleanup();
   sockets = [];
   observed = [];
+  x.zoom = 1;
 });
 
 const mount = (extra: object = {}) =>
@@ -115,6 +123,7 @@ describe("ConsoleNode", () => {
     act(() => x.term.handlers.data("x"));
     expect(sockets[0]!.sent).toEqual([
       JSON.stringify({ t: "attach", consoleId: "c1" }),
+      JSON.stringify({ t: "resize", consoleId: "c1", cols: 80, rows: 24 }),
       JSON.stringify({ t: "input", consoleId: "c1", data: "x" }),
     ]);
   });
@@ -229,5 +238,35 @@ describe("ConsoleNode", () => {
     expect(header.tagName).toBe("HEADER");
     expect(header.querySelector("[data-testid=badge]")).not.toBeNull();
     expect(observed).toEqual([header.nextElementSibling]);
+  });
+
+  it("pointer coordinates are un-scaled by the current zoom for selection and mouse reports", () => {
+    mount();
+    const el = { getBoundingClientRect: () => ({ left: 10, top: 20 }) } as unknown as HTMLElement;
+    const svc = x.term._core._mouseService;
+    x.zoom = 2;
+    svc.getCoords({ clientX: 110, clientY: 120 }, el, 80, 24);
+    expect(x.term.mouse.getCoords).toHaveBeenCalledWith({ clientX: 60, clientY: 70 }, el, 80, 24);
+    x.zoom = 0.5;
+    svc.getMouseReportCoords({ clientX: 30, clientY: 30 }, el);
+    expect(x.term.mouse.getMouseReportCoords).toHaveBeenCalledWith({ clientX: 50, clientY: 40 }, el);
+  });
+
+  it("sends the first fitted size even when it equals xterm's default, and uses 10000 lines of scrollback", () => {
+    mount();
+    act(() => sockets[0]!.open());
+    expect(sockets[0]!.sent).toContain(JSON.stringify({ t: "resize", consoleId: "c1", cols: 80, rows: 24 }));
+    expect(x.term.options.scrollback).toBe(10000);
+  });
+
+  it("an inline factory does not reconnect on rerender", () => {
+    const ui = (f: () => FakeSocket) => (
+      <ReactFlowProvider>
+        <ConsoleNode {...({ id: "n1", data: { node: { id: "c1", title: "Claude" } }, socketFactory: f } as any)} />
+      </ReactFlowProvider>
+    );
+    const { rerender } = render(ui(() => factory()));
+    rerender(ui(() => factory()));
+    expect(sockets).toHaveLength(1);
   });
 });
