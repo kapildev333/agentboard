@@ -13,13 +13,15 @@ const noSpawn = (() => {
 let server: Server;
 let home: string;
 const token = "tok";
+const code = "c0de";
 
 beforeEach(async () => {
   home = mkdtempSync(join(tmpdir(), "ab-cli-"));
   process.env.AGENTBOARD_HOME = home;
   server = createServer((req, res) => {
-    res.statusCode = req.headers["x-agentboard-token"] === token ? 200 : 401;
-    res.end("{}");
+    const ok = req.headers["x-agentboard-token"] === token;
+    res.statusCode = ok ? 200 : 401;
+    res.end(ok && req.method === "POST" && req.url === "/auth/code" ? JSON.stringify({ code }) : "{}");
   });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
 });
@@ -44,10 +46,10 @@ test("open with no daemon spawns one and prints the URL", async () => {
   const repo = join(home, "some repo");
   mkdirSync(repo);
   await openCommand([repo], { spawn, openBrowser: (u) => opened.push(u), log: (s) => lines.push(s) });
-  const url = `http://127.0.0.1:${port}/?token=${token}&repo=${encodeURIComponent(repo)}`;
+  const url = `http://127.0.0.1:${port}/?code=${code}&repo=${encodeURIComponent(repo)}`;
   expect(spawned).toHaveLength(1);
   expect(spawned[0]).toContain("start");
-  expect(options[0]).toMatchObject({ detached: true, stdio: "ignore" });
+  expect(options[0]).toMatchObject({ detached: true, stdio: "ignore", windowsHide: true });
   expect(unrefs).toBe(1);
   expect(opened).toEqual([url]);
   expect(lines).toEqual([url]);
@@ -68,14 +70,26 @@ test("the default opener swallows a missing open command", async () => {
   expect(handlers.error).toBeDefined();
 });
 
-test("open URL-encodes the token", async () => {
-  const odd = "a&b=c";
-  server.close();
-  server = createServer((_, res) => res.end("{}"));
-  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+test("open exchanges the token for a code and never puts the token in the URL", async () => {
   const port = (server.address() as AddressInfo).port;
-  writeFileSync(join(home, "daemon.json"), JSON.stringify({ port, token: odd, pid: 1 }));
+  writeFileSync(join(home, "daemon.json"), JSON.stringify({ port, token, pid: 1 }));
   const lines: string[] = [];
   await openCommand([home], { spawn: noSpawn, openBrowser: () => {}, log: (s) => lines.push(s) });
-  expect(lines[0]).toContain(`token=${encodeURIComponent(odd)}&`);
+  expect(lines[0]).toBe(`http://127.0.0.1:${port}/?code=${code}&repo=${encodeURIComponent(home)}`);
+  expect(lines[0]).not.toContain(token);
+});
+
+test("open replaces a stale daemon.json by spawning once and using the new token", async () => {
+  const port = (server.address() as AddressInfo).port;
+  writeFileSync(join(home, "daemon.json"), JSON.stringify({ port, token: "stale", pid: 1 }));
+  let spawns = 0;
+  const spawn = (() => {
+    spawns++;
+    writeFileSync(join(home, "daemon.json"), JSON.stringify({ port, token, pid: 1 }));
+    return { unref() {}, on() {} };
+  }) as never;
+  const lines: string[] = [];
+  await openCommand([home], { spawn, openBrowser: () => {}, log: (s) => lines.push(s) });
+  expect(spawns).toBe(1);
+  expect(lines[0]).toContain(`code=${code}`);
 });
