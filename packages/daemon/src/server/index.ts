@@ -60,10 +60,12 @@ export async function createServer(opts: ServerOptions) {
     return expires !== undefined && expires >= Date.now();
   };
   const server = http.createServer((req, res) => {
+    // No page may frame the board, whatever the response.
+    res.setHeader("content-security-policy", "frame-ancestors 'none'");
     const url = target(req);
     if (!url) return end(res, 400);
     if (req.method === "GET" && isIndex(url.pathname) && url.searchParams.has("code")) {
-      if (!ownHost(req, port)) return end(res, 403);
+      if (!sameSite(req)) return end(res, 403);
       if (!takeCode(url.searchParams.get("code")!)) return end(res, 401);
       url.searchParams.delete("code");
       const session = randomBytes(32).toString("base64url");
@@ -75,7 +77,7 @@ export async function createServer(opts: ServerOptions) {
       }).end();
       return;
     }
-    const refused = refuse(req, req.method !== "GET");
+    const refused = refuse(req);
     if (refused) return end(res, refused);
     if (req.method === "POST" && url.pathname === "/auth/code") {
       // Header token only: the CLI and MCP mint codes, a page holding the cookie does not.
@@ -88,10 +90,14 @@ export async function createServer(opts: ServerOptions) {
     if (req.method === "GET") return void serveStatic(opts.staticDir, url.pathname, res);
     end(res, 404);
   });
-  // Host stops DNS rebinding, Origin stops cross-site requests, the token stops everything else.
-  const refuse = (req: http.IncomingMessage, checkOrigin: boolean): number =>
-    !ownHost(req, port) ? 403
-      : checkOrigin && !ownOrigin(req, port) ? 403
+  // Host stops DNS rebinding; Origin and Sec-Fetch-Site stop other pages, including other ports on
+  // 127.0.0.1, which SameSite treats as the same site; the token or session stops everything else.
+  const sameSite = (req: http.IncomingMessage): boolean => {
+    const site = req.headers["sec-fetch-site"];
+    return ownHost(req, port) && ownOrigin(req, port) && (site === undefined || site === "same-origin" || site === "none");
+  };
+  const refuse = (req: http.IncomingMessage): number =>
+    !sameSite(req) ? 403
       : !hasAuth(req) ? 401
       : 0;
   const hasAuth = (req: http.IncomingMessage): boolean => {
@@ -118,7 +124,7 @@ export async function createServer(opts: ServerOptions) {
     socket.on("error", () => socket.destroy());
     const url = target(req);
     if (!url) return void socket.destroy();
-    const status = url.pathname !== "/ws" ? 404 : refuse(req, true);
+    const status = url.pathname !== "/ws" ? 404 : refuse(req);
     if (status) {
       socket.end(`HTTP/1.1 ${status} ${http.STATUS_CODES[status]}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
       return;
