@@ -24,7 +24,8 @@ vi.mock("@xterm/xterm", () => ({
     pasted = "";
     options: any;
     mouse = { getCoords: vi.fn(), getMouseReportCoords: vi.fn() };
-    _core = { _mouseService: { ...this.mouse } };
+    scroll = vi.fn();
+    _core = { _mouseService: { ...this.mouse }, _selectionService: { _screenElement: { getBoundingClientRect: () => ({ left: 10, top: 20 }) }, _getMouseEventScrollAmount: this.scroll } };
     constructor(opts: any) {
       this.options = { ...opts };
       x.term = this;
@@ -250,6 +251,9 @@ describe("ConsoleNode", () => {
     x.zoom = 0.5;
     svc.getMouseReportCoords({ clientX: 30, clientY: 30 }, el);
     expect(x.term.mouse.getMouseReportCoords).toHaveBeenCalledWith({ clientX: 50, clientY: 40 }, el);
+    x.zoom = 2;
+    x.term._core._selectionService._getMouseEventScrollAmount({ clientX: 110, clientY: 120 });
+    expect(x.term.scroll).toHaveBeenCalledWith({ clientX: 60, clientY: 70 });
   });
 
   it("sends the first fitted size even when it equals xterm's default, and uses 10000 lines of scrollback", () => {
