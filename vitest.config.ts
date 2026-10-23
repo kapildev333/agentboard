@@ -9,7 +9,6 @@ const alias = Object.fromEntries(names.map((n) => [`@agentboard/${n}`, src(n)]))
 
 export default defineConfig({
   test: {
-    passWithNoTests: true,
     projects: names.map((n) => ({
       resolve: { alias },
       test: { name: n, root: `packages/${n}` },
