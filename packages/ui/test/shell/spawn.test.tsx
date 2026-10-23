@@ -118,4 +118,19 @@ describe("SpawnDialog", () => {
     expect((await screen.findByLabelText(/gemini/)).parentElement!.textContent).toContain("not installed");
     expect(screen.getByLabelText(/opencode/).parentElement!.textContent).not.toContain("not installed");
   });
+
+  it("custom agents show their name, keep distinct choices and post their customId (L14)", async () => {
+    const customs = [
+      { id: "custom", command: "/bin/a", version: null, available: true, customId: "a", name: "Agent A" },
+      { id: "custom", command: "/bin/b", version: null, available: true, customId: "b", name: "Agent B" },
+    ];
+    const fetch = vi.fn(async (_: string | URL | Request, init?: RequestInit) => (init?.method === "POST" ? json(node) : json(customs)));
+    render(<SpawnDialog fetch={fetch} cwd="/r" onSpawned={vi.fn()} />);
+    fireEvent.click(await screen.findByLabelText(/Agent B/));
+    expect((screen.getByLabelText(/Agent A/) as HTMLInputElement).checked).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Spawn" }));
+    await waitFor(() => expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(true));
+    const post = fetch.mock.calls.find(([, i]) => i?.method === "POST")!;
+    expect(JSON.parse(post[1]!.body as string)).toEqual({ agent: "custom", customId: "b", cwd: "/r" });
+  });
 });
