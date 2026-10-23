@@ -13,7 +13,7 @@ export type SocketFactory = () => SocketLike;
 
 const OPEN = 1;
 export const defaultSocketFactory: SocketFactory = () =>
-  new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
+  new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`) as unknown as SocketLike;
 
 export function useConsoleSocket(consoleId: string, factory: SocketFactory = defaultSocketFactory, onOutput?: (data: string) => void) {
   const socket = useRef<SocketLike | null>(null);
