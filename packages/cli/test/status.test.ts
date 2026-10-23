@@ -16,7 +16,7 @@ afterEach(() => delete process.env.AGENTBOARD_HOME);
 
 test("status prints alive false and exits 1 with no daemon", async () => {
   const lines: string[] = [];
-  expect(await statusCommand((s) => lines.push(s))).toBe(1);
+  expect(await statusCommand([], (s) => lines.push(s))).toBe(1);
   expect(JSON.parse(lines[0]!)).toEqual({ alive: false });
 });
 
@@ -26,7 +26,7 @@ test("status prints the port and pid when the daemon answers", async () => {
   const port = (server.address() as AddressInfo).port;
   writeFileSync(join(home, "daemon.json"), JSON.stringify({ port, token: "t", pid: 4242 }));
   const lines: string[] = [];
-  expect(await statusCommand((s) => lines.push(s))).toBe(0);
+  expect(await statusCommand([], (s) => lines.push(s))).toBe(0);
   server.close();
   expect(JSON.parse(lines[0]!)).toEqual({ alive: true, port, pid: 4242 });
 });
