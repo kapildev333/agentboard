@@ -87,3 +87,40 @@ test("the one-time query token becomes a cookie and the redirect drops it", asyn
   expect((await fetch(`${s.origin}/api/status?token=${token}`)).status).toBe(401);
   expect((await fetch(`${s.origin}/`, { headers: { cookie: "agentboard=wrong" } })).status).toBe(401);
 });
+
+test("a valid request reaches its handler and the response is validated", async () => {
+  const seen: unknown[] = [];
+  const s = await start({
+    routes: {
+      "POST /hook/:consoleId": async (body, params) => { seen.push([params.consoleId, body]); return { ok: true }; },
+      "GET /api/board": async (query) => { seen.push(query); return { version: 1 } as never; },
+      "GET /api/status": async () => ({ consoles: [] }),
+    },
+  });
+  const headers = { "x-agentboard-token": token, origin: s.origin, "content-type": "application/json" };
+  const post = (body: string) => fetch(`${s.origin}/hook/c%201`, { method: "POST", headers, body });
+
+  const ok = await post(JSON.stringify({ agent: "claude", event: "Stop" }));
+  expect(ok.status).toBe(200);
+  expect(ok.headers.get("content-type")).toMatch(/application\/json/);
+  expect(await ok.json()).toEqual({ ok: true });
+  expect(seen).toEqual([["c 1", { agent: "claude", event: "Stop" }]]);
+
+  for (const body of [JSON.stringify({ agent: "vim", event: "Stop" }), "{not json"]) {
+    const bad = await post(body);
+    expect(bad.status).toBe(400);
+    expect(await bad.json()).toEqual({ error: "invalid request" });
+  }
+  expect(seen).toHaveLength(1);
+
+  expect((await fetch(`${s.origin}/api/board`, { headers })).status).toBe(400);
+  const wrong = await fetch(`${s.origin}/api/board?repo=%2Ftmp%2Fr`, { headers });
+  expect(seen[1]).toEqual({ repo: "/tmp/r" });
+  expect(wrong.status).toBe(500);
+  const text = await wrong.text();
+  expect(JSON.parse(text)).toEqual({ error: "invalid response" });
+  expect(text).not.toMatch(/at |ZodError/);
+
+  expect(await (await fetch(`${s.origin}/api/status`, { headers })).json()).toEqual({ consoles: [] });
+  expect((await fetch(`${s.origin}/api/agents`, { headers })).status).toBe(404);
+});
