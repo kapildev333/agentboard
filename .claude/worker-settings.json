@@ -1,5 +1,6 @@
 {
   "crossSessionInbound": "accept",
+  "worktree": { "bgIsolation": "none" },
   "env": { "AGENTBOARD_ROLE": "worker" },
   "permissions": {
     "deny": [

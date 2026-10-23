@@ -39,7 +39,7 @@ One Fable session governs; everything else is a worker it dispatches, watches an
 - Workers: `claude --bg --name <lane> -w <lane> --model claude-sonnet-5-5` with the lane brief as the prompt. A worker owns a disjoint set of paths, builds test-first, runs the gate, pushes, opens a pull request, posts its report on the issue, and goes idle. It never merges and never touches main.
 - Reviewers: Opus subagents the governor spawns per pull request, in parallel, reading only the diff and the lane card. Verdict: approve, or changes with findings. The governor never merges on the worker's word.
 - Watching: `claude agents` opens the live view; `claude attach <lane>` puts any worker in your terminal window; `claude logs <lane>` prints its recent output.
-- Parallelism: the governor keeps 6 lanes running on the 16 GB M2 Pro and raises that to 8 when memory and the plan's rate limit allow. Lanes run together whenever their path scopes are disjoint and their inputs have merged.
+- Parallelism: the governor keeps 8 lanes running on the 16 GB M2 Pro and lowers that only when memory or the plan's rate limit runs short. Dispatch follows the dependency graph, not the phase: a lane starts when its inputs are merged, or stacked on an unmerged predecessor's branch when their scopes are disjoint. Gates hold only the lanes that need the gate's answer.
 
 Flow of one tick: lane board (GitHub issues) → dispatch up to 6 workers → worker builds in its worktree → pull request with gate tail and report → gate (scripts/merge.sh) and Opus review → squash merge, label merged, `claude rm` → back to the board; findings from a failed review go straight back into the same worker session.
 
@@ -118,7 +118,7 @@ The governor: acceptEdits with allow rules for npm, git, gh, claude and the scri
 | L26 | OpenCode plugin, production | packages/plugins/opencode | L05, L13 | Sonnet |
 | L27 | Integration e2e: a CLI-spawned console, two worktrees, merge | packages/e2e | L20 to L26 | Opus |
 
-Dispatch waves: L00 alone; L01 alone; L02 to L06 together; gate 0 (owner reads the spike reports, the governor shows six mixed consoles); L10 to L19 six at a time; L1A; gate 1 (five days of dogfood); L20, L21, L24, L25, L26 together, then L22 and L23; L27; gate 2 (from OpenCode the agent spawns a console; both worktrees merged).
+Dispatch follows the dependency graph, never the phase (D9): L00 first, since every lane needs the workspace; then L01 and the five spikes together, stacked on L00's branch before it merges; then every lane whose inputs are in, eight at a time (D8), so L10 to L19 and the phase 2 lanes L20, L21 and L24 compete for the same queue; L14 waits for the three agent spikes; L1A for L10 to L19; L27 for L20 to L26. Gate 0 (owner reads the spike reports, the governor shows six mixed consoles) holds L14 only; gate 1 (five days of dogfood) and gate 2 (from OpenCode the agent spawns a console; both worktrees merged) are owner checkpoints and hold nothing. A stacked lane rebases with `git rebase --onto origin/main <base-sha>` once its base lands.
 
 ## Task cards
 
