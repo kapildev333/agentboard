@@ -25,4 +25,7 @@ export const routes = [
   { method: "POST", path: "/api/git/commit", request: "CommitRequestSchema", response: "CommitResponseSchema" },
   { method: "POST", path: "/api/git/push", request: "PushRequestSchema", response: "OkSchema" },
   { method: "POST", path: "/api/git/pr", request: "PrRequestSchema", response: "PrResponseSchema" },
+  { method: "GET", path: "/api/settings", request: null, response: "SettingsSchema" },
+  { method: "PUT", path: "/api/settings", request: "SettingsSchema", response: "OkSchema" },
+  { method: "POST", path: "/api/open", request: "OpenRequestSchema", response: "OkSchema" },
 ] as const satisfies readonly Route[];

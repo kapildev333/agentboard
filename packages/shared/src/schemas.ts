@@ -108,3 +108,15 @@ export const CommitResponseSchema = z.object({ sha: z.string() });
 export const PushRequestSchema = z.object({ path: z.string() });
 export const PrRequestSchema = z.object({ path: z.string(), title: z.string(), body: z.string().optional() });
 export const PrResponseSchema = z.object({ url: z.string() });
+
+// The one custom agent shape (D25): the catalog, the launcher and the settings panel all use it.
+export const CustomAgentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  command: z.string(),
+  args: z.array(z.string()),
+  needsYou: z.string().optional(),
+});
+// ~/.agentboard/settings.json
+export const SettingsSchema = z.object({ fontSize: z.number(), customAgents: z.array(CustomAgentSchema) });
+export const OpenRequestSchema = z.object({ editor: z.enum(["code", "zed", "finder"]), path: z.string() });
