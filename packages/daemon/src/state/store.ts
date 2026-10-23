@@ -51,8 +51,8 @@ export class StateStore {
 
   async save(board: Board): Promise<void> {
     this.pending.set(board.repoPath, { board });
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => {
+    // not restarted by later saves, so a steady stream of saves still writes every DEBOUNCE_MS
+    this.timer ??= setTimeout(() => {
       // the board stays pending on failure; the next save or flush retries it
       this.flush().catch((e) => console.error("agentboard: board write failed:", (e as Error).message));
     }, DEBOUNCE_MS);
