@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
@@ -26,6 +26,7 @@ const compiled = table.map((r) => ({
   pattern: new RegExp("^" + r.path.replace(/:(\w+)/g, "(?<$1>[^/]+)") + "$"),
 }));
 const MAX_BODY = 1 << 20;
+const CODE_TTL_MS = 60_000;
 
 export type ServerOptions = {
   port: number;
@@ -44,13 +45,26 @@ export async function createServer(opts: ServerOptions) {
   // same("", "") is true, so an empty token would let every request in.
   if (!/^[\w-]{32,}$/.test(opts.token)) throw new Error("token must be at least 32 characters of [A-Za-z0-9_-]");
   let port = 0;
+  // One-time codes for the browser URL, so the token itself never lands in history.
+  const codes = new Map<string, number>();
+  const issueCode = () => {
+    const code = randomBytes(24).toString("base64url");
+    codes.set(code, Date.now() + CODE_TTL_MS);
+    return code;
+  };
+  const takeCode = (code: string) => {
+    const expires = codes.get(code);
+    codes.delete(code);
+    for (const [c, t] of codes) if (t < Date.now()) codes.delete(c);
+    return expires !== undefined && expires >= Date.now();
+  };
   const server = http.createServer((req, res) => {
     const url = target(req);
     if (!url) return end(res, 400);
-    if (req.method === "GET" && isIndex(url.pathname) && url.searchParams.has("token")) {
+    if (req.method === "GET" && isIndex(url.pathname) && url.searchParams.has("code")) {
       if (!ownHost(req, port)) return end(res, 403);
-      if (!same(url.searchParams.get("token")!, opts.token)) return end(res, 401);
-      url.searchParams.delete("token");
+      if (!takeCode(url.searchParams.get("code")!)) return end(res, 401);
+      url.searchParams.delete("code");
       res.writeHead(302, {
         "set-cookie": `agentboard=${opts.token}; HttpOnly; SameSite=Strict; Path=/`,
         location: url.pathname + url.search,
@@ -59,6 +73,12 @@ export async function createServer(opts: ServerOptions) {
     }
     const refused = refuse(req, req.method !== "GET");
     if (refused) return end(res, refused);
+    if (req.method === "POST" && url.pathname === "/auth/code") {
+      // Header token only: the CLI and MCP mint codes, a page holding the cookie does not.
+      const header = req.headers["x-agentboard-token"];
+      if (typeof header !== "string") return end(res, 401);
+      return json(res, 200, { code: issueCode() });
+    }
     const route = compiled.find((r) => r.method === req.method && r.pattern.test(url.pathname));
     if (route) return void handle(route, opts.routes, req, url, res);
     if (req.method === "GET") return void serveStatic(opts.staticDir, url.pathname, res);
@@ -104,6 +124,8 @@ export async function createServer(opts: ServerOptions) {
   return {
     port,
     origin: `http://127.0.0.1:${port}`,
+    /** A one-time code for `${origin}/?code=…`, valid for a minute. */
+    issueCode,
     /** Validates, then sends a console's messages to sockets attached to it and board messages to all. */
     broadcast(message: DaemonMessage): void {
       const text = JSON.stringify(parseDaemonMessage(message));
