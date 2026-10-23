@@ -6,9 +6,7 @@ export default defineConfig({
   workers: 1,
   reporter: "list",
   timeout: 180_000,
-  use: {
-    viewport: { width: 1920, height: 1080 },
-    // swiftshader gives headless Chromium a WebGL context without a GPU
-    launchOptions: { args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] },
-  },
+  // Default Chromium flags: the console renders with xterm's DOM renderer, and forcing SwiftShader GL
+  // drops the board to 15 fps under load (the L03 spike sets it for its WebGL check only).
+  use: { viewport: { width: 1920, height: 1080 } },
 });
