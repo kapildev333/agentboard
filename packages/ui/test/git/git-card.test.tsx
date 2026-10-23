@@ -1,5 +1,5 @@
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
 import { GitCard } from "../../src/git";
 
 afterEach(cleanup);
@@ -19,4 +19,25 @@ it("the card renders a status fixture", async () => {
   expect(screen.getByText(/ahead 2/)).toBeTruthy();
   expect(screen.getByText(/dirty 3/)).toBeTruthy();
   expect(screen.getByText(/wire the thing/)).toBeTruthy();
+});
+
+const router = (routes: Record<string, () => Response>, calls: [string, RequestInit | undefined][] = []) =>
+  (async (url: string | URL | Request, init?: RequestInit) => {
+    const key = `${init?.method ?? "GET"} ${String(url).split("?")[0]}`;
+    calls.push([key, init]);
+    return routes[key]?.() ?? json({ error: "nope" }, 404);
+  }) as typeof globalThis.fetch;
+
+it("clicking Diff loads and renders the patch", async () => {
+  const fetch = router({
+    "GET /api/git/status": () => json(status),
+    "GET /api/git/diff": () =>
+      json({ files: [{ path: "a.ts", status: "M" }], patch: "@@ -1 +1 @@\n-old\n+new" }),
+  });
+  render(<GitCard fetch={fetch} path="/r" />);
+  fireEvent.click(await screen.findByText("Diff"));
+  expect(await screen.findByText("a.ts")).toBeTruthy();
+  expect(screen.getByText("M")).toBeTruthy();
+  expect(screen.getByText("+new").className).toBe("added");
+  expect(screen.getByText("-old").className).toBe("removed");
 });
