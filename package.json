@@ -2,13 +2,11 @@
   "name": "agentboard",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": ">=22"
-  },
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
+    "fix-pty": "chmod +x node_modules/node-pty/prebuilds/*/spawn-helper",
     "lint": "eslint .",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run",
