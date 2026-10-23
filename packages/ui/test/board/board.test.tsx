@@ -4,7 +4,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { autosaveBoard } from "../../src/board/store";
 import type { Board as BoardData, BoardNode } from "@agentboard/shared";
 import { Board, useBoard } from "../../src/board";
-import { CONSOLE_DRAG_HANDLE } from "../../src/console";
+import { CONSOLE_DRAG_HANDLE } from "../../src/console/dragHandle";
 
 type Fn = (...a: never[]) => void;
 type Props = Record<string, unknown> & { nodes: unknown[] } & Record<"onNodeDragStop" | "onMoveEnd" | "onNodesChange", Fn>;
