@@ -40,3 +40,16 @@ test("a path that is not a directory is rejected", async () => {
   await expect(openIn("code", join(tmpdir(), "ab-no-such-dir"), spawn)).rejects.toThrow(/not a directory/);
   expect(calls).toEqual([]);
 });
+
+test("a missing binary rejects with a one-line message", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "ab-open-"));
+  const spawn = (command: string) => {
+    const child = Object.assign(new EventEmitter(), { unref() {} });
+    process.nextTick(() => child.emit("error", new Error(`spawn ${command} ENOENT`)));
+    return child;
+  };
+  const err = await openIn("zed", dir, spawn).catch((e: Error) => e);
+  expect(err).toBeInstanceOf(Error);
+  expect((err as Error).message).toBe("could not start zed: spawn zed ENOENT");
+  expect((err as Error).message).not.toContain("\n");
+});
