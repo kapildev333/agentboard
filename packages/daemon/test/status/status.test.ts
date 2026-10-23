@@ -51,13 +51,15 @@ describe("StatusTracker", () => {
 
   it("hook, plugin and notify consoles ignore the quiet timer", () => {
     const t = new StatusTracker();
-    for (const a of ["claude", "gemini", "opencode", "codex"] as const) {
+    const work = { claude: "PreToolUse", gemini: "BeforeAgent", opencode: "tool.execute.before", codex: "" } as const;
+    for (const [a, event] of Object.entries(work) as [keyof typeof work, string][]) {
       t.markStarting(a, a);
+      if (event) t.handleHook(a, { event });
+      else t.markInput(a, "\r");
       t.markOutput(a, "output");
       vi.advanceTimersByTime(60_000);
-      expect(t.get(a), a).not.toBe("idle");
+      expect(t.get(a), a).toBe("working");
     }
-    expect(t.get("claude")).toBe("starting");
   });
 
   it("a custom needs_you rule fires on matching output", () => {
@@ -77,7 +79,86 @@ describe("StatusTracker", () => {
     t.handleHook("c1", { event: "agent-turn-complete" });
     expect(t.get("c1")).toBe("idle");
     t.markOutput("c1", "anything");
+    expect(t.get("c1")).toBe("idle");
+  });
+
+  it("codex output is work only after a prompt is sent", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "codex");
+    t.markOutput("c1", "banner");
+    expect(t.get("c1")).toBe("idle");
+    t.markInput("c1", "hi");
+    t.markOutput("c1", "echo");
+    expect(t.get("c1")).toBe("idle");
+    t.markInput("c1", "\r");
+    t.markOutput("c1", "thinking");
     expect(t.get("c1")).toBe("working");
+    t.handleHook("c1", { event: "agent-turn-complete" });
+    t.markOutput("c1", "redraw");
+    expect(t.get("c1")).toBe("idle");
+  });
+
+  it("a needs_you console stays needs_you past the quiet time", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "custom", { needsYou: [/\[y\/n\]/] });
+    t.markOutput("c1", "working");
+    t.markOutput("c1", "Proceed? [y/n]");
+    vi.advanceTimersByTime(60_000);
+    expect(t.get("c1")).toBe("needs_you");
+  });
+
+  it("a hook after exit does not revive the console", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "opencode");
+    t.markExit("c1", 0);
+    t.handleHook("c1", { event: "session.idle" });
+    expect(t.get("c1")).toBe("exited");
+  });
+
+  it("global regex rules match every chunk", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "custom", { needsYou: [/ask/g] });
+    for (let i = 0; i < 3; i++) {
+      t.handleHook("c1", { event: "x" });
+      t.markOutput("c1", "ask");
+      expect(t.get("c1")).toBe("needs_you");
+      t.markOutput("c1", "plain");
+      expect(t.get("c1")).toBe("working");
+    }
+  });
+
+  it("the first output ends starting for hook agents", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "claude");
+    t.markOutput("c1", "welcome");
+    expect(t.get("c1")).toBe("idle");
+    t.handleHook("c1", { event: "PreToolUse" });
+    t.markOutput("c1", "more");
+    expect(t.get("c1")).toBe("working");
+  });
+
+  it("markStarting keeps the previous status and does not repeat", () => {
+    const t = new StatusTracker();
+    const seen: unknown[] = [];
+    t.onChange((...a) => seen.push(a));
+    t.markStarting("c1", "claude");
+    t.markStarting("c1", "claude");
+    t.markExit("c1", 0);
+    t.markStarting("c1", "claude");
+    expect(seen).toEqual([
+      ["c1", "starting", "stopped"],
+      ["c1", "exited", "starting"],
+      ["c1", "starting", "exited"],
+    ]);
+  });
+
+  it("a PTY exit sets exited for every agent", () => {
+    const t = new StatusTracker();
+    for (const a of ["claude", "codex", "gemini", "opencode", "custom"] as const) {
+      t.markStarting(a, a);
+      t.markExit(a, 1);
+      expect(t.get(a), a).toBe("exited");
+    }
   });
 
   it("onChange fires once per transition and not on repeats", () => {
