@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "vitest";
@@ -30,4 +30,13 @@ test("openIn spawns the right command for each editor", async () => {
     { command: "zed", args: [dir] },
     { command: "open", args: [dir] },
   ]);
+});
+
+test("a path that is not a directory is rejected", async () => {
+  const file = join(mkdtempSync(join(tmpdir(), "ab-open-")), "a.txt");
+  writeFileSync(file, "x");
+  const { spawn, calls } = fakeSpawn();
+  await expect(openIn("code", file, spawn)).rejects.toThrow(/not a directory/);
+  await expect(openIn("code", join(tmpdir(), "ab-no-such-dir"), spawn)).rejects.toThrow(/not a directory/);
+  expect(calls).toEqual([]);
 });
