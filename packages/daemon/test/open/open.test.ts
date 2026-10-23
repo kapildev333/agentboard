@@ -19,8 +19,13 @@ function fakeSpawn() {
   return { spawn, calls };
 }
 
+// macOS tmpdir sits under a symlink, so the spawned argv is the resolved path.
+function tempDir() {
+  return realpathSync(mkdtempSync(join(tmpdir(), "ab-open-")));
+}
+
 test("openIn spawns the right command for each editor", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "ab-open-"));
+  const dir = tempDir();
   const { spawn, calls } = fakeSpawn();
   await openIn("code", dir, spawn);
   await openIn("zed", dir, spawn);
@@ -34,7 +39,7 @@ test("openIn spawns the right command for each editor", async () => {
 });
 
 test("finder opens the folder on linux and windows", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "ab-open-"));
+  const dir = tempDir();
   const { spawn, calls } = fakeSpawn();
   await openIn("finder", dir, spawn, "linux");
   await openIn("finder", dir, spawn, "win32");
@@ -45,16 +50,16 @@ test("finder opens the folder on linux and windows", async () => {
 });
 
 test("a path that is not a directory is rejected", async () => {
-  const file = join(mkdtempSync(join(tmpdir(), "ab-open-")), "a.txt");
+  const file = join(tempDir(), "a.txt");
   writeFileSync(file, "x");
   const { spawn, calls } = fakeSpawn();
   await expect(openIn("code", file, spawn)).rejects.toThrow(/not a directory/);
-  await expect(openIn("code", join(tmpdir(), "ab-no-such-dir"), spawn)).rejects.toThrow(/not a directory/);
+  await expect(openIn("code", join(tempDir(), "no-such-dir"), spawn)).rejects.toThrow(/not a directory/);
   expect(calls).toEqual([]);
 });
 
 test("handleOpen checks the body shape and returns ok", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "ab-open-"));
+  const dir = tempDir();
   const { spawn, calls } = fakeSpawn();
   await expect(handleOpen({ editor: "vim", path: dir }, spawn)).rejects.toThrow(/unknown editor/);
   await expect(handleOpen({ editor: "code" }, spawn)).rejects.toThrow(/path must be a string/);
@@ -65,23 +70,23 @@ test("handleOpen checks the body shape and returns ok", async () => {
 });
 
 test("a relative path is refused, so no argv can be read as an option", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "ab-open-"));
+  const dir = tempDir();
   const { spawn, calls } = fakeSpawn();
   await expect(openIn("code", relative(process.cwd(), dir), spawn)).rejects.toThrow(/must be absolute/);
   expect(calls).toEqual([]);
 });
 
 test("a symlink is spawned as the directory it points to", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "ab-open-"));
-  const link = join(mkdtempSync(join(tmpdir(), "ab-link-")), "l");
+  const dir = tempDir();
+  const link = join(tempDir(), "l");
   symlinkSync(dir, link);
   const { spawn, calls } = fakeSpawn();
   await openIn("code", link, spawn);
-  expect(calls).toEqual([{ command: "code", args: [realpathSync(dir)] }]);
+  expect(calls).toEqual([{ command: "code", args: [dir] }]);
 });
 
 test("a missing binary rejects with a one-line message", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "ab-open-"));
+  const dir = tempDir();
   const spawn = (command: string) => {
     const child = Object.assign(new EventEmitter(), { unref() {} });
     process.nextTick(() => child.emit("error", new Error(`spawn ${command} ENOENT`)));
