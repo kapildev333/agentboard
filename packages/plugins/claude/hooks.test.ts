@@ -22,6 +22,7 @@ const fake = async (hang = false) => {
   const reqs: { method?: string; url?: string; token?: unknown; body: unknown }[] = [];
   const server = http.createServer((req, res) => {
     let b = "";
+    req.setEncoding("utf8");
     req.on("data", (c) => (b += c));
     req.on("end", () => {
       reqs.push({ method: req.method, url: req.url, token: req.headers["x-agentboard-token"], body: JSON.parse(b) });
@@ -70,6 +71,24 @@ test("wraps whatever event name Claude sends", async () => {
   await run({ AGENTBOARD_URL: `http://127.0.0.1:${s.port}`, AGENTBOARD_CONSOLE_ID: "c9" }, JSON.stringify({ hook_event_name: "SessionEnd" }));
   await s.close();
   expect(s.reqs[0]?.body).toEqual({ agent: "claude", event: "SessionEnd", payload: { hook_event_name: "SessionEnd" } });
+});
+
+test("keeps multi-byte characters intact across stdin reads", async () => {
+  const s = await fake();
+  const text = "é€😀".repeat(40000);
+  await run(
+    { AGENTBOARD_URL: `http://127.0.0.1:${s.port}`, AGENTBOARD_CONSOLE_ID: "c9" },
+    JSON.stringify({ hook_event_name: "Stop", text }),
+  );
+  await s.close();
+  expect((s.reqs[0]?.body as { payload: { text: string } }).payload.text).toBe(text);
+});
+
+test("percent-encodes the console id in the path", async () => {
+  const s = await fake();
+  await run({ AGENTBOARD_URL: `http://127.0.0.1:${s.port}`, AGENTBOARD_CONSOLE_ID: "a/b" });
+  await s.close();
+  expect(s.reqs[0]?.url).toBe("/hook/a%2Fb");
 });
 
 test("posts nothing without the console id", async () => {
