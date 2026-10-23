@@ -19,7 +19,7 @@ export type DaemonOptions = {
   /** AGENTBOARD_HOME for this process; paths read it from the environment. */
   home?: string;
   port?: number;
-  /** The PATH the agent catalog scans; defaults to the login shell's. Tests pass a stub so no real CLI is probed. */
+  /** The PATH agents are found and run from; else AGENTBOARD_AGENT_PATH, else the login shell's PATH. */
   agentPath?: string;
 };
 export type Daemon = { origin: string; port: number; token: string; close(): Promise<void> };
@@ -57,7 +57,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
   if (other && alive(other.pid)) throw new Error(`a daemon is already running (pid ${other.pid}, port ${other.port})`);
 
   const env = await loginEnv();
-  const agentPath = opts.agentPath ?? env.PATH ?? "";
+  // Every entry point (the bin, `agentboard start`, tests) narrows the agent PATH the same way (D38).
+  const agentPath = opts.agentPath ?? (process.env.AGENTBOARD_AGENT_PATH || env.PATH) ?? "";
   const token = randomBytes(32).toString("base64url");
   const store = new StateStore();
   const pty = new PtyManager();
