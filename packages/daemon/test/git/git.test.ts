@@ -15,6 +15,8 @@ function tmp(prefix: string) {
 function makeRepo() {
   const repo = tmp("repo");
   git(repo, "init", "-b", "main");
+  git(repo, "config", "user.name", "t");
+  git(repo, "config", "user.email", "t@example.com");
   writeFileSync(join(repo, "a.txt"), "one\n");
   git(repo, "add", ".");
   git(repo, "commit", "-m", "init");
