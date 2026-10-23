@@ -48,18 +48,23 @@ const boardWith = (...nodes: ConsoleNode[]): Board => ({
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 
 type Call = { url: string; method: string; body?: unknown };
-function fakeApi(board: Board | Promise<Board>, status = 200) {
+function fakeApi(board: Board | Promise<Board>, status = 200, putStatus = 200) {
   const calls: Call[] = [];
+  const putHeaders: Record<string, string>[] = [];
   const fetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
     const method = init?.method ?? "GET";
     calls.push({ url: String(url), method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
     if (status !== 200) return json({}, status);
     if (String(url).startsWith("/api/board") && method === "GET") return json(await board);
+    if (String(url) === "/api/board" && method === "PUT") {
+      putHeaders.push(init?.headers as Record<string, string>);
+      return putStatus !== 200 ? json({ error: "stale" }, putStatus) : json({ ok: true, rev: ((JSON.parse(String(init?.body)) as Board).rev ?? 0) + 1 });
+    }
     if (String(url) === "/api/settings") return json({ fontSize: 13, customAgents: [] });
     if (String(url).endsWith("/resume")) return json(consoleNode("c1", "starting"));
     return json({ ok: true });
   });
-  return { fetch, calls };
+  return { fetch, calls, putHeaders };
 }
 
 function fakeSocket() {
@@ -178,5 +183,61 @@ describe("App", () => {
     await waitFor(() => expect(sockets).toHaveLength(2), { timeout: 2000 });
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.getByTestId("node-c1")).toBeTruthy();
+  });
+
+  const note = (id: string, text: string) => ({ id, type: "note" as const, title: "Note", x: 5, y: 5, w: 200, h: 100, text });
+  const withNote = (rev: number, ...notes: ReturnType<typeof note>[]): Board => {
+    const b = boardWith(consoleNode("c1"));
+    b.workspaces[0]!.nodes.push(...notes);
+    return { ...b, rev };
+  };
+  const puts = (api: ReturnType<typeof fakeApi>) => api.calls.filter((c) => c.method === "PUT" && c.url === "/api/board");
+
+  it("a note added elsewhere appears, and the next save (after a zoom) keeps it with the page's own viewport", async () => {
+    const api = fakeApi({ ...boardWith(consoleNode("c1")), rev: 1 });
+    const socket = fakeSocket();
+    render(<App fetch={api.fetch} search="?repo=%2Fr" connect={() => socket} />);
+    await screen.findByTestId("node-c1");
+    act(() => useBoard.getState().setViewport({ x: 7, y: 8, zoom: 0.5 }));
+    socket.emit({ t: "board", board: withNote(2, note("n1", "from cli")) });
+    expect(await screen.findByText("from cli")).toBeTruthy();
+    await waitFor(() => expect(puts(api)).toHaveLength(1), { timeout: 1500 });
+    const sent = puts(api)[0]!.body as Board;
+    expect(sent.workspaces[0]!.nodes.map((n) => n.id)).toEqual(["c1", "n1"]);
+    expect(sent.workspaces[0]!.viewport).toEqual({ x: 7, y: 8, zoom: 0.5 });
+    expect(sent.rev).toBe(2);
+  });
+
+  it("a note removed elsewhere disappears; one the page added itself stays", async () => {
+    const api = fakeApi(withNote(1, note("n1", "old")));
+    const socket = fakeSocket();
+    render(<App fetch={api.fetch} search="?repo=%2Fr" connect={() => socket} />);
+    await screen.findByText("old");
+    act(() => useBoard.getState().addNode(note("mine", "local") as never));
+    socket.emit({ t: "board", board: withNote(2) });
+    await waitFor(() => expect(screen.queryByText("old")).toBeNull());
+    expect(screen.getByText("local")).toBeTruthy();
+  });
+
+  it("a save sends the client id and the rev, and the next save sends the rev the daemon answered", async () => {
+    const api = fakeApi({ ...boardWith(consoleNode("c1")), rev: 4 });
+    render(<App fetch={api.fetch} search="?repo=%2Fr" connect={fakeSocket} />);
+    await screen.findByTestId("node-c1");
+    act(() => useBoard.getState().setViewport({ x: 1, y: 1, zoom: 1 }));
+    await waitFor(() => expect(puts(api)).toHaveLength(1), { timeout: 1500 });
+    expect(api.putHeaders[0]!["x-agentboard-client"]).toMatch(/./);
+    expect((puts(api)[0]!.body as Board).rev).toBe(4);
+    act(() => useBoard.getState().setViewport({ x: 2, y: 2, zoom: 1 }));
+    await waitFor(() => expect(puts(api)).toHaveLength(2), { timeout: 1500 });
+    expect((puts(api)[1]!.body as Board).rev).toBe(5);
+    expect(api.putHeaders[1]!["x-agentboard-client"]).toBe(api.putHeaders[0]!["x-agentboard-client"]);
+  });
+
+  it("a save the daemon refuses with 409 reloads the board", async () => {
+    const api = fakeApi({ ...boardWith(consoleNode("c1")), rev: 1 }, 200, 409);
+    render(<App fetch={api.fetch} search="?repo=%2Fr" connect={fakeSocket} />);
+    await screen.findByTestId("node-c1");
+    act(() => useBoard.getState().setViewport({ x: 1, y: 1, zoom: 1 }));
+    await waitFor(() => expect(api.calls.filter((c) => c.method === "GET" && c.url.startsWith("/api/board"))).toHaveLength(2), { timeout: 1500 });
   });
 });
