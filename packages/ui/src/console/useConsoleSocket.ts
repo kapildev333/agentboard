@@ -1,3 +1,4 @@
+import { parseDaemonMessage } from "@agentboard/shared";
 import { useCallback, useEffect, useRef } from "react";
 
 export interface SocketLike {
@@ -14,8 +15,10 @@ const OPEN = 1;
 export const defaultSocketFactory: SocketFactory = () =>
   new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
 
-export function useConsoleSocket(consoleId: string, factory: SocketFactory = defaultSocketFactory) {
+export function useConsoleSocket(consoleId: string, factory: SocketFactory = defaultSocketFactory, onOutput?: (data: string) => void) {
   const socket = useRef<SocketLike | null>(null);
+  const out = useRef(onOutput);
+  out.current = onOutput;
   const size = useRef<{ cols: number; rows: number } | null>(null);
   const send = useCallback((m: object) => {
     if (socket.current?.readyState === OPEN) socket.current.send(JSON.stringify(m));
@@ -29,6 +32,14 @@ export function useConsoleSocket(consoleId: string, factory: SocketFactory = def
       s.onopen = () => {
         send({ t: "attach", consoleId });
         if (size.current) send({ t: "resize", consoleId, ...size.current });
+      };
+      s.onmessage = (e) => {
+        try {
+          const m = parseDaemonMessage(JSON.parse(String(e.data)));
+          if (m.t === "output" && m.consoleId === consoleId) out.current?.(m.data);
+        } catch {
+          // not for us
+        }
       };
       s.onclose = () => {
         if (!disposed && retry) connect(false);

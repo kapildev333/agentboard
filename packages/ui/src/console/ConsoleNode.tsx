@@ -15,11 +15,11 @@ export interface ConsoleNodeProps {
 
 export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }: ConsoleNodeProps) {
   const el = useRef<HTMLDivElement>(null);
-  const { sendInput, sendResize } = useConsoleSocket(data.consoleId, socketFactory);
+  const term = useRef<Terminal | null>(null);
+  const { sendInput, sendResize } = useConsoleSocket(data.consoleId, socketFactory, (d) => term.current?.write(d));
   const io = useRef({ sendInput, sendResize });
   io.current = { sendInput, sendResize };
   const zoom = useStore((s) => s.transform[2]);
-  const term = useRef<Terminal | null>(null);
   const fit = useRef<FitAddon | null>(null);
   const gl = useRef<WebglAddon | null>(null);
 
