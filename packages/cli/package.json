@@ -8,5 +8,11 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json"
+  },
+  "bin": {
+    "agentboard": "dist/index.js"
+  },
+  "dependencies": {
+    "@agentboard/shared": "0.0.0"
   }
 }
