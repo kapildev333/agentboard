@@ -1,6 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
+import { extname, resolve, sep } from "node:path";
 import type { Duplex } from "node:stream";
 import { WebSocketServer } from "ws";
 
@@ -14,8 +16,20 @@ export type ServerOptions = {
 export async function createServer(opts: ServerOptions) {
   let port = 0;
   const server = http.createServer((req, res) => {
+    const url = new URL(req.url ?? "/", "http://x");
+    if (req.method === "GET" && isIndex(url.pathname) && url.searchParams.has("token")) {
+      if (!ownHost(req, port)) return end(res, 403);
+      if (!same(url.searchParams.get("token")!, opts.token)) return end(res, 401);
+      url.searchParams.delete("token");
+      res.writeHead(302, {
+        "set-cookie": `agentboard=${opts.token}; HttpOnly; SameSite=Strict; Path=/`,
+        location: url.pathname + url.search,
+      }).end();
+      return;
+    }
     const refused = refuse(req, req.method !== "GET");
     if (refused) return end(res, refused);
+    if (req.method === "GET") return void serveStatic(opts.staticDir, url.pathname, res);
     end(res, 404);
   });
   // Host stops DNS rebinding, Origin stops cross-site requests, the token stops everything else.
@@ -57,7 +71,31 @@ function ownOrigin(req: http.IncomingMessage, port: number): boolean {
 
 function hasToken(req: http.IncomingMessage, token: string): boolean {
   const header = req.headers["x-agentboard-token"];
-  return typeof header === "string" && same(header, token);
+  if (typeof header === "string") return same(header, token);
+  const cookie = req.headers.cookie?.split(";").map((c) => c.trim()).find((c) => c.startsWith("agentboard="));
+  return cookie !== undefined && same(cookie.slice("agentboard=".length), token);
+}
+
+const isIndex = (pathname: string) => pathname === "/" || pathname === "/index.html";
+
+const types: Record<string, string> = {
+  ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
+  ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon",
+  ".woff2": "font/woff2", ".wasm": "application/wasm",
+};
+
+async function serveStatic(dir: string, pathname: string, res: http.ServerResponse): Promise<void> {
+  const root = resolve(dir);
+  let file: string;
+  try { file = resolve(root, "." + decodeURIComponent(isIndex(pathname) ? "/index.html" : pathname)); }
+  catch { return end(res, 400); }
+  if (!file.startsWith(root + sep)) return end(res, 404);
+  try {
+    const body = await readFile(file);
+    res.writeHead(200, { "content-type": types[extname(file)] ?? "application/octet-stream" }).end(body);
+  } catch {
+    end(res, 404);
+  }
 }
 
 function same(a: string, b: string): boolean {
