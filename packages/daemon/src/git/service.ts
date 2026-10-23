@@ -24,6 +24,8 @@ export class GitService {
     const path = join(repoPath, ".worktrees", name);
     const g = simpleGit(repoPath);
     await g.raw(["worktree", "add", "-b", name, path, base]);
+    // The base lives in the branch config: no upstream is set (it would break hasUnpushed), and status reads it back by path.
+    await g.raw(["config", `branch.${name}.agentboardBase`, base]);
     const exclude = (await g.raw(["rev-parse", "--path-format=absolute", "--git-path", "info/exclude"])).trim();
     const current = existsSync(exclude) ? readFileSync(exclude, "utf8") : "";
     if (!current.split("\n").includes(".worktrees/")) appendFileSync(exclude, `${current && !current.endsWith("\n") ? "\n" : ""}.worktrees/\n`);
@@ -46,10 +48,12 @@ export class GitService {
     const [sha, subject, when] = (await this.hasHead(g))
       ? (await g.raw(["log", "-1", "--format=%H%x00%s%x00%cI"])).trim().split("\0")
       : [];
+    const base = await this.baseOf(g);
+    const count = async (range: string) => Number((await g.raw(["rev-list", "--count", range])).trim());
     return {
       branch: st.current ?? "HEAD",
-      ahead: st.ahead,
-      behind: st.behind,
+      ahead: base ? await count(`${base}..HEAD`) : st.ahead,
+      behind: base ? await count(`HEAD..${base}`) : st.behind,
       dirty: st.files.length,
       lastCommit: sha ? { sha, subject, when } : null,
     };
@@ -91,13 +95,22 @@ export class GitService {
     return g.raw(["rev-parse", "--verify", "-q", "HEAD"]).then((o) => o.trim() !== "", () => false);
   }
 
+  // The base branch recorded by worktreeAdd, or "" for a branch that has none (or whose base was deleted).
+  private async baseOf(g: SimpleGit): Promise<string> {
+    const branch = (await g.raw(["branch", "--show-current"])).trim();
+    if (!branch) return "";
+    const base = await g.raw(["config", "--get", `branch.${branch}.agentboardBase`]).then((o) => o.trim(), () => "");
+    return base && (await g.raw(["rev-parse", "--verify", "-q", base]).then((o) => o.trim() !== "", () => false)) ? base : "";
+  }
+
   private async hasUnpushed(g: SimpleGit): Promise<boolean> {
     const count = async (...a: string[]) => Number((await g.raw(["rev-list", "--count", ...a])).trim());
     try {
       return (await count("@{u}..HEAD")) > 0;
     } catch {
-      // No upstream: unpushed means commits no remote has, but only if a remote exists to push to.
-      return (await g.getRemotes()).length > 0 && (await count("HEAD", "--not", "--remotes")) > 0;
+      // No upstream: unpushed means commits no remote and not the base have, but only if a remote exists to push to.
+      const base = await this.baseOf(g);
+      return (await g.getRemotes()).length > 0 && (await count("HEAD", "--not", "--remotes", ...(base ? [base] : []))) > 0;
     }
   }
 }
