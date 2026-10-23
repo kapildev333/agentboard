@@ -79,6 +79,7 @@ case "$mode" in
     root="${CLAUDE_PROJECT_DIR:-$PWD}"
     case "$path" in
       "$root"/*) ;;
+      "$HOME"/.claude/projects/*/memory/*) [ "${AGENTBOARD_ROLE:-}" = worker ] && deny "refused: workers do not write memory"; exit 0;;
       /*) deny "refused: edit outside the worktree: $path";;
     esac
     rel="${path#"$root"/}"
