@@ -35,7 +35,8 @@ function markerDir(names: string[]) {
   const dir = tmp();
   const marker = join(dir, "ran");
   for (const name of names) {
-    writeFileSync(join(dir, name), `#!/bin/sh\ntouch "${marker}"\necho 1\n`);
+    // a shell builtin, not touch: a scan running the stub with PATH set to this directory finds no touch
+    writeFileSync(join(dir, name), `#!/bin/sh\n: > "${marker}"\necho 1\n`);
     chmodSync(join(dir, name), 0o755);
   }
   return { dir, ran: () => existsSync(marker) };
