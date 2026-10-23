@@ -5,6 +5,7 @@ import { parseArgs } from "node:util";
 import { BoardSchema, type NoteNode } from "@agentboard/shared";
 import { api } from "../api.js";
 import { ensureDaemon } from "../daemonFile.js";
+import { requireDir } from "./open.js";
 
 // Boards are keyed by the exact repo path, so default to the main repo root, not a subdirectory or linked worktree.
 function mainRepoRoot(cwd: string): string {
@@ -26,6 +27,7 @@ export async function noteCommand(args: string[], deps: { log?: (line: string) =
     const text = positionals.join(" ");
     if (!text) throw new Error("usage: agentboard note <text> [--repo <path>]");
     const repo = resolve(values.repo ?? mainRepoRoot(deps.cwd ?? process.cwd()));
+    requireDir(repo);
     const info = await ensureDaemon(repo);
     const board = BoardSchema.parse(await api(info, "GET", `/api/board?repo=${encodeURIComponent(repo)}`));
     const ws = board.workspaces.find((w) => w.id === board.activeWorkspaceId);

@@ -45,6 +45,7 @@ beforeEach(async () => {
   const home = mkdtempSync(join(tmpdir(), "ab-cli-"));
   process.env.AGENTBOARD_HOME = home;
   put = undefined;
+  getUrl = undefined;
   current = structuredClone(board);
   server = createServer((req, res) => {
     let body = "";
