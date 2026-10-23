@@ -10,3 +10,19 @@ describe("pty spike", () => {
     expect(out).toContain("hi");
   });
 });
+
+describe("pty-ws spike", () => {
+  it("serves one connection end to end", async () => {
+    const { startServer } = await import("./pty-ws.ts");
+    const { WebSocket } = await import("ws");
+    const srv = await startServer();
+    const ws = new WebSocket(`ws://127.0.0.1:${srv.port}`);
+    let out = "";
+    ws.on("message", (d) => (out += d.toString()));
+    await new Promise((r) => ws.once("open", r));
+    ws.send("echo hello\n");
+    await expect.poll(() => out.replace("echo hello", "")).toContain("hello");
+    ws.close();
+    await srv.close();
+  });
+});
