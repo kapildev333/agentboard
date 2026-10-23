@@ -43,7 +43,8 @@ export class StatusTracker {
     if (e.agent === "custom") e.timer = this.timers.set(() => this.set(consoleId, "idle"), QUIET_MS);
   }
 
-  markExit(consoleId: string, _code: number | null): void {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- code is part of the card's signature
+  markExit(consoleId: string, _code?: number | null): void {
     this.set(consoleId, "exited");
   }
 
