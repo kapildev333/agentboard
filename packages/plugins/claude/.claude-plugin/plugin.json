@@ -1,5 +1,6 @@
 {
-  "name": "agentboard-hooks",
-  "version": "0.0.0",
-  "description": "Posts Stop, Notification, UserPromptSubmit, PermissionRequest and SessionEnd to the AgentBoard daemon named in AGENTBOARD_URL and AGENTBOARD_CONSOLE_ID"
+  "name": "agentboard",
+  "description": "Shows Claude Code sessions as live nodes on the AgentBoard board and adds a /board command.",
+  "version": "0.1.0",
+  "author": { "name": "agentboard" }
 }
