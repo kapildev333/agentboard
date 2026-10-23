@@ -1,9 +1,19 @@
 {
-  "name": "@agentboard/plugins",
-  "version": "0.0.0",
-  "private": true,
+  "name": "@agentboard/opencode-plugin",
+  "version": "0.1.0",
+  "description": "OpenCode plugin: reports session state to AgentBoard and lets an agent open another one",
   "type": "module",
+  "license": "MIT",
+  "main": "dist/agentboard.js",
+  "files": [
+    "dist",
+    "opencode/README.md"
+  ],
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p opencode/tsconfig.build.json"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
   }
 }

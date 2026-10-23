@@ -8,6 +8,7 @@ describe("buildHookPost", () => {
     const event = { type: "session.idle", properties: { sessionID: "s1" } };
     expect(buildHookPost(env, event)).toEqual({
       url: "http://127.0.0.1:4321/hook/c1",
+      headers: { "content-type": "application/json", "X-AgentBoard-Token": "" },
       body: { agent: "opencode", event: "session.idle", payload: { sessionID: "s1" } },
     });
     expect(buildHookPost({}, event)).toBeNull();
