@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json --rootDir ../.."
   },
   "dependencies": {
     "node-pty": "1.1.0",
