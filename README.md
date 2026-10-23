@@ -71,7 +71,7 @@ Never run `npx agentboard`. That npm name belongs to an unrelated package. Agent
   - **Diff** lists changed files and shows the unified diff.
   - **Commit** stages everything (`git add -A`) and commits with your message.
   - **Push** runs `git push -u origin HEAD`.
-  - **Open PR** runs `gh pr create` with the last commit's subject as the title and opens the new pull request.
+  - **Open PR** runs `gh pr create` with the last commit's subject as the title and shows a link to the new pull request.
 - **Open in VS Code, Zed or Finder.** These buttons sit under the git card. They run `code <path>`, `zed <path>`, or on macOS `open -R <path>`, which reveals the folder in Finder.
 - **Notes.** `agentboard note "text"` or the MCP `add_note` tool adds a yellow note card to the active workspace. This version cannot create or edit notes from the page.
 - **Settings.**
@@ -121,12 +121,12 @@ The hooks report status only for Claude sessions the board launched. A plain `cl
 
 ### The OpenCode plugin
 
-`npm run build -w packages/plugins` bundles the plugin into one file, `packages/plugins/opencode/dist/agentboard.js`. Copy or symlink that file into `~/.config/opencode/plugins/`. Do not copy the source folder: OpenCode loads every file in that folder as a plugin. The plugin then does two things:
+`npm run build` bundles the plugin into one file, `packages/plugins/opencode/dist/agentboard.js`. The plugin does two things:
 
-- It forwards session status to the board for consoles the board launched.
+- It forwards session status to the board.
 - It gives the agent an `agentboard_spawn` tool that opens another agent as a new console.
 
-Outside a board console it stays silent.
+OpenCode consoles the board launches load this bundle from your checkout on their own, so they need no install. To give the tool to a plain `opencode` session too, symlink the bundle into `~/.config/opencode/plugins/`. Do not copy the source folder: OpenCode loads every file in that folder as a plugin. Outside a board console the plugin sends no events.
 
 ## Status model
 
