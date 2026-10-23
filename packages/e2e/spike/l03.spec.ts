@@ -12,8 +12,6 @@ test.beforeAll(async () => {
   echo = await startEcho(0);
   vite = await createServer({
     root: new URL("../../ui/spike", import.meta.url).pathname,
-    configFile: false,
-    esbuild: { jsx: "automatic" },
     server: { port: 0, host: "127.0.0.1" },
     logLevel: "error",
   });
@@ -34,6 +32,23 @@ test("typing hello into the third node echoes it back", async ({ page }) => {
   await expect
     .poll(() => page.evaluate(() => window.__terms[2].buffer.active.getLine(0)?.translateToString(true)))
     .toBe("hello");
+});
+
+test("a node drags by its header, also while its terminal is focused", async ({ page }) => {
+  await page.goto(url);
+  await page.waitForFunction(() => window.__terms?.length === 6);
+  const node = page.locator(".react-flow__node").nth(0);
+  await node.locator(".xterm").click();
+  const before = await node.boundingBox();
+  const header = (await node.locator(".drag-handle").boundingBox())!;
+  await page.mouse.move(header.x + 20, header.y + 5);
+  await page.mouse.down();
+  await page.mouse.move(header.x + 120, header.y + 55, { steps: 5 });
+  await page.mouse.up();
+  const after = await node.boundingBox();
+  // React Flow starts the drag after the first move event, so expect most of the 100 px, not all
+  expect(after!.x - before!.x).toBeGreaterThan(60);
+  expect(after!.y - before!.y).toBeGreaterThan(30);
 });
 
 for (const renderer of ["webgl", "dom"]) {
@@ -65,7 +80,8 @@ for (const renderer of ["webgl", "dom"]) {
       }
       await page.mouse.up();
       const result = await fps;
-      console.log(`L03 fps zoom=${zoom * 100}% renderer=${renderer}: ${result}`);
+      const cols = await page.evaluate(() => window.__terms[0].cols);
+      console.log(`L03 cols=${cols} fps zoom=${zoom * 100}% renderer=${renderer}: ${result}`);
       await page.screenshot({ path: info.outputPath(`${renderer}-${zoom * 100}.png`) });
       expect(result).toBeGreaterThan(0);
     });
