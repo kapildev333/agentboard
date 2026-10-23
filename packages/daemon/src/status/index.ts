@@ -8,7 +8,7 @@ export type Timers = {
 
 const QUIET_MS = 20_000;
 
-type Entry = { agent: AgentId; rules: StatusRules; status: ConsoleStatus; timer?: unknown };
+type Entry = { agent: AgentId; rules: StatusRules; status: ConsoleStatus; timer?: unknown; armed?: boolean };
 
 export class StatusTracker {
   private entries = new Map<string, Entry>();
@@ -19,28 +19,46 @@ export class StatusTracker {
   ) {}
 
   markStarting(consoleId: string, agent: AgentId, options: StatusRules = {}): void {
-    this.remove(consoleId);
-    this.entries.set(consoleId, { agent, rules: options, status: "stopped" });
+    // keep the old status so a restart reports its real previous and a repeat call emits nothing
+    this.clearTimer(consoleId);
+    this.entries.set(consoleId, { agent, rules: options, status: this.get(consoleId) });
     this.set(consoleId, "starting");
   }
 
   handleHook(consoleId: string, body: { event: string; payload?: unknown }): void {
     const e = this.entries.get(consoleId);
-    const next = e && mapSignal(e.agent, body.event, body.payload);
-    if (next) this.set(consoleId, next);
+    if (!e || e.status === "exited") return;
+    const next = mapSignal(e.agent, body.event, body.payload);
+    if (!next) return;
+    if (next === "idle") e.armed = false;
+    this.set(consoleId, next);
+  }
+
+  // codex: a carriage return means a prompt was sent, so output until agent-turn-complete is work
+  markInput(consoleId: string, data: string): void {
+    const e = this.entries.get(consoleId);
+    if (e?.agent === "codex" && data.includes("\r")) e.armed = true;
   }
 
   markOutput(consoleId: string, chunk: string): void {
     const e = this.entries.get(consoleId);
-    // hooks and plugins are authoritative for claude, gemini, opencode; only codex and custom read output
-    if (!e || e.status === "exited" || (e.agent !== "codex" && e.agent !== "custom")) return;
-    const match = (res?: RegExp[]) => res?.some((r) => r.test(chunk));
-    const idle = e.agent === "custom" && match(e.rules.idle);
+    if (!e || e.status === "exited") return;
+    // hooks and plugins are authoritative once running; the first output only ends starting
+    if (e.agent !== "codex" && e.agent !== "custom") {
+      if (e.status === "starting") this.set(consoleId, "idle");
+      return;
+    }
+    const match = (res?: RegExp[]) => res?.some((r) => chunk.search(r) !== -1);
+    let next: ConsoleStatus | null = null;
     // needs_you wins over idle
-    this.set(consoleId, match(e.rules.needsYou) ? "needs_you" : idle ? "idle" : "working");
+    if (match(e.rules.needsYou)) next = "needs_you";
+    else if (e.agent === "custom" && match(e.rules.idle)) next = "idle";
+    else if (e.agent === "custom" || e.armed) next = "working";
+    else if (e.status === "starting") next = "idle";
+    if (next) this.set(consoleId, next);
     this.clearTimer(consoleId);
-    // codex goes idle from its notify hook, never from silence
-    if (e.agent === "custom") e.timer = this.timers.set(() => this.set(consoleId, "idle"), QUIET_MS);
+    // only custom consoles go idle from silence; codex waits for its notify hook
+    if (e.agent === "custom" && next === "working") e.timer = this.timers.set(() => this.set(consoleId, "idle"), QUIET_MS);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- code is part of the card's signature
