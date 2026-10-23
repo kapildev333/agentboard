@@ -231,4 +231,14 @@ describe("StatusTracker", () => {
     t.markOutput("c1", "late");
     expect(t.get("c1")).toBe("exited");
   });
+
+  it("SessionEnd with reason clear or resume leaves a claude console's status unchanged (L13)", () => {
+    for (const reason of ["clear", "resume"]) {
+      const t = new StatusTracker();
+      t.markStarting("c1", "claude");
+      t.handleHook("c1", { event: "UserPromptSubmit" });
+      t.handleHook("c1", { event: "SessionEnd", payload: { reason } });
+      expect(t.get("c1"), reason).toBe("working");
+    }
+  });
 });
