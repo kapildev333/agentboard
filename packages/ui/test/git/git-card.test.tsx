@@ -112,3 +112,29 @@ it("the commit message is required", async () => {
   fireEvent.click(await screen.findByText("Commit"));
   expect((screen.getByLabelText("Commit message") as HTMLInputElement).required).toBe(true);
 });
+
+it("a push error survives the next status refresh", async () => {
+  let statusCalls = 0;
+  const fetch = router({
+    "GET /api/git/status": () => (statusCalls++, json(status)),
+    "POST /api/git/push": () => json({ error: "remote rejected" }, 500),
+  });
+  render(<GitCard fetch={fetch} path="/r" intervalMs={20} />);
+  fireEvent.click(await screen.findByText("Push"));
+  await screen.findByText("remote rejected");
+  const seen = statusCalls;
+  await vi.waitFor(() => expect(statusCalls).toBeGreaterThan(seen + 1));
+  expect(screen.getByRole("alert").textContent).toBe("remote rejected");
+});
+
+it("removed and added lines that start with -- or ++ are marked after the first hunk", async () => {
+  const fetch = router({
+    "GET /api/git/status": () => json(status),
+    "GET /api/git/diff": () => json({ files: [], patch: "--- a/x\n+++ b/x\n@@ -1 +1 @@\n---\n+++ y" }),
+  });
+  render(<GitCard fetch={fetch} path="/r" />);
+  fireEvent.click(await screen.findByText("Diff"));
+  expect((await screen.findByText("---")).className).toBe("removed");
+  expect(screen.getByText("+++ y").className).toBe("added");
+  expect(screen.getByText("--- a/x").className).toBe("");
+});
