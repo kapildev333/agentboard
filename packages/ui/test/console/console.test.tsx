@@ -130,6 +130,8 @@ describe("ConsoleNode", () => {
     act(() => sockets[0]!.open());
     act(() => sockets[0]!.receive({ t: "output", consoleId: "c1", data: "hello" }));
     act(() => sockets[0]!.receive({ t: "output", consoleId: "other", data: "nope" }));
+    for (const raw of ["not json", '{"t":"nope","consoleId":"c1"}', '{"__proto__":{"t":"output"}}', '{"t":"output","consoleId":"c1"}'])
+      expect(() => act(() => sockets[0]!.onmessage!({ data: raw }))).not.toThrow();
     expect(x.term.written).toEqual(["hello"]);
   });
 
@@ -154,14 +156,27 @@ describe("ConsoleNode", () => {
   });
 
   it("Cmd+C with a selection and Cmd+V are left to the browser, so paste happens once", () => {
+    Object.defineProperty(navigator, "userAgent", { value: "Mozilla/5.0 (Linux)", configurable: true });
     mount();
-    const key = (k: string) => x.term.keyHandler({ type: "keydown", key: k, metaKey: true, ctrlKey: false } as KeyboardEvent);
+    const key = (k: string, mods = { ctrlKey: true, metaKey: false }) =>
+      x.term.keyHandler({ type: "keydown", key: k, ...mods } as KeyboardEvent);
     expect(key("v")).toBe(false);
     x.term.selection = "sel";
     expect(key("c")).toBe(false);
     x.term.selection = "";
     expect(key("c")).toBe(true);
     expect(x.term.pasted).toBe("");
+  });
+
+  it("on macOS only Cmd is the clipboard key, Ctrl goes to the PTY", () => {
+    Object.defineProperty(navigator, "userAgent", { value: "Mozilla/5.0 (Macintosh; Intel Mac OS X)", configurable: true });
+    mount();
+    const key = (k: string, mods: object) => x.term.keyHandler({ type: "keydown", key: k, ctrlKey: false, metaKey: false, ...mods } as KeyboardEvent);
+    x.term.selection = "sel";
+    expect(key("v", { ctrlKey: true })).toBe(true);
+    expect(key("c", { ctrlKey: true })).toBe(true);
+    expect(key("v", { metaKey: true })).toBe(false);
+    expect(key("c", { metaKey: true })).toBe(false);
   });
 
   it("changing fontSize keeps the same terminal and refits", () => {
