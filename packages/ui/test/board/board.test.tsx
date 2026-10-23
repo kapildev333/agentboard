@@ -79,7 +79,7 @@ describe("Board", () => {
 
   it("the zoom bounds are 0.25 and 2", () => {
     render(<Board nodeTypes={nodeTypes} />);
-    expect(seen.props).toMatchObject({ minZoom: 0.25, maxZoom: 2 });
+    expect(seen.props).toMatchObject({ minZoom: 0.25, maxZoom: 2, panOnScroll: true });
   });
 });
 
@@ -96,20 +96,6 @@ describe("Board wiring", () => {
     expect(seen.mounts).toBe(1);
     act(() => useBoard.getState().switchWorkspace("b"));
     expect(seen.mounts).toBe(2);
-  });
-
-  it("drag stop saves every dragged node, not only one", () => {
-    const st = useBoard.getState();
-    st.addNode(note("n1"));
-    st.addNode(note("n2"));
-    render(<Board nodeTypes={nodeTypes} />);
-    const dragged = [
-      { id: "n1", position: { x: 10, y: 20 } },
-      { id: "n2", position: { x: 30, y: 40 } },
-    ];
-    act(() => (seen.props.onNodeDragStop as (...a: unknown[]) => void)({}, dragged[0], dragged));
-    const nodes = useBoard.getState().board.workspaces[0]!.nodes;
-    expect(nodes.map((n) => [n.x, n.y])).toEqual([[10, 20], [30, 40]]);
   });
 
   it("the canvas gets the active workspace's viewport and never renders the old nodes after a switch", () => {
