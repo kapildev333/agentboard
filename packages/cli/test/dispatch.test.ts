@@ -28,3 +28,10 @@ test("status with no daemon returns 1", async () => {
 test("open routes to the open command", async () => {
   await expect(main(["open", join(tmpdir(), "ab-missing-dir")])).rejects.toThrow(/not a directory/);
 });
+
+test("a bad option to status comes back as a logged error object", async () => {
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  expect(await main(["status", "--bogus"])).toBe(1);
+  expect(JSON.parse(log.mock.calls[0]![0])).toHaveProperty("error");
+  log.mockRestore();
+});

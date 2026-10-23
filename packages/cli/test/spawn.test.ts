@@ -63,3 +63,9 @@ test("spawn requires exactly one agent", async () => {
   }
   expect(seen).toHaveLength(0);
 });
+
+test("spawn sends the prompt and the repo as cwd", async () => {
+  expect(await spawnCommand(["claude", "--prompt", "fix the bug", "--repo", "/r"], { log: () => {} })).toBe(0);
+  const post = seen.find((r) => r.method === "POST")!;
+  expect(JSON.parse(post.body)).toMatchObject({ agent: "claude", prompt: "fix the bug", cwd: "/r" });
+});
