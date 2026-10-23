@@ -3,8 +3,10 @@ import type { EventEmitter } from "node:events";
 import { realpath, stat } from "node:fs/promises";
 import { isAbsolute } from "node:path";
 
-// A bad request from the client: L12 answers 400. Anything else (a failed spawn) is a 500.
-export class OpenError extends Error {}
+// A bad request from the client: the server answers its status, 400. Anything else (a failed spawn) is a 500.
+export class OpenError extends Error {
+  readonly status = 400;
+}
 
 export type Editor = "code" | "zed" | "finder";
 export type Spawn = (command: string, args: readonly string[], options: SpawnOptions) => EventEmitter & { unref(): void };
