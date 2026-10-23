@@ -5,9 +5,15 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { boardPath, DaemonFile, daemonFilePath, StateStore } from "../../src/state/index.js";
 
 let failRename = false;
+let beforeRename: (() => Promise<void>) | null = null;
 vi.mock("node:fs/promises", async (orig) => {
   const m = await orig<typeof import("node:fs/promises")>();
-  return { ...m, rename: (...a: Parameters<typeof m.rename>) => (failRename ? Promise.reject(new Error("boom")) : m.rename(...a)) };
+  return { ...m, rename: async (...a: Parameters<typeof m.rename>) => {
+      await beforeRename?.();
+      if (failRename) throw new Error("boom");
+      return m.rename(...a);
+    },
+  };
 });
 
 let home: string;
@@ -17,6 +23,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   failRename = false;
+  beforeRename = null;
   vi.useRealTimers();
   delete process.env.AGENTBOARD_HOME;
   await rm(home, { recursive: true, force: true });
@@ -59,4 +66,28 @@ test("a failed daemon file write leaves the previous file intact", async () => {
   failRename = true;
   await expect(file.write({ port: 9, token: "u", pid: 3 })).rejects.toThrow("boom");
   expect(JSON.parse(await readFile(daemonFilePath(), "utf8")).port).toBe(1);
+});
+
+test("an in-place edit made while the write is in flight is written by the next flush", async () => {
+  const store = new StateStore();
+  const board = await store.load("/repo/a");
+  await store.save(board);
+  let reached!: () => void;
+  const atRename = new Promise<void>((r) => (reached = r));
+  let release!: () => void;
+  const gate = new Promise<void>((r) => (release = r));
+  beforeRename = async () => {
+    reached();
+    await gate;
+  };
+  const first = store.flush();
+  await atRename;
+  beforeRename = null;
+  const same = await store.load("/repo/a");
+  same.workspaces[0]!.nodes.push({ ...note });
+  await store.save(same);
+  release();
+  await first;
+  await store.flush();
+  expect((await new StateStore().load("/repo/a")).workspaces[0]!.nodes).toHaveLength(1);
 });

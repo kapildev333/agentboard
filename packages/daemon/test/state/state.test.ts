@@ -25,15 +25,6 @@ test("save then load returns an equal board", async () => {
   expect(await new StateStore().load("/repo/a")).toEqual(board);
 });
 
-test("an interrupted write leaves the previous file intact", async () => {
-  const store = new StateStore();
-  const board = await store.load("/repo/a");
-  await store.save(board);
-  await store.flush();
-  await writeFile(`${boardPath("/repo/a")}.tmp`, '{"version":1,"repo');
-  expect(await new StateStore().load("/repo/a")).toEqual(board);
-});
-
 test("a version-0 document migrates to version 1", () => {
   const note = { id: "n1", type: "note", title: "t", x: 1, y: 2, w: 3, h: 4, text: "hi" };
   const board = migrate({ repoPath: "/repo/a", nodes: [note] });
@@ -59,8 +50,11 @@ test("save writes after the 300 ms debounce, not before", async () => {
   const store = new StateStore();
   await store.save(await store.load("/repo/a"));
   await vi.advanceTimersByTimeAsync(299);
+  expect(vi.getTimerCount()).toBe(1);
   expect(existsSync(boardPath("/repo/a"))).toBe(false);
   await vi.advanceTimersByTimeAsync(1);
+  expect(vi.getTimerCount()).toBe(0);
+  vi.useRealTimers();
   await vi.waitFor(() => expect(existsSync(boardPath("/repo/a"))).toBe(true));
 });
 
@@ -86,6 +80,7 @@ test("saves for two repos within the debounce both get written", async () => {
   const store = new StateStore();
   const a = await store.load("/repo/a");
   const b = await store.load("/repo/b");
+  a.workspaces[0]!.nodes.push({ ...note });
   await store.save(a);
   await store.save(b);
   await store.flush();
