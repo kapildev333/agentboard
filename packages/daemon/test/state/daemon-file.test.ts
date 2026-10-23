@@ -17,9 +17,9 @@ afterEach(async () => {
 test("the daemon file is mode 600", async () => {
   const file = new DaemonFile();
   expect(await file.read()).toBeNull();
-  await file.write({ port: 4321, token: "t", pid: 99 });
+  await file.write({ port: 4321, token: "t", pid: process.pid });
   expect((await stat(daemonFilePath())).mode & 0o777).toBe(0o600);
-  expect(await file.read()).toEqual({ port: 4321, token: "t", pid: 99 });
+  expect(await file.read()).toEqual({ port: 4321, token: "t", pid: process.pid });
   await file.remove();
   expect(await file.read()).toBeNull();
 });
@@ -45,4 +45,11 @@ test("read rejects a daemon file that fails the schema", async () => {
 test("an empty AGENTBOARD_HOME falls back to ~/.agentboard", () => {
   process.env.AGENTBOARD_HOME = "";
   expect(daemonFilePath()).toBe(join(homedir(), ".agentboard", "daemon.json"));
+});
+
+test("remove keeps a daemon file that names another daemon's pid (L10)", async () => {
+  const file = new DaemonFile();
+  await file.write({ port: 1, token: "t", pid: process.pid + 1 });
+  await file.remove();
+  expect(await file.read()).toEqual({ port: 1, token: "t", pid: process.pid + 1 });
 });
