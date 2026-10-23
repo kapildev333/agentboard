@@ -301,3 +301,24 @@ test("a foreign Origin or a cross-site fetch is refused on every method and the 
   ];
   for (const res of pages) expect(res.headers.get("content-security-policy")).toMatch(/frame-ancestors 'none'/);
 });
+
+test("a missing Origin passes only with the header token, never on the cookie alone", async () => {
+  const s = await start({
+    routes: { "POST /hook/:consoleId": async () => ({ ok: true }), "GET /api/status": async () => ({ consoles: [] }) },
+  });
+  const cookie = (await fetch(`${s.origin}/?code=${s.issueCode()}`, { redirect: "manual", headers: { "sec-fetch-site": "none" } }))
+    .headers.get("set-cookie")!.split(";")[0];
+  const hook = (headers: Record<string, string>) => fetch(`${s.origin}/hook/c1`, {
+    method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify({ agent: "claude", event: "Stop" }),
+  });
+  const ws = `${s.origin.replace("http", "ws")}/ws`;
+
+  expect((await hook({ cookie, "sec-fetch-site": "same-origin" })).status).toBe(403);
+  expect((await hook({ cookie, "sec-fetch-site": "same-origin", origin: s.origin })).status).toBe(200);
+  expect((await hook({ "x-agentboard-token": token })).status).toBe(200);
+  expect(await upgrade(ws, { cookie })).toEqual({ opened: false, status: 403 });
+  expect(await upgrade(ws, { cookie, origin: s.origin })).toEqual({ opened: true });
+  expect(await upgrade(ws, { "x-agentboard-token": token })).toEqual({ opened: true });
+  expect((await fetch(`${s.origin}/api/status`, { headers: { cookie } })).status).toBe(403);
+  expect((await fetch(`${s.origin}/api/status`, { headers: { cookie, "sec-fetch-site": "same-origin" } })).status).toBe(200);
+});
