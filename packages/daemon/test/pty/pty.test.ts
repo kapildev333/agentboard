@@ -25,4 +25,15 @@ describe("PtyManager", () => {
     await until(() => out, "hi");
     await m.kill("a");
   });
+
+  it("resize changes stty size", async () => {
+    const m = new PtyManager();
+    let out = "";
+    sh(m, "r");
+    m.onData("r", (d) => (out += d));
+    m.resize("r", 100, 30);
+    m.write("r", "stty size\n");
+    await until(() => out, "30 100");
+    await m.kill("r");
+  });
 });
