@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent } from "react";
 import type { ConsoleNode } from "@agentboard/shared";
 import { useBoard } from "../board";
 
@@ -6,8 +6,8 @@ const consoles = () =>
   useBoard.getState().board.workspaces.flatMap((w) => w.nodes.filter((n): n is ConsoleNode => n.type === "console"));
 
 export function useNotifications({ onFocus }: { onFocus: (nodeId: string) => void }): void {
-  const focus = useRef(onFocus);
-  focus.current = onFocus;
+  // The latest onFocus without re-running the effect (L17: replaces a ref written during render).
+  const focus = useEffectEvent((nodeId: string) => onFocus(nodeId));
   useEffect(() => {
     // Asks for notification permission once, on the first user gesture.
     let asked = false;
@@ -33,7 +33,7 @@ export function useNotifications({ onFocus }: { onFocus: (nodeId: string) => voi
             note.onclick = () => {
               window.focus(); // Chrome does not raise the tab on a notification click
               note.close();
-              focus.current(n.id);
+              focus(n.id);
             };
           }
         }
