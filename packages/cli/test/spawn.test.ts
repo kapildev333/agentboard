@@ -99,7 +99,7 @@ test("spawn custom --id sends the customId", async () => {
 test("spawn custom without --id fails before any request", async () => {
   const lines: string[] = [];
   expect(await spawnCommand(["custom"], { log: (s) => lines.push(s) })).toBe(1);
-  expect(JSON.parse(lines[0]!).error).toBe("custom agents need --id <id> (see agentboard status --json for the ids)");
+  expect(JSON.parse(lines[0]!).error).toBe("custom agents need --id <id>; the ids are the custom agents in the board settings (GET /api/agents lists them)");
   expect(seen).toHaveLength(0);
 });
 

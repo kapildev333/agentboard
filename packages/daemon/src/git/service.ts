@@ -25,7 +25,9 @@ export class GitService {
     const g = simpleGit(repoPath);
     await g.raw(["worktree", "add", "-b", name, path, base]);
     // The base lives in the branch config: no upstream is set (it would break hasUnpushed), and status reads it back by path.
-    await g.raw(["config", `branch.${name}.agentboardBase`, base]);
+    // Only a real ref is recorded: HEAD, HEAD~n and shas would resolve inside the worktree to its own commits.
+    const ref = (await g.raw(["rev-parse", "--symbolic-full-name", base]).catch(() => "")).trim();
+    if (ref.startsWith("refs/")) await g.raw(["config", `branch.${name}.agentboardBase`, ref]);
     const exclude = (await g.raw(["rev-parse", "--path-format=absolute", "--git-path", "info/exclude"])).trim();
     const current = existsSync(exclude) ? readFileSync(exclude, "utf8") : "";
     if (!current.split("\n").includes(".worktrees/")) appendFileSync(exclude, `${current && !current.endsWith("\n") ? "\n" : ""}.worktrees/\n`);
@@ -49,11 +51,10 @@ export class GitService {
       ? (await g.raw(["log", "-1", "--format=%H%x00%s%x00%cI"])).trim().split("\0")
       : [];
     const base = await this.baseOf(g);
-    const count = async (range: string) => Number((await g.raw(["rev-list", "--count", range])).trim());
     return {
       branch: st.current ?? "HEAD",
-      ahead: base ? await count(`${base}..HEAD`) : st.ahead,
-      behind: base ? await count(`HEAD..${base}`) : st.behind,
+      ahead: base ? await this.count(g, `${base}..HEAD`) : st.ahead,
+      behind: base ? await this.count(g, `HEAD..${base}`) : st.behind,
       dirty: st.files.length,
       lastCommit: sha ? { sha, subject, when } : null,
     };
@@ -103,8 +104,12 @@ export class GitService {
     return base && (await g.raw(["rev-parse", "--verify", "-q", base]).then((o) => o.trim() !== "", () => false)) ? base : "";
   }
 
+  private async count(g: SimpleGit, ...a: string[]): Promise<number> {
+    return Number((await g.raw(["rev-list", "--count", ...a])).trim());
+  }
+
   private async hasUnpushed(g: SimpleGit): Promise<boolean> {
-    const count = async (...a: string[]) => Number((await g.raw(["rev-list", "--count", ...a])).trim());
+    const count = (...a: string[]) => this.count(g, ...a);
     try {
       return (await count("@{u}..HEAD")) > 0;
     } catch {
