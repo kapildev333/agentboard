@@ -122,6 +122,9 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
   const launch = (node: ConsoleNode, custom: CustomAgent | undefined, resume: boolean, prompt?: string) => {
     const ctx = { consoleId: node.id, sessionId: node.session?.id ?? "", daemonUrl: origin, token, name: node.title, prompt, custom };
     const l = resume && node.session ? resumeArgs(node.agent, node.session.id, ctx) : launchArgs(node.agent, ctx);
+    // Run the file the catalog listed, found on the agent PATH, never whatever the login PATH holds (D38).
+    const file = node.agent === "custom" ? l.command : AgentCatalog.resolve(l.command, agentPath);
+    if (!file) throw new HttpError(400, `${l.command} is not on the agent PATH`);
     let needsYou: RegExp[] | undefined;
     try {
       needsYou = custom?.needsYou ? [new RegExp(custom.needsYou)] : undefined;
@@ -130,12 +133,13 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     }
     tracker.markStarting(node.id, node.agent, { needsYou });
     try {
-      pty.spawn({ id: node.id, command: l.command, args: l.args, cwd: node.cwd, env: { ...env, ...l.env }, cols: 80, rows: 24 });
+      pty.spawn({ id: node.id, command: file, args: l.args, cwd: node.cwd, env: { ...env, ...l.env }, cols: 80, rows: 24 });
     } catch (e) {
       tracker.markExit(node.id);
       throw new HttpError(400, `could not start ${l.command}: ${(e as Error).message}`);
     }
     running.add(node.id);
+    if (node.agent !== "custom") void AgentCatalog.readVersion(l.command, { path: agentPath });
     pty.onData(node.id, (data) => {
       tracker.markOutput(node.id, data);
       server.broadcast({ t: "output", consoleId: node.id, data });
