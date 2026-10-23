@@ -68,7 +68,7 @@ it("the notification is tagged by node, and its click focuses the window, closes
   const onFocus = vi.fn(() => void order.push("node"));
   renderHook(() => useNotifications({ onFocus }));
   act(() => setStatuses({ c1: "needs_you", c2: "idle" }));
-  expect(N.mock.calls[0]![1]).toEqual({ body: "claude", tag: "c1" });
+  expect(N.mock.calls[0]![1]).toEqual({ body: "claude", tag: "c1", renotify: true });
   const note = N.mock.instances[0] as unknown as { onclick: () => void; close: () => void };
   note.close = vi.fn(() => void order.push("close"));
   note.onclick();
@@ -161,5 +161,49 @@ it("a visible tab creates no Notification", () => {
   renderHook(() => useNotifications({ onFocus: () => {} }));
   act(() => setStatuses({ c1: "needs_you", c2: "idle" }));
   expect(N).not.toHaveBeenCalled();
+  expect(document.title).toBe("(1) AgentBoard");
+});
+
+it("only a change to needs_you notifies, once per console", () => {
+  const N = fakeNotification();
+  hidden(true);
+  setStatuses({ c1: "needs_you", c2: "working" });
+  renderHook(() => useNotifications({ onFocus: () => {} }));
+  act(() => setStatuses({ c1: "needs_you", c2: "working", c3: "needs_you" }));
+  expect(N).not.toHaveBeenCalled();
+  act(() => setStatuses({ c1: "needs_you", c2: "needs_you", c3: "needs_you" }));
+  expect(N).toHaveBeenCalledTimes(1);
+  expect(N.mock.calls[0]![1]).toMatchObject({ tag: "c2" });
+});
+
+it("a pointerdown then a keydown request permission once", () => {
+  const N = fakeNotification();
+  Object.assign(N, { permission: "default" });
+  renderHook(() => useNotifications({ onFocus: () => {} }));
+  window.dispatchEvent(new Event("pointerdown"));
+  window.dispatchEvent(new Event("keydown"));
+  expect(N.requestPermission).toHaveBeenCalledTimes(1);
+});
+
+it("a denied permission creates no Notification", () => {
+  const N = fakeNotification();
+  Object.assign(N, { permission: "denied" });
+  hidden(true);
+  renderHook(() => useNotifications({ onFocus: () => {} }));
+  act(() => setStatuses({ c1: "needs_you", c2: "idle" }));
+  expect(N).not.toHaveBeenCalled();
+});
+
+it("the map shows the active workspace only, the title counts every workspace", () => {
+  setStatuses({ c1: "working" });
+  const { board } = useBoard.getState();
+  useBoard.getState().setBoard({
+    ...board,
+    workspaces: [...board.workspaces, { id: "b", name: "B", viewport: { x: 0, y: 0, zoom: 1 }, nodes: [consoleNode("far", "needs_you")] }],
+  });
+  render(<MissionMap onFocus={() => {}} />);
+  renderHook(() => useNotifications({ onFocus: () => {} }));
+  expect(screen.queryByText(/T-far/)).toBeNull();
+  expect(screen.getByText(/T-c1/)).toBeTruthy();
   expect(document.title).toBe("(1) AgentBoard");
 });
