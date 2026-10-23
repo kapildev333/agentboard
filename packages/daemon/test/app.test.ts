@@ -280,3 +280,13 @@ test("after /clear the console adopts the next session id once, then D34 guards 
   await hook("Stop", { session_id: "nested-again" });
   expect(await session()).toBe("after-clear");
 });
+
+test("a spawn that cannot launch leaves no worktree behind", async () => {
+  const s = setup();
+  spawnSync("git", ["init", "-q", "-b", "main", s.repo]);
+  spawnSync("git", ["-C", s.repo, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "--allow-empty", "-m", "init"]);
+  const d = await start(s);
+  const res = await d.call("POST", "/api/consoles", { agent: "codex", cwd: s.repo, worktree: "wt" });
+  expect(res.status).toBe(400);
+  expect(existsSync(join(s.repo, ".worktrees", "wt"))).toBe(false);
+});
