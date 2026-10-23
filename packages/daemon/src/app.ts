@@ -121,7 +121,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     return custom;
   };
 
-  const launch = (node: ConsoleNode, custom: CustomAgent | undefined, resume: boolean, prompt?: string) => {
+  // Everything that can refuse a launch, checked before any side effect such as a worktree.
+  const prepare = (node: ConsoleNode, custom: CustomAgent | undefined, resume: boolean, prompt?: string) => {
     const ctx = { consoleId: node.id, sessionId: node.session?.id ?? "", daemonUrl: origin, token, name: node.title, prompt, custom };
     const l = resume && node.session ? resumeArgs(node.agent, node.session.id, ctx) : launchArgs(node.agent, ctx);
     // Run the file the catalog listed, found on the agent PATH, never whatever the login PATH holds (D38).
@@ -133,6 +134,9 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     } catch {
       throw new HttpError(400, `invalid needs-you rule for ${custom!.name}`);
     }
+    return { l, file, needsYou };
+  };
+  const start = (node: ConsoleNode, { l, file, needsYou }: ReturnType<typeof prepare>) => {
     tracker.markStarting(node.id, node.agent, { needsYou });
     try {
       pty.spawn({ id: node.id, command: file, args: l.args, cwd: node.cwd, env: { ...env, ...l.env }, cols: 80, rows: 24 });
@@ -200,23 +204,17 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       const ws = caller?.ws ?? board.workspaces.find((w) => w.id === board.activeWorkspaceId) ?? board.workspaces[0];
       if (!ws) throw new HttpError(400, "board has no workspace");
       const custom = req.agent === "custom" ? await customFor(req.customId) : undefined;
-      let worktree: ConsoleNode["worktree"];
-      if (req.worktree) {
-        const base = (await git.status({ path: repo })).branch;
-        worktree = await git.worktree({ repo, name: req.worktree, base });
-      }
       const now = new Date().toISOString();
       const name = custom?.name ?? NAMES[req.agent];
       const node: ConsoleNode = {
         id: randomUUID(),
         type: "console",
-        title: worktree ? `${name}: ${worktree.branch}` : name,
+        title: req.worktree ? `${name}: ${req.worktree}` : name,
         ...place(ws, caller?.node),
         w: W,
         h: H,
         agent: req.agent,
-        cwd: worktree?.path ?? req.cwd,
-        ...(worktree && { worktree }),
+        cwd: req.cwd,
         // Claude takes its session id from us (--session-id); the others report theirs in a hook.
         ...(req.agent === "claude" && { session: { provider: "claude" as const, id: randomUUID() } }),
         ...(custom && { customId: custom.id }),
@@ -224,9 +222,15 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
         createdAt: now,
         lastActiveAt: now,
       };
+      const prepared = prepare(node, custom, false, req.prompt);
+      if (req.worktree) {
+        const base = (await git.status({ path: repo })).branch;
+        node.worktree = await git.worktree({ repo, name: req.worktree, base });
+        node.cwd = node.worktree.path;
+      }
       ws.nodes.push(node);
       try {
-        launch(node, custom, false, req.prompt);
+        start(node, prepared);
       } catch (e) {
         ws.nodes = ws.nodes.filter((n) => n.id !== node.id);
         tracker.remove(node.id);
@@ -253,7 +257,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       const custom = f.node.agent === "custom" ? await customFor(f.node.customId) : undefined;
       // A custom agent has no resume, and claude starts a fresh session when it has none: both launch fresh.
       if (f.node.agent === "claude" && !f.node.session) f.node.session = { provider: "claude", id: randomUUID() };
-      launch(f.node, custom, f.node.agent !== "custom" && f.node.session !== undefined);
+      start(f.node, prepare(f.node, custom, f.node.agent !== "custom" && f.node.session !== undefined));
       changed(f.board);
       return f.node;
     },
