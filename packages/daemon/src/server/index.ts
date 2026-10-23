@@ -77,7 +77,7 @@ export async function createServer(opts: ServerOptions) {
       }).end();
       return;
     }
-    const refused = refuse(req);
+    const refused = refuse(req, req.method !== "GET");
     if (refused) return end(res, refused);
     if (req.method === "POST" && url.pathname === "/auth/code") {
       // Header token only: the CLI and MCP mint codes, a page holding the cookie does not.
@@ -96,16 +96,21 @@ export async function createServer(opts: ServerOptions) {
     const site = req.headers["sec-fetch-site"];
     return ownHost(req, port) && ownOrigin(req, port) && (site === undefined || site === "same-origin" || site === "none");
   };
-  const refuse = (req: http.IncomingMessage): number =>
-    !sameSite(req) ? 403
-      : !hasAuth(req) ? 401
-      : 0;
-  const hasAuth = (req: http.IncomingMessage): boolean => {
+  // strict: non-GET or upgrade, where browsers always send Origin. A cookie request must prove it came
+  // from the board itself: by Origin, or on a GET by Sec-Fetch-Site; only header callers may send neither.
+  const refuse = (req: http.IncomingMessage, strict: boolean): number => {
+    if (!sameSite(req)) return 403;
+    const auth = authOf(req);
+    if (!auth) return 401;
+    const proven = req.headers.origin !== undefined || (!strict && req.headers["sec-fetch-site"] !== undefined);
+    return auth === "cookie" && !proven ? 403 : 0;
+  };
+  const authOf = (req: http.IncomingMessage): "header" | "cookie" | null => {
     const header = req.headers["x-agentboard-token"];
-    if (typeof header === "string") return same(header, opts.token);
+    if (typeof header === "string") return same(header, opts.token) ? "header" : null;
     const name = `agentboard_${port}=`;
     const cookie = req.headers.cookie?.split(";").map((c) => c.trim()).find((c) => c.startsWith(name));
-    return cookie !== undefined && sessions.has(cookie.slice(name.length));
+    return cookie !== undefined && sessions.has(cookie.slice(name.length)) ? "cookie" : null;
   };
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_BODY });
   const attached = new Map<WebSocket, Set<string>>();
@@ -124,7 +129,7 @@ export async function createServer(opts: ServerOptions) {
     socket.on("error", () => socket.destroy());
     const url = target(req);
     if (!url) return void socket.destroy();
-    const status = url.pathname !== "/ws" ? 404 : refuse(req);
+    const status = url.pathname !== "/ws" ? 404 : refuse(req, true);
     if (status) {
       socket.end(`HTTP/1.1 ${status} ${http.STATUS_CODES[status]}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
       return;
@@ -167,7 +172,7 @@ function ownHost(req: http.IncomingMessage, port: number): boolean {
   return req.headers.host === `127.0.0.1:${port}` || req.headers.host === `localhost:${port}`;
 }
 
-// An absent Origin is a non-browser client (a CLI hook); browsers always send one on these requests.
+// An absent Origin passes here; refuse decides whether the caller may omit it.
 function ownOrigin(req: http.IncomingMessage, port: number): boolean {
   const origin = req.headers.origin;
   return origin === undefined || origin === `http://127.0.0.1:${port}` || origin === `http://localhost:${port}`;
