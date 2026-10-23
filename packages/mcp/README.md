@@ -9,7 +9,7 @@ npm run build -w @agentboard/mcp
 npm link -w @agentboard/mcp    # puts agentboard-mcp on PATH
 ```
 
-Without `npm link`, use `node <repo>/packages/mcp/dist/bin.js` in place of `agentboard-mcp` below.
+Without `npm link`, use `node <repo>/packages/mcp/bin/agentboard-mcp.js` in place of `agentboard-mcp` below.
 
 Tools: `open_board`, `spawn_console`, `list_consoles`, `add_note`, `get_status`.
 
