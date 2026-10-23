@@ -63,7 +63,7 @@ export function SpawnDialog({ fetch, cwd, onSpawned }: { fetch: Fetch; cwd: stri
         {agents.map((a) => (
         <label key={a.id} style={{ display: "block", opacity: a.available ? 1 : 0.4 }}>
           <input type="radio" name="agent" value={a.id} disabled={!a.available} checked={agent === a.id} onChange={() => setAgent(a.id)} />
-          {a.id} {a.version ?? "not installed"}
+          {a.id} {a.available ? a.version : "not installed"}
         </label>
         ))}
       </fieldset>
