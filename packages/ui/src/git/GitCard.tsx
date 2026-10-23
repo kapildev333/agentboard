@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
-import { GitStatusSchema } from "@agentboard/shared";
+import { GitStatusSchema, PrResponseSchema } from "@agentboard/shared";
 import { DiffView } from "./DiffView";
 
 type Status = ReturnType<typeof GitStatusSchema.parse>;
 
-export function GitCard({ fetch, path, intervalMs = 10_000 }: { fetch: typeof globalThis.fetch; path: string; intervalMs?: number }) {
+export function GitCard({
+  fetch,
+  path,
+  intervalMs = 10_000,
+  open = (url) => void window.open(url, "_blank", "noopener"),
+}: {
+  fetch: typeof globalThis.fetch;
+  path: string;
+  intervalMs?: number;
+  open?: (url: string) => void;
+}) {
   const [status, setStatus] = useState<Status>();
   const [showDiff, setShowDiff] = useState(false);
   const [committing, setCommitting] = useState(false);
@@ -41,6 +51,15 @@ export function GitCard({ fetch, path, intervalMs = 10_000 }: { fetch: typeof gl
       <div>
         <button onClick={() => setShowDiff(!showDiff)}>Diff</button>
         <button onClick={() => setCommitting(!committing)}>Commit</button>
+        <button onClick={() => post("push", { path })}>Push</button>
+        <button
+          onClick={async () => {
+            const pr = await post("pr", { path, title: status.lastCommit?.subject ?? status.branch });
+            if (pr) open(PrResponseSchema.parse(pr).url);
+          }}
+        >
+          Open PR
+        </button>
       </div>
       {committing && (
         <form
