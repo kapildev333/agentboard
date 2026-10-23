@@ -115,6 +115,15 @@ describe("StatusTracker", () => {
     expect(t.get("c1")).toBe("exited");
   });
 
+  it("a hook-driven exit is not final: claude keeps running after SessionEnd on /clear", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "claude");
+    t.handleHook("c1", { event: "SessionEnd" });
+    expect(t.get("c1")).toBe("exited");
+    t.handleHook("c1", { event: "UserPromptSubmit" });
+    expect(t.get("c1")).toBe("working");
+  });
+
   it("global regex rules match every chunk", () => {
     const t = new StatusTracker();
     t.markStarting("c1", "custom", { needsYou: [/ask/g] });
