@@ -1,18 +1,29 @@
+import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { BoardSchema, type NoteNode } from "@agentboard/shared";
 import { api } from "../api.js";
 import { ensureDaemon } from "../daemonFile.js";
 
+// Boards are keyed by the exact repo path, so default to the main repo root, not a subdirectory or linked worktree.
+function mainRepoRoot(cwd: string): string {
+  try {
+    const common = execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    return dirname(common.trim());
+  } catch {
+    return cwd; // not a git repo
+  }
+}
+
 // ponytail: read-modify-write of the whole board; a concurrent UI edit can be lost until a notes route exists.
-export async function noteCommand(args: string[], deps: { log?: (line: string) => void } = {}): Promise<number> {
+export async function noteCommand(args: string[], deps: { log?: (line: string) => void; cwd?: string } = {}): Promise<number> {
   const log = deps.log ?? console.log;
   try {
     const { values, positionals } = parseArgs({ args, allowPositionals: true, options: { repo: { type: "string" } } });
     const text = positionals.join(" ");
     if (!text) throw new Error("usage: agentboard note <text> [--repo <path>]");
-    const repo = resolve(values.repo ?? process.cwd());
+    const repo = resolve(values.repo ?? mainRepoRoot(deps.cwd ?? process.cwd()));
     const info = await ensureDaemon(repo);
     const board = BoardSchema.parse(await api(info, "GET", `/api/board?repo=${encodeURIComponent(repo)}`));
     const ws = board.workspaces.find((w) => w.id === board.activeWorkspaceId);

@@ -12,6 +12,7 @@ export async function spawnCommand(args: string[], deps: { log?: (line: string) 
       allowPositionals: true,
       options: { worktree: { type: "string" }, prompt: { type: "string" }, repo: { type: "string" } },
     });
+    if (positionals.length !== 1) throw new Error("usage: agentboard spawn <agent> [--worktree <name>] [--prompt <text>] [--repo <path>]");
     const body = SpawnConsoleRequestSchema.parse({
       agent: positionals[0],
       cwd: resolve(values.repo ?? process.cwd()),
