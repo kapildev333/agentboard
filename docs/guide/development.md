@@ -67,22 +67,6 @@ The agent in every test is `packages/e2e/fake-agent/index.mjs`, registered as a 
 
 No test ever runs codex, gemini, opencode or another third-party agent (ruling D31). macOS blocks unsigned binaries with a dialog, and running the real CLIs is the owner's check at a gate.
 
-## Running the daemon on a build machine
-
-Each time the spawn dialog opens (`GET /api/agents`), the agent catalog runs `<cli> --version` on every agent CLI it finds. On a machine with third-party agents installed, that executes them. Until the daemon can skip the probe (ruling D38), a worker or script that runs the daemon, the CLI or the MCP server follows two rules.
-
-**1. Use a PATH with no third-party agent on it.** Make a scratch bin folder inside your worktree that holds only symlinks to `node`, `npm`, `git`, `gh`, `sh` and the fake agent. Put `PATH=<that folder>` in front of every daemon, CLI and MCP command. Before any run, check that `PATH=<that folder> command -v codex` prints nothing; do the same for `gemini` and `opencode`.
-
-**2. Narrow the catalog's PATH as well.** The PATH from rule 1 is not enough on its own. The daemon reads PATH again from your login shell (`$SHELL -ilc env`), and on macOS the login files rebuild it, so `/usr/local/bin` comes back. Run the daemon through the `agentboard-daemon` bin with `AGENTBOARD_AGENT_PATH` set to an empty folder, the way the e2e does:
-
-```sh
-mkdir -p /tmp/empty-agent-path
-AGENTBOARD_HOME=<scratch home> AGENTBOARD_AGENT_PATH=/tmp/empty-agent-path \
-  PATH=<scratch bin> node packages/daemon/bin/agentboard-daemon.js
-```
-
-Start that daemon before any `agentboard open`, `spawn` or `note`, so those commands reuse it instead of starting their own. `agentboard start` and a daemon started by `agentboard open` scan the full login-shell PATH. Never open the spawn dialog on such a daemon on a build machine.
-
 ## The gate
 
 `scripts/gate.sh` replaces CI. It runs from any worktree and prints `== gate: PASS` last. In order, it:
