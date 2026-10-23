@@ -342,3 +342,18 @@ test("close resolves while a client holds a refused upgrade open", async () => {
     socket.destroy();
   }
 });
+
+test("the token is accepted as Authorization: Bearer as well as the header", async () => {
+  const s = await start({ routes: { "POST /hook/:consoleId": async () => ({ ok: true }) } });
+  const hook = (authorization: string) => fetch(`${s.origin}/hook/c1`, {
+    method: "POST", headers: { authorization, "content-type": "application/json" },
+    body: JSON.stringify({ agent: "codex", event: "agent-turn-complete" }),
+  });
+  expect((await hook(`Bearer ${token}`)).status).toBe(200);
+  expect((await hook(`bearer ${token}`)).status).toBe(200);
+  expect((await hook("Bearer wrong")).status).toBe(401);
+  expect((await hook(`Basic ${token}`)).status).toBe(401);
+  expect((await hook("Bearer ")).status).toBe(401);
+  expect((await fetch(`${s.origin}/auth/code`, { method: "POST", headers: { authorization: `Bearer ${token}` } })).status).toBe(200);
+  expect(await upgrade(`${s.origin.replace("http", "ws")}/ws`, { authorization: `Bearer ${token}` })).toEqual({ opened: true });
+});
