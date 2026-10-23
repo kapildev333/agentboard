@@ -1,5 +1,6 @@
 import { spawn as nodeSpawn } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { DaemonInfoSchema, daemonFilePath, type DaemonInfo } from "@agentboard/shared";
 
 type Env = Record<string, string | undefined>;
@@ -33,11 +34,16 @@ export async function isAlive(info: DaemonInfo): Promise<boolean> {
 export async function ensureDaemon(cwd: string, spawn: typeof nodeSpawn = nodeSpawn, timeoutMs = 10_000): Promise<DaemonInfo> {
   const live = await readDaemonInfo();
   if (live && (await isAlive(live))) return live;
-  const daemon = spawn(process.execPath, [process.argv[1] ?? "", "start"], { cwd, stdio: "ignore", detached: true, windowsHide: true });
+  // This package's own bin, so a caller such as the MCP server never re-runs its own script as the daemon.
+  const bin = fileURLToPath(new URL("./bin.js", import.meta.url));
+  const daemon = spawn(process.execPath, [bin, "start"], { cwd, stdio: "ignore", detached: true, windowsHide: true });
+  let exitCode: number | null | undefined;
   daemon.on("error", () => {}); // surfaces as the timeout below
+  daemon.on("exit", (code: number | null) => (exitCode = code));
   daemon.unref();
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
+    if (exitCode !== undefined) throw new Error(`daemon exited (${exitCode}); run agentboard start to see why`);
     const next = await readDaemonInfo();
     if (next && (await isAlive(next))) return next;
     await new Promise((r) => setTimeout(r, 100));
