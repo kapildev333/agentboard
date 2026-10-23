@@ -38,5 +38,5 @@ export async function ensureDaemon(cwd: string, spawn: typeof nodeSpawn = nodeSp
     if (next && (await isAlive(next))) return next;
     await new Promise((r) => setTimeout(r, 100));
   }
-  throw new Error("daemon did not start within 10 seconds");
+  throw new Error(`daemon did not start within ${timeoutMs / 1000} seconds`);
 }
