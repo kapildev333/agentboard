@@ -117,6 +117,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     }
   };
   const customFor = async (customId: string | undefined) => {
+    if (!customId) throw new HttpError(400, "custom agents need a customId");
     const custom = (await settings()).customAgents.find((c) => c.id === customId);
     if (!custom) throw new HttpError(400, `unknown custom agent: ${customId}`);
     return custom;
