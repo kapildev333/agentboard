@@ -28,8 +28,9 @@ describe("AgentBoard plugin", () => {
     const hooks = (await AgentBoard()) as Required<Awaited<ReturnType<typeof AgentBoard>>>;
     await hooks.event({ event: { type: "permission.asked", properties: { id: "p" } } });
     await hooks.event({ event: { type: "message.updated", properties: {} } });
+    await hooks.event({ event: { type: "session.created", properties: { info: { id: "s1" } } } });
     await hooks["tool.execute.before"]({ tool: "bash" });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
