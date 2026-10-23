@@ -56,3 +56,60 @@ test("worktreeRemove refuses unpushed commits", async () => {
   await svc().worktreeRemove(path, { force: true });
   expect(existsSync(path)).toBe(false);
 });
+
+test("status counts ahead and behind against the upstream", async () => {
+  const repo = makeRepo();
+  const remote = tmp("remote");
+  git(remote, "init", "--bare", "-b", "main");
+  git(repo, "remote", "add", "origin", remote);
+  git(repo, "push", "-u", "origin", "main");
+  const other = tmp("other");
+  git(other, "clone", remote, ".");
+  writeFileSync(join(other, "r.txt"), "r\n");
+  git(other, "add", ".");
+  git(other, "commit", "-m", "remote work");
+  git(other, "push");
+  git(repo, "fetch");
+  writeFileSync(join(repo, "l.txt"), "l\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "local work");
+  writeFileSync(join(repo, "u.txt"), "u\n");
+  const s = await svc().status(repo);
+  expect(s).toMatchObject({ branch: "main", ahead: 1, behind: 1, dirty: 1 });
+  expect(s.lastCommit).toMatchObject({ subject: "local work" });
+  expect(s.lastCommit.sha).toMatch(/^[0-9a-f]{40}$/);
+});
+
+test("diff lists a changed file and returns a patch", async () => {
+  const repo = makeRepo();
+  writeFileSync(join(repo, "a.txt"), "one\ntwo\n");
+  const d = await svc().diff(repo);
+  expect(d.files).toEqual([{ path: "a.txt", status: "M" }]);
+  expect(d.patch).toContain("+two");
+});
+
+test("commit and push set upstream on first push", async () => {
+  const repo = makeRepo();
+  const remote = tmp("remote");
+  git(remote, "init", "--bare", "-b", "main");
+  git(repo, "remote", "add", "origin", remote);
+  writeFileSync(join(repo, "c.txt"), "c\n");
+  const { sha } = await svc().commit(repo, "add c");
+  expect(sha).toBe(git(repo, "rev-parse", "HEAD"));
+  await svc().push(repo);
+  expect(git(repo, "rev-parse", "--abbrev-ref", "@{u}")).toBe("origin/main");
+  expect(git(remote, "rev-parse", "main")).toBe(sha);
+});
+
+test("createPr calls gh with the title and body", async () => {
+  const calls: [string, string[], string][] = [];
+  const s = new GitService({
+    exec: async (cmd, args, o) => {
+      calls.push([cmd, args, o.cwd]);
+      return "https://github.com/o/r/pull/7\n";
+    },
+  });
+  const { url } = await s.createPr("/wt", { title: "T", body: "B" });
+  expect(url).toBe("https://github.com/o/r/pull/7");
+  expect(calls).toEqual([["gh", ["pr", "create", "--title", "T", "--body", "B"], "/wt"]]);
+});
