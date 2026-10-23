@@ -21,6 +21,9 @@ export type StatusResponse = z.infer<typeof s.StatusResponseSchema>;
 export type HookRequest = z.infer<typeof s.HookRequestSchema>;
 export type GitStatus = z.infer<typeof s.GitStatusSchema>;
 export type GitDiff = z.infer<typeof s.GitDiffSchema>;
+export type CustomAgent = z.infer<typeof s.CustomAgentSchema>;
+export type Settings = z.infer<typeof s.SettingsSchema>;
+export type OpenRequest = z.infer<typeof s.OpenRequestSchema>;
 
 // Lives in daemon code, never on the wire, so it has no schema: resume is a function.
 export type AgentDef = {

@@ -4,3 +4,4 @@ export type * from "./types.js";
 export * from "./protocol.js";
 export * from "./status-map.js";
 export * from "./routes.js";
+export * from "./paths.js";
