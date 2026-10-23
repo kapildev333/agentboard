@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
-import { GitDiffSchema } from "@agentboard/shared";
+import { GitDiffSchema, type GitDiff } from "@agentboard/shared";
+import { readJson } from "./http";
 
-type Diff = ReturnType<typeof GitDiffSchema.parse>;
+const colors = { added: "#1a7f37", removed: "#cf222e" };
 
 export function DiffView({ fetch, path }: { fetch: typeof globalThis.fetch; path: string }) {
-  const [diff, setDiff] = useState<Diff>();
+  const [diff, setDiff] = useState<GitDiff>();
   const [error, setError] = useState<string>();
   useEffect(() => {
     fetch(`/api/git/diff?path=${encodeURIComponent(path)}`)
-      .then((res) => res.json())
+      .then(readJson)
       .then((body) => setDiff(GitDiffSchema.parse(body)))
       .catch((e: Error) => setError(e.message));
   }, [fetch, path]);
@@ -24,11 +25,15 @@ export function DiffView({ fetch, path }: { fetch: typeof globalThis.fetch; path
         ))}
       </ul>
       <pre style={{ fontFamily: "monospace" }}>
-        {diff.patch.split("\n").map((line, i) => (
-          <div key={i} className={line.startsWith("+") ? "added" : line.startsWith("-") ? "removed" : undefined}>
-            {line}
-          </div>
-        ))}
+        {diff.patch.split("\n").map((line, i) => {
+          const header = line.startsWith("+++") || line.startsWith("---");
+          const kind = header ? undefined : line.startsWith("+") ? "added" : line.startsWith("-") ? "removed" : undefined;
+          return (
+            <div key={i} className={kind} style={kind ? { color: colors[kind] } : undefined}>
+              {line}
+            </div>
+          );
+        })}
       </pre>
     </div>
   );
