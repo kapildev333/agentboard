@@ -7,7 +7,7 @@ Every agent the board launches reports its status to the daemon at `POST /hook/<
 | Agent | How it is hooked | Your config |
 | --- | --- | --- |
 | Claude Code | `--settings '{"hooks":…}'` with command hooks for `UserPromptSubmit`, `PreToolUse`, `Stop`, `Notification`, `PermissionRequest`, `SessionEnd`. Inline settings merge with your user, project and plugin hooks, so yours still run | Untouched |
-| Codex | `-c notify=["<node>","<relay>"]` overrides `notify` for this launch only. Codex runs the relay after each turn | Untouched |
+| Codex | `-c notify=["<node>","<relay>"]` overrides `notify` for this launch only. Codex runs the relay after each turn | Untouched, but your own `notify` command does not run inside board consoles: the override replaces it, as `notify` takes one command (L06) |
 | Gemini CLI | A settings file holding `BeforeAgent`, `AfterAgent` and `Notification` hooks, written to a private temporary folder and passed as `GEMINI_CLI_SYSTEM_DEFAULTS_PATH`, Gemini's lowest-precedence layer. Hook lists merge, so yours still run | Untouched |
 | OpenCode | `OPENCODE_CONFIG_CONTENT='{"plugin":["file://<checkout>/packages/plugins/opencode/dist/agentboard.js"]}'` loads the plugin bundle from your checkout for this launch | Untouched |
 
@@ -48,26 +48,9 @@ Board-launched Claude consoles report status with or without the plugin. Install
 
 `npm run build` (or `npm run build -w packages/plugins` alone) writes the bundle to `packages/plugins/opencode/dist/agentboard.js`.
 
-**Board consoles need no install.** Every OpenCode console the board launches loads the bundle from your checkout through `OPENCODE_CONFIG_CONTENT`. Its `zod` import resolves from the checkout's `node_modules`.
+**There is nothing to install.** Every OpenCode console the board launches loads the bundle from your checkout through `OPENCODE_CONFIG_CONTENT`. Its `zod` import resolves from the checkout's `node_modules`.
 
-**For plain `opencode` sessions**, install it globally so the agent gets the `agentboard_spawn` tool there too. Symlink it:
-
-```sh
-mkdir -p ~/.config/opencode/plugins
-ln -s /path/to/agentboard/packages/plugins/opencode/dist/agentboard.js ~/.config/opencode/plugins/agentboard.js
-```
-
-Or add it to `opencode.json`:
-
-```json
-{ "plugin": ["file:///path/to/agentboard/packages/plugins/opencode/dist/agentboard.js"] }
-```
-
-Rules for installing it:
-
-- Install only the bundled `dist/agentboard.js`. Never copy the source folder: OpenCode loads every file in its plugins folder as a plugin and calls every export, and the helper file breaks its loader.
-- `zod` is left out of the bundle and must resolve from the file's folder. A symlink or a `file://` entry into the checkout resolves the checkout's copy. A copied file needs `{"dependencies":{"zod":"4.6.7"}}` in `~/.config/opencode/package.json`.
-- In a board console with the global plugin installed as well, OpenCode loads it twice and each event is posted twice. The status tracker ignores the repeat.
+Do not install it globally in `~/.config/opencode/plugins/` or `opencode.json`. Outside a board console it does nothing: it sends no events, and its tool answers "AgentBoard is not running". Inside a board console a global copy only loads the plugin a second time. Never copy the source folder anywhere OpenCode loads plugins from either: OpenCode calls every export of every file there, and the helper file breaks its loader.
 
 ### What it does
 
