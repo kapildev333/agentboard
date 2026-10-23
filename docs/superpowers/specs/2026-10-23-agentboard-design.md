@@ -46,7 +46,7 @@ AgentBoard (working name, yours to change) is a free local tool that puts every 
 Goals, in priority order:
 
 1. Dogfood by week 4: you do your daily agent work on the board instead of terminal tabs, and do not go back.
-2. One command installs it and one command opens it: npx agentboard or brew install, then the board is in the browser within 5 seconds.
+2. One command installs it and one command opens it: agentboard or brew install, then the board is in the browser within 5 seconds.
 3. Six live consoles on a 16 GB laptop with no visible lag: keystroke echo under 50 ms and total memory under 1 GB, since there is no Electron.
 4. A console that needs permission or input shows "needs you" within 2 seconds for Claude Code, Codex, Gemini CLI and OpenCode.
 5. Nothing leaves the machine, ever: no sign-in, no servers, no telemetry, and the daemon listens only on 127.0.0.1.
@@ -267,7 +267,7 @@ Phases 3 to 7 are planned when the previous gate passes, each with its own brain
 - Phase 4, orchestration and continuity, 3 to 4 weeks: mission map, teams, handoffs, loops, composer, profiles, analytics, project memory. Gate: a real handoff and a real loop shipped work; analytics match the CLI's own usage numbers within 5%.
 - Phase 5, command bar and voice, 2 to 3 weeks: text commands first, push-to-talk second. Gate: a spoken command moves the board hands-free.
 - Phase 6, studios, 3 to 4 weeks: document, diagram, code tree, markdown vault. Gate: Symvibe parity.
-- Phase 7, distribution, 1 week: npm and brew releases with prebuilt node-pty, a curl installer, release notes; an optional desktop wrapper only if the tab-badge limit bites. Gate: `npx agentboard` works on a clean Mac, Linux and Windows machine.
+- Phase 7, distribution, 1 week: npm and brew releases with prebuilt node-pty, a curl installer, release notes; an optional desktop wrapper only if the tab-badge limit bites. Gate: `agentboard` (linked from the checkout; the unscoped npm name is taken, D33) works on a clean Mac, Linux and Windows machine.
 
 How to run it with Claude Code:
 
