@@ -7,6 +7,23 @@ type Status = ReturnType<typeof GitStatusSchema.parse>;
 export function GitCard({ fetch, path, intervalMs = 10_000 }: { fetch: typeof globalThis.fetch; path: string; intervalMs?: number }) {
   const [status, setStatus] = useState<Status>();
   const [showDiff, setShowDiff] = useState(false);
+  const [committing, setCommitting] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState<string>();
+  const post = async (route: string, body: object) => {
+    setError(undefined);
+    try {
+      const res = await fetch(`/api/git/${route}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? `HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
   useEffect(() => {
     const load = async () => {
       const res = await fetch(`/api/git/status?path=${encodeURIComponent(path)}`);
@@ -23,7 +40,23 @@ export function GitCard({ fetch, path, intervalMs = 10_000 }: { fetch: typeof gl
       <span>dirty {status.dirty}</span> <span>{status.lastCommit?.subject}</span>
       <div>
         <button onClick={() => setShowDiff(!showDiff)}>Diff</button>
+        <button onClick={() => setCommitting(!committing)}>Commit</button>
       </div>
+      {committing && (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (await post("commit", { path, message })) {
+              setCommitting(false);
+              setMessage("");
+            }
+          }}
+        >
+          <input aria-label="Commit message" value={message} onChange={(e) => setMessage(e.target.value)} />
+          <button type="submit">Submit</button>
+        </form>
+      )}
+      {error && <p role="alert">{error}</p>}
       {showDiff && <DiffView fetch={fetch} path={path} />}
     </div>
   );
