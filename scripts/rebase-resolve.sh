@@ -21,7 +21,11 @@ for _ in $(seq 1 40); do
   for f in $(git diff --name-only --diff-filter=U); do
     case "$f" in
       packages/shared/src/*.js|packages/shared/src/*.d.ts) git rm -qf -- "$f" 2>/dev/null || git checkout --ours -- "$f" 2>/dev/null; git rm -qf --cached -- "$f" 2>/dev/null;;
-      */tsconfig.build.json|packages/daemon/package.json|packages/cli/package.json|packages/mcp/package.json) git checkout --ours -- "$f" && git add -- "$f";;
+      */tsconfig.build.json) git checkout --ours -- "$f" && git add -- "$f";;
+      packages/daemon/package.json|packages/cli/package.json|packages/mcp/package.json)
+        # union of main's manifest (ours) and the lane's (theirs): neither side's dependency is dropped
+        git show ":2:$f" > /tmp/ours.json; git show ":3:$f" > /tmp/theirs.json
+        node -e 'const fs=require("fs");const a=JSON.parse(fs.readFileSync("/tmp/ours.json","utf8")),b=JSON.parse(fs.readFileSync("/tmp/theirs.json","utf8"));const out={...a,...b};for(const k of ["dependencies","devDependencies","scripts","bin"]){if(a[k]||b[k])out[k]={...(a[k]||{}),...(b[k]||{})};}fs.writeFileSync(process.argv[1],JSON.stringify(out,null,2)+"\n")' "$f" && git add -- "$f";;
       packages/ui/package.json|packages/e2e/package.json|packages/plugins/package.json) git checkout --theirs -- "$f" && node -e 'const fs=require("fs");const p=process.argv[1];const d=JSON.parse(fs.readFileSync(p,"utf8"));if(d.scripts&&/^echo /.test(d.scripts.build||""))delete d.scripts.build;fs.writeFileSync(p,JSON.stringify(d,null,2)+"\n")' "$f" && git add -- "$f";;
       package-lock.json) git checkout --theirs -- "$f"; npm install --ignore-scripts >/dev/null 2>&1; git add -- "$f";;
       *) git checkout --theirs -- "$f" && git add -- "$f";;
