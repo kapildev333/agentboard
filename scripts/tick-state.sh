@@ -9,9 +9,13 @@ gh issue list --label lane --state all --limit 100 --json number,title,labels,st
 echo "== pull requests"
 gh pr list --state open --limit 50 --json number,title,headRefName,headRefOid,labels \
   -q '.[] | [(.number|tostring), .title, .headRefName, (.headRefOid[0:8]), ([.labels[].name]|join(","))] | join(" · ")'
-echo "== sessions (id · name · state · status)"
+echo "== sessions (id · lane · state · status · waitingFor)"
 claude agents --json --all 2>/dev/null | node -e '
 let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
   let a=[];try{a=JSON.parse(s)}catch(e){console.log("agents unreadable");return}
-  for(const j of a){ if(/^L[0-9][0-9A-Z]$/.test(j.name||"")) console.log([j.id,j.name,j.state,j.status||"",j.waitingFor||""].join(" · ")) }
+  for(const j of a){
+    const m=/\.claude\/worktrees\/(L[0-9][0-9A-Z])(\/|$)/.exec(j.cwd||"");
+    const lane=m?m[1]:(/^L[0-9][0-9A-Z]$/.test(j.name||"")?j.name:null);
+    if(lane&&j.id) console.log([j.id,lane,j.state,j.status||"",j.waitingFor||""].join(" · "))
+  }
 })'
