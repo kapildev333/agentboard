@@ -16,7 +16,7 @@ export interface ConsoleNodeProps {
 export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }: ConsoleNodeProps) {
   const el = useRef<HTMLDivElement>(null);
   const term = useRef<Terminal | null>(null);
-  const { sendInput, sendResize } = useConsoleSocket(data.consoleId, socketFactory, (d) => term.current?.write(d));
+  const { sendInput, sendResize, exited } = useConsoleSocket(data.consoleId, socketFactory, (d) => term.current?.write(d));
   const io = useRef({ sendInput, sendResize });
   io.current = { sendInput, sendResize };
   const zoom = useStore((s) => s.transform[2]);
@@ -29,6 +29,18 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
     const f = new FitAddon();
     t.loadAddon(f);
     t.open(el.current!);
+    t.attachCustomKeyEventHandler((e) => {
+      if (e.type !== "keydown" || !(e.metaKey || e.ctrlKey)) return true;
+      if (e.key === "c" && t.hasSelection()) {
+        void navigator.clipboard.writeText(t.getSelection());
+        return false;
+      }
+      if (e.key === "v") {
+        void navigator.clipboard.readText().then((text) => t.paste(text));
+        return false;
+      }
+      return true;
+    });
     t.onData((d) => io.current.sendInput(d));
     t.onResize(({ cols, rows }) => io.current.sendResize(cols, rows));
     term.current = t;
@@ -79,6 +91,7 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
         {data.title} {statusBadge}
       </header>
       <div ref={el} style={{ flex: 1, minHeight: 0 }} />
+      {exited && <footer>[exited]</footer>}
     </div>
   );
 }
