@@ -26,7 +26,8 @@ test("save then load returns an equal board", async () => {
 });
 
 test("a version-0 document migrates to version 1", () => {
-  const note = { id: "n1", type: "note", title: "t", x: 1, y: 2, w: 3, h: 4, text: "hi" };
+  // other tests leave real timers pending; they write into the current home, so timer tests use their own repo paths
+const note = { id: "n1", type: "note", title: "t", x: 1, y: 2, w: 3, h: 4, text: "hi" };
   const board = migrate({ repoPath: "/repo/a", nodes: [note] });
   expect(board).toEqual({
     version: 1,
@@ -48,14 +49,14 @@ const note = { id: "n1", type: "note", title: "t", x: 1, y: 2, w: 3, h: 4, text:
 test("save writes after the 300 ms debounce, not before", async () => {
   vi.useFakeTimers();
   const store = new StateStore();
-  await store.save(await store.load("/repo/a"));
+  await store.save(await store.load("/repo/debounce"));
   await vi.advanceTimersByTimeAsync(299);
   expect(vi.getTimerCount()).toBe(1);
-  expect(existsSync(boardPath("/repo/a"))).toBe(false);
+  expect(existsSync(boardPath("/repo/debounce"))).toBe(false);
   await vi.advanceTimersByTimeAsync(1);
   expect(vi.getTimerCount()).toBe(0);
   vi.useRealTimers();
-  await vi.waitFor(() => expect(existsSync(boardPath("/repo/a"))).toBe(true));
+  await vi.waitFor(() => expect(existsSync(boardPath("/repo/debounce"))).toBe(true));
 });
 
 test("flush after the timer fired waits for that write", async () => {
@@ -128,7 +129,7 @@ test("load rejects on a read error other than a missing file", async () => {
 test("saves arriving under 300 ms apart do not postpone the write", async () => {
   vi.useFakeTimers();
   const store = new StateStore();
-  const board = await store.load("/repo/a");
+  const board = await store.load("/repo/starve");
   await store.save(board);
   await vi.advanceTimersByTimeAsync(200);
   const changed = structuredClone(board);
@@ -136,6 +137,6 @@ test("saves arriving under 300 ms apart do not postpone the write", async () => 
   await store.save(changed);
   await vi.advanceTimersByTimeAsync(100);
   vi.useRealTimers();
-  await vi.waitFor(() => expect(existsSync(boardPath("/repo/a"))).toBe(true));
-  expect(JSON.parse(await readFile(boardPath("/repo/a"), "utf8"))).toEqual(changed);
+  await vi.waitFor(() => expect(existsSync(boardPath("/repo/starve"))).toBe(true));
+  expect(JSON.parse(await readFile(boardPath("/repo/starve"), "utf8"))).toEqual(changed);
 });
