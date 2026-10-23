@@ -6,7 +6,13 @@ One daemon serves one board per repository. The board for a repository is keyed 
 
 **Spawn console** opens a dialog with these parts:
 
-- **Agent.** The list comes from `GET /api/agents`. When the dialog opens, the daemon looks up `claude`, `codex`, `gemini` and `opencode` on its PATH and runs `<cli> --version` on each one it finds, with a 3-second limit. It reads that PATH once, from your login shell, at start. The list shows each agent's version, or "not installed" greyed out, followed by your custom agents.
+- **Agent.** The list comes from `GET /api/agents`. Building it never runs an agent (ruling D38).
+  - **The agent PATH.** The daemon looks up `claude`, `codex`, `gemini` and `opencode` on the agent PATH: `AGENTBOARD_AGENT_PATH` when it is set, otherwise the PATH of your login shell, read once at start.
+  - **Available.** An agent counts as available when an executable file of that name is on that PATH. Any other agent shows "not installed", greyed out.
+  - **Version.** The version appears only after that agent's first console has started: at launch the daemon runs `<cli> --version` once, with a 3-second limit, and remembers the answer.
+  - **Custom agents** follow the four built-in ones.
+
+  A console always runs the file found on the agent PATH. When none is there, the spawn is refused with `<agent> is not on the agent PATH`.
 - **new worktree.** When ticked, a branch name is required. The daemon runs `git worktree add -b <branch> <repo>/.worktrees/<branch> <current branch>`, adds `.worktrees/` to the repository's `.git/info/exclude` (never to `.gitignore`), and starts the agent in the new folder. The console's title becomes `<Agent>: <branch>`. A branch name that starts with `-` is refused. A branch or folder that already exists makes the spawn fail.
 - **first prompt.** Optional. It reaches the agent as its opening message:
   - `claude -- <prompt>` and `codex -- <prompt>`
@@ -66,7 +72,6 @@ Layout changes are saved 500 ms after your last change. Each workspace remembers
   - Cmd+V (Ctrl+V on Linux and Windows) pastes.
 - Reloading the page, or opening the board in another tab, replays roughly the last 200,000 characters of each console's output, then streams live.
 - `[exited]` appears under a terminal whose process has ended.
-- Mouse selection inside a terminal is offset at any zoom other than 100%. Select text at 100% zoom.
 
 ## Workspaces
 
@@ -100,11 +105,13 @@ While any console on the board needs you, the tab title reads `(N) AgentBoard`. 
 
 - **Status line:** the branch, ahead and behind counts against the upstream, the number of changed files, and the last commit's subject. It refreshes every 10 seconds.
 - **Diff:** lists the files changed against `HEAD` with their status letter and shows the unified diff. Untracked files are not listed.
-- **Commit:** a message field; Submit runs `git add -A` and `git commit -m <message>`. "nothing to commit" is reported inline.
+- **Commit:** a message field; Submit runs `git add -A` and `git commit -m <message>`.
 - **Push:** `git push -u origin HEAD`.
 - **Open PR:** `gh pr create --title <last commit subject> --body ""` in that folder, then shows the pull request URL it prints as a link. `gh` must be installed and logged in.
 
-One action runs at a time, and the status line refreshes after a commit or push. Errors from git or gh appear under the buttons.
+One action runs at a time, and the status line refreshes after a commit or push.
+
+When an action fails, the card shows only "internal error" under the buttons: the daemon answers every git or gh failure with a bare 500. That covers a commit on a clean tree, a push with no remote, and `gh` missing or logged out. Run the same command in the console's terminal to see the real message.
 
 ## Open in VS Code, Zed or Finder
 
