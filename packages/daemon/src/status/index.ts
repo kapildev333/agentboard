@@ -25,7 +25,7 @@ export class StatusTracker {
     if (next === "idle") e.armed = false;
     // from the first hook on, hooks own the status of a hook agent and the output heuristics stop
     e.hooked = true;
-    if (e.agent !== "codex") this.clearTimer(consoleId);
+    this.clearTimer(consoleId);
     this.set(consoleId, next);
   }
 
@@ -39,7 +39,7 @@ export class StatusTracker {
     const e = this.entries.get(consoleId);
     if (!e || e.ended) return;
     // hooks and plugins own the status once their first hook has arrived
-    if (e.agent !== "codex" && e.agent !== "custom" && e.hooked) return;
+    if (e.agent !== "codex" && e.hooked) return;
     const heuristic = e.agent !== "codex";
     const match = (res?: RegExp[]) => res?.some((r) => chunk.search(r) !== -1);
     let next: ConsoleStatus | null = null;
