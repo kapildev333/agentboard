@@ -80,6 +80,9 @@ describe("StatusTracker", () => {
     expect(t.get("c1")).toBe("idle");
     t.markOutput("c1", "anything");
     expect(t.get("c1")).toBe("idle");
+    t.markInput("c1", "\r");
+    t.markOutput("c1", "anything");
+    expect(t.get("c1")).toBe("working");
   });
 
   it("codex output is work only after a prompt is sent", () => {
@@ -142,14 +145,36 @@ describe("StatusTracker", () => {
     expect(t.get("c1")).toBe("starting");
   });
 
-  it("the first output ends starting for hook agents", () => {
+  it("a hook agent with no hooks yet reads output: working, then idle after the quiet time", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "claude", { needsYou: [/\[y\/n\]/] });
+    t.markOutput("c1", "welcome");
+    expect(t.get("c1")).toBe("working");
+    vi.advanceTimersByTime(20_000);
+    expect(t.get("c1")).toBe("idle");
+    t.markOutput("c1", "Proceed? [y/n]");
+    expect(t.get("c1")).toBe("needs_you");
+  });
+
+  it("once a hook has arrived, output no longer changes a hook agent", () => {
     const t = new StatusTracker();
     t.markStarting("c1", "claude");
     t.markOutput("c1", "welcome");
-    expect(t.get("c1")).toBe("idle");
-    t.handleHook("c1", { event: "PreToolUse" });
+    t.handleHook("c1", { event: "PermissionRequest" });
+    vi.advanceTimersByTime(60_000);
+    expect(t.get("c1")).toBe("needs_you");
     t.markOutput("c1", "more");
-    expect(t.get("c1")).toBe("working");
+    expect(t.get("c1")).toBe("needs_you");
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("remove forgets the console and its timer", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "custom");
+    t.markOutput("c1", "x");
+    t.remove("c1");
+    expect(t.get("c1")).toBe("stopped");
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("markStarting keeps the previous status and does not repeat", () => {
