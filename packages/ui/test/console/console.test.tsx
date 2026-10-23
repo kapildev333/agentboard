@@ -174,4 +174,20 @@ describe("ConsoleNode", () => {
     expect(key("v")).toBe(false);
     await vi.waitFor(() => expect(x.term.pasted).toBe("pasted"));
   });
+
+  it("reconnects once after a close, and attaches again", () => {
+    mount();
+    act(() => sockets[0]!.onclose!());
+    expect(sockets).toHaveLength(2);
+    act(() => sockets[1]!.open());
+    expect(sockets[1]!.sent[0]).toBe(JSON.stringify({ t: "attach", consoleId: "c1" }));
+    act(() => sockets[1]!.onclose!());
+    expect(sockets).toHaveLength(2);
+  });
+
+  it("falls back to the DOM renderer when WebGL fails", () => {
+    x.webglFails = true;
+    mount();
+    expect(x.term).toBeDefined();
+  });
 });
