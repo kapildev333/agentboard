@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommitRequestSchema,
   CommitResponseSchema,
@@ -16,12 +16,10 @@ export function GitCard({
   fetch,
   path,
   intervalMs = 10_000,
-  open = (url) => void window.open(url, "_blank", "noopener"),
 }: {
   fetch: typeof globalThis.fetch;
   path: string;
   intervalMs?: number;
-  open?: (url: string) => void;
 }) {
   const [status, setStatus] = useState<GitStatus>();
   const [showDiff, setShowDiff] = useState(false);
@@ -29,8 +27,26 @@ export function GitCard({
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string>();
   const [statusError, setStatusError] = useState<string>();
+  // The PR url is shown as a link: a window.open after the reply is not a user gesture, so browsers block it.
+  const [prUrl, setPrUrl] = useState<string>();
+  // A ref, not state, so a second click in the same tick already sees the first one in flight.
+  const busy = useRef(false);
+  const [, setBusy] = useState(false);
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/git/status?path=${encodeURIComponent(path)}`);
+      setStatus(GitStatusSchema.parse(await readJson(res)));
+      setStatusError(undefined);
+    } catch (e) {
+      setStatusError((e as Error).message);
+    }
+  }, [fetch, path]);
   // Validates the request body and the reply; shows any failure inline and returns undefined.
+  // One action at a time; a success reloads the status so ahead and dirty refresh.
   const post = async <T,>(route: string, request: { parse(b: unknown): unknown }, reply: { parse(b: unknown): T }, body: unknown) => {
+    if (busy.current) return;
+    busy.current = true;
+    setBusy(true);
     setError(undefined);
     try {
       const res = await fetch(`/api/git/${route}`, {
@@ -38,25 +54,21 @@ export function GitCard({
         headers: { "content-type": "application/json" },
         body: JSON.stringify(request.parse(body)),
       });
-      return reply.parse(await readJson(res));
+      const out = reply.parse(await readJson(res));
+      if (route !== "pr") void load();
+      return out;
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      busy.current = false;
+      setBusy(false);
     }
   };
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch(`/api/git/status?path=${encodeURIComponent(path)}`);
-        setStatus(GitStatusSchema.parse(await readJson(res)));
-        setStatusError(undefined);
-      } catch (e) {
-        setStatusError((e as Error).message);
-      }
-    };
     void load();
     const t = setInterval(load, intervalMs);
     return () => clearInterval(t);
-  }, [fetch, path, intervalMs]);
+  }, [load, intervalMs]);
   if (!status) return statusError ? <p role="alert">{statusError}</p> : null;
   return (
     <div>
@@ -73,7 +85,7 @@ export function GitCard({
               title: status.lastCommit?.subject ?? status.branch,
             });
             if (!pr) return;
-            if (/^https?:\/\//.test(pr.url)) open(pr.url);
+            if (/^https?:\/\//.test(pr.url)) setPrUrl(pr.url);
             else setError("PR url is not http(s)");
           }}
         >
@@ -93,6 +105,11 @@ export function GitCard({
           <input required aria-label="Commit message" value={message} onChange={(e) => setMessage(e.target.value)} />
           <button type="submit">Submit</button>
         </form>
+      )}
+      {prUrl && (
+        <p>
+          <a href={prUrl} target="_blank" rel="noopener noreferrer">{prUrl}</a>
+        </p>
       )}
       {(error ?? statusError) && <p role="alert">{error ?? statusError}</p>}
       {showDiff && <DiffView fetch={fetch} path={path} />}
