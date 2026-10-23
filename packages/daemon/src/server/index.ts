@@ -142,7 +142,10 @@ export async function createServer(opts: ServerOptions) {
       ws.on("error", () => ws.terminate());
     });
   });
-  await new Promise<void>((resolve) => server.listen(opts.port, "127.0.0.1", resolve));
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(opts.port, "127.0.0.1", () => { server.off("error", reject); resolve(); });
+  });
   port = (server.address() as AddressInfo).port;
   return {
     port,
@@ -239,7 +242,10 @@ async function handle(
   let result: unknown;
   try {
     result = await handler(input, params);
-  } catch {
+  } catch (err) {
+    // A client error (OpenError, unknown console) carries its 4xx status and a message meant for the caller.
+    const status = (err as { status?: unknown }).status;
+    if (err instanceof Error && typeof status === "number" && status >= 400 && status < 500) return json(res, status, { error: err.message });
     return json(res, 500, { error: "internal error" });
   }
   const out = schema(route.response).safeParse(result);
