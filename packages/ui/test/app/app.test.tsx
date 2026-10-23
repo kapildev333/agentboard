@@ -162,4 +162,21 @@ describe("App", () => {
     await new Promise((r) => setTimeout(r, 1200));
     expect(sockets).toHaveLength(1);
   });
+
+  it("a dropped socket to a live daemon reconnects after about a second and shows no alert", async () => {
+    const api = fakeApi(boardWith(consoleNode("c1", "working")));
+    const sockets: ReturnType<typeof fakeSocket>[] = [];
+    const connect = () => {
+      const s = fakeSocket();
+      sockets.push(s);
+      return s;
+    };
+    render(<App fetch={api.fetch} search="?repo=%2Fr" connect={connect} />);
+    await screen.findByTestId("node-c1");
+    act(() => sockets[0]!.onclose?.());
+    await waitFor(() => expect(api.calls.some((c) => c.url === "/api/status")).toBe(true));
+    await waitFor(() => expect(sockets).toHaveLength(2), { timeout: 2000 });
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByTestId("node-c1")).toBeTruthy();
+  });
 });
