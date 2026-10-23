@@ -8,7 +8,7 @@ export function SettingsPanel({ settings, onChange }: { settings: Settings; onCh
   useEffect(() => setSize(String(settings.fontSize)), [settings.fontSize]);
   // Clamp on blur so typing 18 does not pass through 10 or 24.
   const commitSize = () => {
-    const n = Math.min(24, Math.max(10, Number(size) || 10));
+    const n = Math.min(24, Math.max(10, Math.round(Number(size) || settings.fontSize)));
     setSize(String(n));
     if (n !== settings.fontSize) onChange({ ...settings, fontSize: n });
   };
@@ -22,10 +22,10 @@ export function SettingsPanel({ settings, onChange }: { settings: Settings; onCh
       </label>
       {settings.customAgents.map((a, i) => (
         <div key={i}>
-          <input aria-label={`name ${i}`} value={a.name} onChange={(e) => setAgent(i, { name: e.target.value })} />
-          <input aria-label={`command ${i}`} value={a.command} onChange={(e) => setAgent(i, { command: e.target.value })} />
+          <input aria-label={`name ${i + 1}`} value={a.name} onChange={(e) => setAgent(i, { name: e.target.value })} />
+          <input aria-label={`command ${i + 1}`} value={a.command} onChange={(e) => setAgent(i, { command: e.target.value })} />
           <input
-            aria-label={`needs-you regex ${i}`}
+            aria-label={`needs-you regex ${i + 1}`}
             value={a.needsYou ?? ""}
             onChange={(e) => setAgent(i, { needsYou: e.target.value || undefined })}
           />
