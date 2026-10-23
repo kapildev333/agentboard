@@ -28,3 +28,10 @@ test("claudeLaunch passes a session id and five hook events pointing at the daem
     expect(hook.url).toContain(base.consoleId);
   }
 });
+
+test("claudeLaunch with resume passes --resume instead of --session-id", () => {
+  const { args } = claudeLaunch({ ...base, resume: true });
+  expect(after(args, "--resume")).toBe(base.sessionId);
+  expect(args).not.toContain("--session-id");
+  expect(JSON.parse(after(args, "--settings")).hooks.Stop).toBeDefined();
+});
