@@ -67,7 +67,7 @@ $ agentboard spawn claude --worktree fix-login --prompt "reproduce the login bug
   - A wrong number of arguments prints the usage line.
   - An unknown agent prints `unknown agent: <name> (claude|codex|gemini|opencode|custom)`.
   - A `--repo` that is not a directory prints `not a directory: <path>`.
-  - A missing binary prints `could not start <command>: …`.
+  - An agent with no executable on the agent PATH prints `<agent> is not on the agent PATH`.
 - **Custom agents** cannot be spawned from the CLI in this version: `agentboard spawn custom` answers `{"error":"unknown custom agent: undefined"}`. Use the spawn dialog.
 
 ### `agentboard note <text> [--repo <path>]`
@@ -92,9 +92,8 @@ http://127.0.0.1:61152
 
 - Ctrl-C or SIGTERM stops it cleanly.
 - When another daemon already answers for the same `AGENTBOARD_HOME`, it prints `agentboard: a daemon is already running (pid <pid>, port <port>)` and exits 1.
-- `start` always picks a random free port. The lower-level `agentboard-daemon` bin (in `packages/daemon/bin`) does the same job and also reads these variables:
-  - `AGENTBOARD_PORT` pins the port.
-  - `AGENTBOARD_AGENT_PATH` sets the PATH the agent catalog scans. The end-to-end tests set it to an empty folder so that no real agent CLI is probed.
+- `start` always picks a random free port. The lower-level `agentboard-daemon` bin (in `packages/daemon/bin`) does the same job, and `AGENTBOARD_PORT` pins its port.
+- `AGENTBOARD_AGENT_PATH`, read by every daemon however it starts (`start`, `open`, `spawn`, `note` or `agentboard-daemon`), sets the agent PATH. Agents are listed and run from that PATH instead of the login shell's. The end-to-end tests set it to an empty folder.
 
 ### Environment variables
 
@@ -103,7 +102,7 @@ http://127.0.0.1:61152
 | `AGENTBOARD_HOME` | daemon, CLI, MCP | State folder instead of `~/.agentboard` |
 | `AGENTBOARD_CONSOLE_ID` | CLI `spawn`, MCP `spawn_console` | Parent console; set by the daemon inside every console |
 | `AGENTBOARD_PORT` | `agentboard-daemon` only | Fixed port |
-| `AGENTBOARD_AGENT_PATH` | `agentboard-daemon` only | PATH for the agent catalog |
+| `AGENTBOARD_AGENT_PATH` | daemon | The agent PATH: where agents are found and run from (default: the login shell's PATH) |
 
 ## `agentboard-mcp`
 
