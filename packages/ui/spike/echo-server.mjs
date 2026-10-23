@@ -1,3 +1,4 @@
+import process from "node:process";
 import { WebSocketServer } from "ws";
 
 // Answers every message with the same bytes. Resolves once listening.
@@ -12,5 +13,5 @@ export function startEcho(port = 0) {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const { port } = await startEcho(Number(process.env.PORT ?? 0));
-  console.log(`echo ws://127.0.0.1:${port}`);
+  process.stdout.write(`echo ws://127.0.0.1:${port}\n`);
 }
