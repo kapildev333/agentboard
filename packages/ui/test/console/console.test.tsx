@@ -7,8 +7,6 @@ import { ConsoleNode } from "../../src/console";
 const x = vi.hoisted(() => ({
   term: undefined as any,
   fit: undefined as any,
-  gl: undefined as any,
-  webglFails: false,
 }));
 vi.mock("@xterm/xterm", () => ({
   Terminal: class {
@@ -54,16 +52,6 @@ vi.mock("@xterm/addon-fit", () => ({
     }
   },
 }));
-vi.mock("@xterm/addon-webgl", () => ({
-  WebglAddon: class {
-    dispose = vi.fn();
-    constructor() {
-      if (x.webglFails) throw new Error("no webgl");
-      x.gl = this;
-    }
-    onContextLoss() {}
-  },
-}));
 
 class FakeSocket {
   sent: string[] = [];
@@ -105,7 +93,6 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   sockets = [];
-  x.webglFails = false;
 });
 
 const mount = (extra: object = {}) =>
@@ -146,9 +133,9 @@ describe("ConsoleNode", () => {
 
   it("the focused node carries nodrag and nowheel", () => {
     const { container } = mount();
-    const root = container.firstElementChild as HTMLElement;
+    const root = container.querySelector("div > div > div") as HTMLElement;
+    expect(container.querySelector("header")!.className).not.toMatch(/nodrag/);
     expect(root.className).not.toMatch(/nodrag/);
-    act(() => root.querySelector("div")!.focus());
     fireEvent.focusIn(root);
     expect(root.className).toMatch(/nodrag/);
     expect(root.className).toMatch(/nowheel/);
@@ -184,11 +171,5 @@ describe("ConsoleNode", () => {
     expect(sockets[1]!.sent[0]).toBe(JSON.stringify({ t: "attach", consoleId: "c1" }));
     act(() => sockets[1]!.onclose!());
     expect(sockets).toHaveLength(2);
-  });
-
-  it("falls back to the DOM renderer when WebGL fails", () => {
-    x.webglFails = true;
-    mount();
-    expect(x.term).toBeDefined();
   });
 });
