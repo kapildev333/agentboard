@@ -11,6 +11,7 @@ export const AgentBoard = async () => {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(post.body),
+        signal: AbortSignal.timeout(1000),
       });
     } catch {
       // daemon gone: never break the agent
