@@ -172,7 +172,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     changed(f.board);
   });
 
-  const routes: RouteHandlers = {
+  // Required: a route added to the shared table without a handler here fails the typecheck.
+  const routes: Required<RouteHandlers> = {
     "GET /api/board": async ({ repo }) => loadBoard(repo),
     "PUT /api/board": async (incoming) => {
       const current = await loadBoard(incoming.repoPath);
