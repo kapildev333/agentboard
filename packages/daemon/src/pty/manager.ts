@@ -11,7 +11,9 @@ export type SpawnOptions = {
 };
 export type PtyHandle = { id: string; pid: number };
 
-type Entry = { pty: IPty; exited: boolean };
+type Entry = { pty: IPty; exited: boolean; buffer: string };
+
+const REPLAY_CHARS = 200 * 1024; // ponytail: counts UTF-16 chars, not bytes; fine for terminal output
 
 export type Timers = { set: (fn: () => void, ms: number) => unknown; clear: (handle: unknown) => void };
 
@@ -24,7 +26,8 @@ export class PtyManager {
 
   spawn(o: SpawnOptions): PtyHandle {
     const pty = ptySpawn(o.command, o.args, { name: "xterm-256color", cwd: o.cwd, env: o.env, cols: o.cols, rows: o.rows });
-    const entry: Entry = { pty, exited: false };
+    const entry: Entry = { pty, exited: false, buffer: "" };
+    pty.onData((d) => (entry.buffer = (entry.buffer + d).slice(-REPLAY_CHARS)));
     pty.onExit(() => (entry.exited = true));
     this.entries.set(o.id, entry);
     return { id: o.id, pid: pty.pid };
@@ -58,6 +61,10 @@ export class PtyManager {
       this.timers.clear(timer);
     }
     this.entries.delete(id);
+  }
+
+  replay(id: string): string {
+    return this.get(id).buffer;
   }
 
   list(): string[] {
