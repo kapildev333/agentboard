@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { acceptHook, sessionFromHook } from "../src/session.js";
+import { acceptHook, adoptsNextSession, sessionFromHook } from "../src/session.js";
 
 test("a hook whose payload.session_id differs from the console's session is dropped (D34)", () => {
   const node = { session: { provider: "claude" as const, id: "s1" } };
@@ -18,4 +18,11 @@ test("the resume id is read from each agent's hook payload (L14)", () => {
   expect(sessionFromHook("claude", "Stop", { session_id: "c-1" })).toBeUndefined();
   expect(sessionFromHook("custom", "x", { session_id: "x" })).toBeUndefined();
   expect(sessionFromHook("codex", "agent-turn-complete", "not an object")).toBeUndefined();
+});
+
+test("a SessionEnd with reason clear or resume opens the way for the next session id (D39)", () => {
+  expect(adoptsNextSession("SessionEnd", { reason: "clear" })).toBe(true);
+  expect(adoptsNextSession("SessionEnd", { reason: "resume" })).toBe(true);
+  expect(adoptsNextSession("SessionEnd", { reason: "logout" })).toBe(false);
+  expect(adoptsNextSession("Stop", { reason: "clear" })).toBe(false);
 });
