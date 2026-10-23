@@ -159,7 +159,7 @@ All state is one JSON file per repo at ~/.agentboard/boards/<repo-hash>.json plu
 ```typescript
 type AgentId = 'claude' | 'codex' | 'gemini' | 'opencode' | 'custom'
 type Daemon = { port: number; token: string; pid: number }   // ~/.agentboard/daemon.json
-type Board = { version: 1; repoPath: string; activeWorkspaceId: string; workspaces: Workspace[] }
+type Board = { version: 1; rev: number; repoPath: string; activeWorkspaceId: string; workspaces: Workspace[] }   // rev: the daemon increments it on every save; a stale PUT is refused with 409 (D40, L1B)
 type Workspace = { id: string; name: string; viewport: { x: number; y: number; zoom: number }; nodes: BoardNode[] }
 type BoardNode = ConsoleNode | NoteNode | WebTileNode | ChecklistNode
 type ConsoleNode = {
