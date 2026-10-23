@@ -82,6 +82,35 @@ test("status counts ahead and behind against the upstream", async () => {
   expect(s.lastCommit?.sha).toMatch(/^[0-9a-f]{40}$/);
 });
 
+const commitFile = (cwd: string, file: string) => {
+  writeFileSync(join(cwd, file), `${file}\n`);
+  git(cwd, "add", ".");
+  git(cwd, "commit", "-m", file);
+};
+
+test("a worktree branch with one commit and no remote reports ahead 1 against its base", async () => {
+  const repo = makeRepo();
+  const { path } = await svc().worktreeAdd(repo, "feat-a", "main");
+  expect(await svc().status(path)).toMatchObject({ ahead: 0, behind: 0 });
+  commitFile(path, "b.txt");
+  expect(await svc().status(path)).toMatchObject({ branch: "feat-a", ahead: 1, behind: 0 });
+  commitFile(repo, "m.txt");
+  expect(await svc().status(path)).toMatchObject({ ahead: 1, behind: 1 });
+});
+
+test("worktreeRemove is allowed once the commits are on the base, even with an origin", async () => {
+  const repo = makeRepo();
+  const remote = tmp("remote");
+  git(remote, "init", "--bare", "-b", "main");
+  git(repo, "remote", "add", "origin", remote);
+  const { path } = await svc().worktreeAdd(repo, "feat-m", "main");
+  commitFile(path, "b.txt");
+  await expect(svc().worktreeRemove(path, { force: false })).rejects.toMatchObject({ code: "unpushed" });
+  git(repo, "merge", "feat-m");
+  await svc().worktreeRemove(path, { force: false });
+  expect(existsSync(path)).toBe(false);
+});
+
 test("diff lists a changed file and returns a patch", async () => {
   const repo = makeRepo();
   writeFileSync(join(repo, "a.txt"), "one\ntwo\n");
