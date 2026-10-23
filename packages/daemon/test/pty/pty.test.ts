@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PtyManager } from "../../src/pty/index.js";
+import { loginEnv, PtyManager } from "../../src/pty/index.js";
 
 const until = (read: () => string, needle: string, ms = 2000) =>
   new Promise<void>((resolve, reject) => {
@@ -92,5 +92,13 @@ describe("PtyManager", () => {
     expect(r).toContain("E1ND");
     expect(r).not.toContain("first");
     await m.kill("p");
+  });
+});
+
+describe("loginEnv", () => {
+  it("loginEnv contains PATH", async () => {
+    const vars = await loginEnv();
+    expect(vars.PATH).toBeTruthy();
+    expect(await loginEnv()).toBe(vars);
   });
 });
