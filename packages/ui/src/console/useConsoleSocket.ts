@@ -1,4 +1,4 @@
-import { parseDaemonMessage } from "@agentboard/shared";
+import { parseClientMessage, parseDaemonMessage, type ClientMessage } from "@agentboard/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface SocketLike {
@@ -21,8 +21,8 @@ export function useConsoleSocket(consoleId: string, factory: SocketFactory = def
   out.current = onOutput;
   const [exited, setExited] = useState(false);
   const size = useRef<{ cols: number; rows: number } | null>(null);
-  const send = useCallback((m: object) => {
-    if (socket.current?.readyState === OPEN) socket.current.send(JSON.stringify(m));
+  const send = useCallback((m: ClientMessage) => {
+    if (socket.current?.readyState === OPEN) socket.current.send(JSON.stringify(parseClientMessage(m)));
   }, []);
 
   useEffect(() => {
@@ -31,6 +31,8 @@ export function useConsoleSocket(consoleId: string, factory: SocketFactory = def
       const s = factory();
       socket.current = s;
       s.onopen = () => {
+        // The daemon replays its ring buffer on attach, so clear the screen it already fills.
+        if (!retry) out.current?.("\x1bc");
         send({ t: "attach", consoleId });
         if (size.current) send({ t: "resize", consoleId, ...size.current });
       };
