@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SettingsPanel, type Settings } from "../../src/shell";
 
 afterEach(cleanup);
-const settings: Settings = { fontSize: 14, customAgents: [{ name: "aider", command: "aider --yes" }] };
+const settings: Settings = { fontSize: 14, customAgents: [{ id: "aider", name: "aider", command: "aider", args: ["--yes"] }] };
 
 describe("SettingsPanel", () => {
   it("the settings panel reports a font size change", () => {
@@ -32,7 +32,7 @@ describe("SettingsPanel", () => {
     fireEvent.change(screen.getByLabelText("needs-you regex 1"), { target: { value: "\\? $" } });
     expect(onChange).toHaveBeenLastCalledWith({
       ...settings,
-      customAgents: [{ name: "aider", command: "aider --yes", needsYou: "\\? $" }],
+      customAgents: [{ id: "aider", name: "aider", command: "aider", args: ["--yes"], needsYou: "\\? $" }],
     });
     fireEvent.click(screen.getByRole("button", { name: "Add agent" }));
     expect(onChange.mock.lastCall![0].customAgents).toHaveLength(2);
@@ -47,7 +47,7 @@ describe("SettingsPanel", () => {
 
   it("clearing the regex stores undefined", () => {
     const onChange = vi.fn();
-    const s: Settings = { fontSize: 14, customAgents: [{ name: "a", command: "b", needsYou: "x" }] };
+    const s: Settings = { fontSize: 14, customAgents: [{ id: "a", name: "a", command: "b", args: [], needsYou: "x" }] };
     render(<SettingsPanel settings={s} onChange={onChange} />);
     fireEvent.change(screen.getByLabelText("needs-you regex 1"), { target: { value: "" } });
     expect(onChange.mock.lastCall![0].customAgents[0].needsYou).toBeUndefined();
@@ -85,5 +85,18 @@ describe("SettingsPanel", () => {
     fireEvent.change(input, { target: { value: "12.4" } });
     fireEvent.blur(input);
     expect(onChange).toHaveBeenCalledWith({ ...settings, fontSize: 12 });
+  });
+
+  it("args are edited as one space-separated field and a new agent gets an id (D25)", () => {
+    const onChange = vi.fn();
+    render(<SettingsPanel settings={settings} onChange={onChange} />);
+    const args = screen.getByLabelText("args 1") as HTMLInputElement;
+    expect(args.value).toBe("--yes");
+    fireEvent.change(args, { target: { value: "--yes  --model x" } });
+    expect(onChange.mock.lastCall![0].customAgents[0].args).toEqual(["--yes", "--model", "x"]);
+    fireEvent.click(screen.getByRole("button", { name: "Add agent" }));
+    const added = onChange.mock.lastCall![0].customAgents[1];
+    expect(added).toMatchObject({ name: "", command: "", args: [] });
+    expect(added.id).toMatch(/\S/);
   });
 });
