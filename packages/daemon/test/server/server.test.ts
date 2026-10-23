@@ -322,3 +322,23 @@ test("a missing Origin passes only with the header token, never on the cookie al
   expect((await fetch(`${s.origin}/api/status`, { headers: { cookie } })).status).toBe(403);
   expect((await fetch(`${s.origin}/api/status`, { headers: { cookie, "sec-fetch-site": "same-origin" } })).status).toBe(200);
 });
+
+test("close resolves while a client holds a refused upgrade open", async () => {
+  const s = await start();
+  const socket = net.connect({ port: s.port, host: "127.0.0.1", allowHalfOpen: true });
+  try {
+    const answered = new Promise<string>((resolve) => socket.once("data", (d) => resolve(d.toString())));
+    socket.on("error", () => {});
+    socket.write(`GET /ws HTTP/1.1\r\nHost: 127.0.0.1:${s.port}\r\nOrigin: https://evil.example\r\n`
+      + `Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\n`
+      + `Sec-WebSocket-Key: ${btoa("the sample nonce")}\r\n\r\n`);
+    expect(await answered).toMatch(/^HTTP\/1\.1 403/);
+    const closed = await Promise.race([
+      s.close().then(() => "closed"),
+      new Promise((r) => setTimeout(() => r("timeout"), 1000)),
+    ]);
+    expect(closed).toBe("closed");
+  } finally {
+    socket.destroy();
+  }
+});
