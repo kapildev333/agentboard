@@ -52,6 +52,8 @@ export const WorkspaceSchema = z.object({
 });
 export const BoardSchema = z.object({
   version: z.literal(1),
+  /** Counts the saves of PUT /api/board; a PUT older than the saved one is refused (409), one without a rev is not checked. Optional so a board file from before it existed still loads. */
+  rev: z.number().int().nonnegative().optional(),
   repoPath: z.string(),
   activeWorkspaceId: z.string(),
   workspaces: z.array(WorkspaceSchema),
@@ -72,6 +74,7 @@ export const DaemonMessageSchema = z.discriminatedUnion("t", [
 
 // HTTP bodies, queries and responses
 export const OkSchema = z.object({ ok: z.literal(true) });
+export const PutBoardResponseSchema = z.object({ ok: z.literal(true), rev: z.number().int().nonnegative() });
 export const BoardQuerySchema = z.object({ repo: z.string() });
 export const SpawnConsoleRequestSchema = z.object({
   agent: AgentIdSchema,

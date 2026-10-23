@@ -12,7 +12,7 @@ type Route = {
 
 export const routes = [
   { method: "GET", path: "/api/board", request: "BoardQuerySchema", response: "BoardSchema" },
-  { method: "PUT", path: "/api/board", request: "BoardSchema", response: "OkSchema" },
+  { method: "PUT", path: "/api/board", request: "BoardSchema", response: "PutBoardResponseSchema" },
   { method: "POST", path: "/api/consoles", request: "SpawnConsoleRequestSchema", response: "ConsoleNodeSchema" },
   { method: "DELETE", path: "/api/consoles/:id", request: null, response: "OkSchema" },
   { method: "POST", path: "/api/consoles/:id/resume", request: null, response: "ConsoleNodeSchema" },

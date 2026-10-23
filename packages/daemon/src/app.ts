@@ -78,6 +78,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       b = store.load(repo).then((board) => {
         // Nothing runs for a board read from disk: every console shows stopped until resumed (F1.6, L10).
         for (const n of consoles(board)) n.status = "stopped";
+        board.rev ??= 0; // so every client that reads the board carries a rev back
         boards.set(repo, board);
         return board;
       });
@@ -176,8 +177,10 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
   // Required: a route added to the shared table without a handler here fails the typecheck.
   const routes: Required<RouteHandlers> = {
     "GET /api/board": async ({ repo }) => loadBoard(repo),
-    "PUT /api/board": async (incoming) => {
+    "PUT /api/board": async (incoming, _params, client) => {
       const current = await loadBoard(incoming.repoPath);
+      if (incoming.rev !== undefined && incoming.rev < (current.rev ?? 0)) throw new HttpError(409, "the board changed since this copy was read");
+      incoming.rev = (current.rev ?? 0) + 1;
       // The daemon owns each console's status, session and launch fields; the page owns layout and titles.
       const own = new Map(consoles(current).map((n) => [n.id, n]));
       const seen = new Set<string>();
@@ -197,7 +200,9 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
           }
       boards.set(incoming.repoPath, incoming);
       await store.save(incoming);
-      return { ok: true };
+      // Every other page learns of it; the sender already has it.
+      server.broadcast({ t: "board", board: incoming }, client);
+      return { ok: true, rev: incoming.rev };
     },
     "POST /api/consoles": async (req) => {
       const caller = req.callerConsoleId ? find(req.callerConsoleId) : undefined;

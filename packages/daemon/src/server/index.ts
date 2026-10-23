@@ -13,7 +13,7 @@ type Route = (typeof table)[number];
 type Parsed<N> = N extends SchemaName ? ReturnType<(typeof shared)[N]["parse"]> : undefined;
 export type RouteHandlers = {
   [R in Route as `${R["method"]} ${R["path"]}`]?: (
-    input: Parsed<R["request"]>, params: Record<string, string>,
+    input: Parsed<R["request"]>, params: Record<string, string>, client?: string,
   ) => Promise<Parsed<R["response"]>>;
 };
 export type RouteKey = keyof RouteHandlers;
@@ -113,6 +113,7 @@ export async function createServer(opts: ServerOptions) {
   };
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_BODY });
   const attached = new Map<WebSocket, Set<string>>();
+  const clientOf = new Map<WebSocket, string>();
   const send = (ws: WebSocket, text: string) => { if (ws.readyState === WebSocket.OPEN) ws.send(text); };
   const onMessage = (ws: WebSocket, data: Buffer) => {
     let m: ClientMessage;
@@ -137,8 +138,10 @@ export async function createServer(opts: ServerOptions) {
     }
     wss.handleUpgrade(req, socket, head, (ws) => {
       attached.set(ws, new Set());
+      const client = url.searchParams.get("client");
+      if (client) clientOf.set(ws, client);
       ws.on("message", (data) => onMessage(ws, data));
-      ws.on("close", () => attached.delete(ws));
+      ws.on("close", () => (attached.delete(ws), clientOf.delete(ws)));
       ws.on("error", () => ws.terminate());
     });
   });
@@ -152,10 +155,10 @@ export async function createServer(opts: ServerOptions) {
     origin: `http://127.0.0.1:${port}`,
     /** A one-time code for `${origin}/?code=…`, valid for a minute. */
     issueCode,
-    /** Validates, then sends a console's messages to sockets attached to it and board messages to all. */
-    broadcast(message: DaemonMessage): void {
+    /** Validates, then sends a console's messages to sockets attached to it and board messages to all but the socket opened with `?client=except`. */
+    broadcast(message: DaemonMessage, except?: string): void {
       const text = JSON.stringify(parseDaemonMessage(message));
-      for (const [ws, ids] of attached) if (!("consoleId" in message) || ids.has(message.consoleId)) send(ws, text);
+      for (const [ws, ids] of attached) if (!(except && clientOf.get(ws) === except) && (!("consoleId" in message) || ids.has(message.consoleId))) send(ws, text);
     },
     close: () => new Promise<void>((resolve) => {
       for (const ws of wss.clients) ws.terminate();
@@ -222,7 +225,7 @@ function same(a: string, b: string): boolean {
 async function handle(
   route: (typeof compiled)[number], handlers: RouteHandlers, req: http.IncomingMessage, url: URL, res: http.ServerResponse,
 ): Promise<void> {
-  const handler = handlers[route.key] as ((input: unknown, params: Record<string, string>) => Promise<unknown>) | undefined;
+  const handler = handlers[route.key] as ((input: unknown, params: Record<string, string>, client?: string) => Promise<unknown>) | undefined;
   if (!handler) return json(res, 404, { error: "not found" });
   let raw: unknown, params: Record<string, string>;
   try {
@@ -241,7 +244,7 @@ async function handle(
   }
   let result: unknown;
   try {
-    result = await handler(input, params);
+    result = await handler(input, params, req.headers["x-agentboard-client"]?.toString());
   } catch (err) {
     // A client error (OpenError, unknown console) carries its 4xx status and a message meant for the caller.
     const status = (err as { status?: unknown }).status;
