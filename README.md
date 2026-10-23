@@ -23,6 +23,14 @@ cd ~/code/your-repo
 agentboard open .
 ```
 
+If `npm link` fails with `EACCES`, your global npm folder belongs to root, which the nodejs.org installer sets up. Never use `sudo`. Point npm at a folder you own, put it on your PATH, and link again:
+
+```sh
+npm config set prefix ~/.npm-global
+export PATH="$HOME/.npm-global/bin:$PATH"     # add this line to your shell profile too
+npm link -w @agentboard/cli
+```
+
 `agentboard open .` starts the daemon in the background if none is running, opens your browser and prints the address it opened:
 
 ```
@@ -49,7 +57,12 @@ Never run `npx agentboard`. That npm name belongs to an unrelated package. Agent
 
 ## Using the board
 
-- **Spawn a console.** **Spawn console** lists the agents found on the daemon's PATH, each with its version or "not installed", plus your custom agents. The dialog has two options:
+- **Spawn a console.** **Spawn console** lists `claude`, `codex`, `gemini` and `opencode`, plus your custom agents.
+  - An agent counts as available when an executable file of that name is on the agent PATH; listing it never runs it.
+  - "not installed" greys out the rest.
+  - A version appears only after that agent's first console has started.
+
+  The dialog has two options:
   - **New worktree** creates `.worktrees/<branch>` in the repo, on a new branch made from the current one, and starts the agent there. The console's title then names the branch.
   - **First prompt** goes to the agent as its opening message. Custom agents ignore it.
 
@@ -126,7 +139,7 @@ The hooks report status only for Claude sessions the board launched. A plain `cl
 - It forwards session status to the board.
 - It gives the agent an `agentboard_spawn` tool that opens another agent as a new console.
 
-OpenCode consoles the board launches load this bundle from your checkout on their own, so they need no install. To give the tool to a plain `opencode` session too, symlink the bundle into `~/.config/opencode/plugins/`. Do not copy the source folder: OpenCode loads every file in that folder as a plugin. Outside a board console the plugin sends no events.
+OpenCode consoles the board launches load this bundle from your checkout on their own, so there is nothing to install. A global install in `~/.config/opencode/plugins/` adds nothing: outside a board console the plugin sends no events, and its tool answers "AgentBoard is not running".
 
 ## Status model
 
@@ -143,7 +156,7 @@ How a status changes:
 - Every console starts as **Starting**.
 - Until a hook-driven agent (Claude, Gemini, OpenCode) sends its first event, it is judged by its output like a custom agent: output means working, and 20 quiet seconds mean idle. That way a broken hook degrades to a guess instead of a frozen badge.
 - The process exiting marks the console **Exited**.
-- Hook posts that carry a different session id are ignored, for example from a nested `claude -p` run.
+- Hook posts that carry a different session id are ignored, for example from a nested `claude -p` run. After Claude's `/clear` or `/resume`, the console adopts the next session id once (D39).
 
 ## Security model
 
@@ -199,7 +212,10 @@ The end-to-end tests drive a fake agent registered as a custom agent. No test ru
 
 These parts of the [design spec](docs/superpowers/specs/2026-10-23-agentboard-design.md) are not built yet:
 
+- **Real Codex, Gemini CLI and OpenCode runs.** These three CLIs were never run as the real programs in this build (rulings D10 and D31). Their launch arguments, hooks and plugin are unit-tested and written from their documentation; running them is the owner's check.
 - **Outside sessions.** A `claude` session started outside the board does not get a console.
+- **An `agentboard mcp` subcommand.** The spec names one; the MCP server is the separate `agentboard-mcp` bin instead.
+- **Keyboard navigation between consoles.** Moving from one console to the next takes the mouse or the mission map.
 - **Worktree cleanup.** Closing a console does not remove its worktree or warn about uncommitted work; remove it with `git worktree remove`. **Start fresh** is not offered beside **Resume**.
 - **Codex needs-you.** Codex has no "needs you" signal yet, and no one-time hook setup with a visible diff exists for OpenCode, Codex or Gemini.
 - **Board extras (phase 3):** web tiles, editable notes, checklists, image drop, ink and layout presets.
