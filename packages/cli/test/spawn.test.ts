@@ -65,16 +65,30 @@ test("spawn requires exactly one agent", async () => {
 });
 
 test("spawn sends the prompt and the repo as cwd", async () => {
-  expect(await spawnCommand(["claude", "--prompt", "fix the bug", "--repo", "/r"], { log: () => {} })).toBe(0);
+  const repo = mkdtempSync(join(tmpdir(), "ab-repo-"));
+  expect(await spawnCommand(["claude", "--prompt", "fix the bug", "--repo", repo], { log: () => {} })).toBe(0);
   const post = seen.find((r) => r.method === "POST")!;
-  expect(JSON.parse(post.body)).toMatchObject({ agent: "claude", prompt: "fix the bug", cwd: "/r" });
+  expect(JSON.parse(post.body)).toMatchObject({ agent: "claude", prompt: "fix the bug", cwd: repo });
 });
 
 test("spawn rejects an unknown agent without calling the daemon", async () => {
   const lines: string[] = [];
   expect(await spawnCommand(["bogus"], { log: (s) => lines.push(s) })).toBe(1);
-  expect(JSON.parse(lines[0]!)).toHaveProperty("error");
+  expect(JSON.parse(lines[0]!)).toEqual({ error: "unknown agent: bogus (claude|codex|gemini|opencode|custom)" });
   expect(seen.filter((r) => r.method === "POST")).toHaveLength(0);
+});
+
+test("an empty AGENTBOARD_CONSOLE_ID sends no caller id (L23)", async () => {
+  process.env.AGENTBOARD_CONSOLE_ID = "";
+  expect(await spawnCommand(["claude"], { log: () => {} })).toBe(0);
+  expect(JSON.parse(seen.find((r) => r.method === "POST")!.body)).not.toHaveProperty("callerConsoleId");
+});
+
+test("spawn with a missing --repo fails before reaching for a daemon (L23)", async () => {
+  const lines: string[] = [];
+  expect(await spawnCommand(["claude", "--repo", join(tmpdir(), "ab-missing-repo-x")], { log: (s) => lines.push(s) })).toBe(1);
+  expect(JSON.parse(lines[0]!).error).toMatch(/^not a directory: /);
+  expect(seen).toHaveLength(0);
 });
 
 test("spawn --repo . sends the current directory as cwd", async () => {
