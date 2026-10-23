@@ -4,6 +4,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { autosaveBoard } from "../../src/board/store";
 import type { Board as BoardData, BoardNode } from "@agentboard/shared";
 import { Board, useBoard } from "../../src/board";
+import { CONSOLE_DRAG_HANDLE } from "../../src/console";
 
 type Fn = (...a: never[]) => void;
 type Props = Record<string, unknown> & { nodes: unknown[] } & Record<"onNodeDragStop" | "onMoveEnd" | "onNodesChange", Fn>;
@@ -210,5 +211,17 @@ describe("store", () => {
     expect(save).not.toHaveBeenCalled();
     stop();
     vi.useRealTimers();
+  });
+
+  it("console nodes get the console drag handle, other nodes none", () => {
+    useBoard.getState().setBoard(board());
+    render(<Board nodeTypes={nodeTypes} />);
+    act(() => {
+      useBoard.getState().addNode({ ...note("c1"), type: "console" } as never);
+      useBoard.getState().addNode(note("n1"));
+    });
+    const nodes = seen.props!.nodes as { id: string; dragHandle?: string }[];
+    expect(nodes.find((n) => n.id === "c1")!.dragHandle).toBe(CONSOLE_DRAG_HANDLE);
+    expect(nodes.find((n) => n.id === "n1")!.dragHandle).toBeUndefined();
   });
 });
