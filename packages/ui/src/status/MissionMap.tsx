@@ -13,7 +13,7 @@ export function MissionMap({ onFocus }: { onFocus: (nodeId: string) => void }) {
         const rows = consoles.filter((n) => n.status === status);
         if (!rows.length) return null;
         return (
-          <div key={status} role="group" aria-label={LABEL[status]} data-status={status}>
+          <div key={status} role="group" aria-label={LABEL[status]}>
             <StatusBadge status={status} />
             {rows.map((n) => (
               <button key={n.id} type="button" onClick={() => onFocus(n.id)} style={{ display: "block", width: "100%", textAlign: "left" }}>
