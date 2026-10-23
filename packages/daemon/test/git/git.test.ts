@@ -79,7 +79,7 @@ test("status counts ahead and behind against the upstream", async () => {
   const s = await svc().status(repo);
   expect(s).toMatchObject({ branch: "main", ahead: 1, behind: 1, dirty: 1 });
   expect(s.lastCommit).toMatchObject({ subject: "local work" });
-  expect(s.lastCommit.sha).toMatch(/^[0-9a-f]{40}$/);
+  expect(s.lastCommit?.sha).toMatch(/^[0-9a-f]{40}$/);
 });
 
 test("diff lists a changed file and returns a patch", async () => {
