@@ -36,11 +36,7 @@ args = []
 `~/.gemini/settings.json`:
 
 ```json
-{
-  "mcpServers": {
-    "agentboard": { "command": "agentboard-mcp" }
-  }
-}
+{ "mcpServers": { "agentboard": { "command": "agentboard-mcp" } } }
 ```
 
 ## OpenCode
@@ -48,9 +44,5 @@ args = []
 `opencode.json`:
 
 ```json
-{
-  "mcp": {
-    "agentboard": { "type": "local", "command": ["agentboard-mcp"] }
-  }
-}
+{ "mcp": { "agentboard": { "type": "local", "command": ["agentboard-mcp"] } } }
 ```
