@@ -64,7 +64,7 @@ case "$mode" in
     fi
     echo "$cmd" | grep -qE '(^|[;&|(] *)env *([;&|)]|$)' && deny "refused: dumping the environment"
     echo "$cmd" | grep -qE 'npm +publish|gh +auth|\$ANTHROPIC|ANTHROPIC_API_KEY|\.claude\.json|\.credentials\.json|\.ssh/|\.config/gh|id_rsa|id_ed25519|keychain' && deny "refused: publishing or credentials"
-    echo "$cmd" | grep -qE 'git +push[^|;&]*( -f| --force)' && deny "refused: force push"
+    echo "$cmd" | grep -qE 'git +push[^|;&]*( -f( |$)| --force( |$)| --force=)' && deny "refused: force push (use --force-with-lease after a rebase)"
     echo "$cmd" | grep -qE 'git +push[^|;&]*(origin +)?(main|master|HEAD:main)( |$)' && deny "refused: push to main"
     echo "$cmd" | grep -qE 'rm +-[a-zA-Z]*r[a-zA-Z]* +(/|~|\$HOME)( |/|$)' && deny "refused: recursive delete of home or root"
     echo "$cmd" | grep -qE 'pkill +-f|killall ' && deny "refused: pattern kills; stop processes by PID or port"
