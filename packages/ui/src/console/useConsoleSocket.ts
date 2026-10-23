@@ -1,0 +1,43 @@
+import { useCallback, useEffect, useRef } from "react";
+
+export interface SocketLike {
+  readyState: number;
+  onopen: ((e?: unknown) => void) | null;
+  onmessage: ((e: { data: unknown }) => void) | null;
+  onclose: ((e?: unknown) => void) | null;
+  send(data: string): void;
+  close(): void;
+}
+export type SocketFactory = () => SocketLike;
+
+const OPEN = 1;
+export const defaultSocketFactory: SocketFactory = () =>
+  new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
+
+export function useConsoleSocket(consoleId: string, factory: SocketFactory = defaultSocketFactory) {
+  const socket = useRef<SocketLike | null>(null);
+  const send = useCallback((m: object) => {
+    if (socket.current?.readyState === OPEN) socket.current.send(JSON.stringify(m));
+  }, []);
+
+  useEffect(() => {
+    let disposed = false;
+    const connect = (retry: boolean) => {
+      const s = factory();
+      socket.current = s;
+      s.onopen = () => send({ t: "attach", consoleId });
+      s.onclose = () => {
+        if (!disposed && retry) connect(false);
+      };
+    };
+    connect(true);
+    return () => {
+      disposed = true;
+      socket.current?.close();
+    };
+  }, [consoleId, factory, send]);
+
+  return {
+    sendInput: (data: string) => send({ t: "input", consoleId, data }),
+  };
+}
