@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 import { OpenInButtons } from "../../src/open/OpenInButtons.js";
 
@@ -41,4 +41,18 @@ test("a daemon error shows as one line inline", async () => {
   render(<OpenInButtons path="/x" doFetch={doFetch} />);
   fireEvent.click(screen.getByRole("button", { name: "Zed" }));
   expect((await screen.findByRole("alert")).textContent).toBe('not a directory: "/x"');
+});
+
+test("a rejecting fetch shows the could-not-reach alert and a later 200 clears it (L22)", async () => {
+  let fail = true;
+  const doFetch = (async () => {
+    if (fail) throw new TypeError("Failed to fetch");
+    return new Response(null, { status: 200 });
+  }) as typeof fetch;
+  render(<OpenInButtons path="/x" doFetch={doFetch} />);
+  fireEvent.click(screen.getByRole("button", { name: "Finder" }));
+  expect((await screen.findByRole("alert")).textContent).toBe("could not reach the daemon");
+  fail = false;
+  fireEvent.click(screen.getByRole("button", { name: "Finder" }));
+  await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
 });
