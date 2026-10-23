@@ -1,5 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { makeHome, startDaemon, type Daemon, type Home } from "./daemon.js";
+import { expect, test } from "@playwright/test";
+import { makeHome, spawnFake, startDaemon, type Daemon, type Home } from "./daemon.js";
 
 let h: Home;
 let d: Daemon;
@@ -13,14 +13,6 @@ test.afterAll(async () => {
   await d?.kill();
   h?.cleanup();
 });
-
-export async function spawnFake(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Spawn console" }).click();
-  const dialog = page.getByRole("dialog", { name: "Spawn console" });
-  await dialog.getByLabel(/Fake/).check();
-  await dialog.getByRole("button", { name: "Spawn" }).click();
-  await expect(dialog).toBeHidden();
-}
 
 test("six consoles show live output and status", async ({ page }) => {
   await page.goto(await d.loginUrl(h.repo));

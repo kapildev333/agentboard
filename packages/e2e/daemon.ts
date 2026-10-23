@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
+import { expect, type Page } from "@playwright/test";
 
 const bin = fileURLToPath(new URL("../daemon/dist/bin.js", import.meta.url));
 export const fakeAgent = fileURLToPath(new URL("./fake-agent/index.mjs", import.meta.url));
@@ -55,4 +56,37 @@ export async function startDaemon(h: Home): Promise<Daemon> {
         child.kill("SIGKILL");
       }),
   };
+}
+
+/** Spawns the fake agent through the UI's spawn dialog. */
+export async function spawnFake(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Spawn console" }).click();
+  const dialog = page.getByRole("dialog", { name: "Spawn console" });
+  await dialog.getByLabel(/Fake/).check();
+  await dialog.getByRole("button", { name: "Spawn" }).click();
+  await expect(dialog).toBeHidden();
+}
+
+/** Spawns n fake consoles and waits for every prompt. */
+export async function spawnConsoles(page: Page, n: number) {
+  for (let i = 0; i < n; i++) await spawnFake(page);
+  const nodes = page.locator(".react-flow__node-console");
+  await expect(nodes).toHaveCount(n);
+  for (let i = 0; i < n; i++) await expect(nodes.nth(i).locator(".xterm-rows")).toContainText("fake>");
+  return nodes;
+}
+
+/** Resident set size in bytes of a pid, and of it plus every descendant. */
+export function rss(pid: number): { own: number; tree: number } {
+  const rows = execFileSync("ps", ["-A", "-o", "pid=,ppid=,rss="], { encoding: "utf8" })
+    .trim()
+    .split("\n")
+    .map((l) => l.trim().split(/\s+/).map(Number) as [number, number, number]);
+  const tree = new Set([pid]);
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const [p, pp] of rows) if (tree.has(pp) && !tree.has(p)) (tree.add(p), (grew = true));
+  }
+  const kb = (p: number) => rows.find((r) => r[0] === p)?.[2] ?? 0;
+  return { own: kb(pid) * 1024, tree: [...tree].reduce((sum, p) => sum + kb(p), 0) * 1024 };
 }
