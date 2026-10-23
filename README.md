@@ -54,14 +54,14 @@ Never run `npx agentboard`. That npm name belongs to an unrelated package. Agent
   - **First prompt** goes to the agent as its opening message. Custom agents ignore it.
 
   Consoles fill a three-column grid. A console spawned by another console (through the CLI, MCP or the OpenCode tool) lands to the right of its parent.
-- **Move around the board.** Scroll or use the trackpad to pan, and pinch or use the zoom controls for 25% to 200%. The minimap and the fit-view button help on a big board.
+- **Move around the board.** Scroll or use the trackpad to pan. Pinch, Cmd-scroll or the zoom controls zoom from 25% to 200%. The minimap and the fit-view button help on a big board.
   - Drag a console by its title bar. Select a console to resize it from its edges.
   - A terminal you clicked into takes every key and scroll.
-  - Pressing Delete with a node selected removes it, and that ends a console.
+  - Pressing Backspace with a node selected removes it, and that ends a console.
 - **Workspaces.** Tabs in the top bar, each with its own consoles and view:
   - Click a tab to switch to it. Double-click it to rename it.
   - `+` adds a workspace. `×` deletes the active one; the last workspace cannot be deleted.
-- **Status badges and notifications.** Each console shows Starting, Working, Idle, Needs you, Exited or Stopped. The mission map groups the active workspace's consoles by status; click one to jump to it.
+- **Status badges and notifications.** Each console shows Starting, Working, Idle, Needs you, Exited or Stopped. The mission map groups the active workspace's consoles by status; click one to focus its terminal.
   - The tab title reads `(2) AgentBoard` while two consoles need you.
   - While the tab is hidden, a console that turns "needs you" raises a browser notification. Clicking the notification focuses that console.
   - The browser asks for notification permission on your first click or key press.
