@@ -80,7 +80,7 @@ $ agentboard note "check the login flow before merging"
 - The note goes on the active workspace of the board for `--repo`. Without `--repo`, it goes to the main repository root of the current directory: from a subfolder or a linked worktree, that is the main checkout.
 - The words after `note` are joined with spaces. An empty note prints the usage line and exits 1.
 - The note is placed under the lowest node, at the left edge of the existing nodes.
-- An open board does not show the note, and that page's next save deletes it. The daemon's status broadcasts carry the note, but the page takes only consoles from them. Once you have panned, zoomed, dragged or changed workspaces on a page, it also saves whenever a console changes status, so reloading afterwards can be too late. Close the board, or reload it and leave it untouched, before adding a note; reload again after. Lane L1B (#80) is fixing this.
+- An open board shows the note at once. After the `PUT /api/board`, the daemon sends the board to every open page in a `board` WebSocket message. Each page merges it: the note and its text come from the daemon, and the page keeps its own viewport and any node it is moving. See [Using the board](using-the-board.md#notes).
 
 ### `agentboard start`
 
@@ -118,7 +118,7 @@ The server does not start the daemon. It reads `daemon.json` on every call, so i
 | `open_board` | `repo` (string, absolute path) | The board as JSON: workspaces and nodes. It does not open a browser |
 | `spawn_console` | `agent` (`claude`, `codex`, `gemini`, `opencode`, `custom`), `cwd` (string), optional `worktree`, `prompt`, `callerConsoleId`, `customId` | The new console |
 | `list_consoles` | none | Every console the daemon has loaded, with id, agent, cwd, status and more |
-| `add_note` | `text` (string) | The note. It goes on the board last opened through `open_board` in this server, or the server's working directory, at the top-left of the active workspace. As with `agentboard note`, an open board does not show it and its next save deletes it, even at the end of the calling agent's turn. Close the board, or reload it and leave it untouched, before adding a note; reload again after (lane L1B, #80, is fixing this) |
+| `add_note` | `text` (string) | The note. It goes on the board last opened through `open_board` in this server, or the server's working directory, at the top-left of the active workspace. As with `agentboard note`, every open page shows it at once |
 | `get_status` | none | `{"consoles":[…]}` |
 
 - `spawn_console` takes `callerConsoleId` from `AGENTBOARD_CONSOLE_ID` when you leave it out.
