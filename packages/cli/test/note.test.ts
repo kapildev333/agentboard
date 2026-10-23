@@ -1,4 +1,5 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -72,4 +73,13 @@ test("status --json lists consoles", async () => {
     pid: 4242,
     consoles: [{ id: "c1", title: "claude", agent: "claude", status: "idle" }],
   });
+});
+
+test("note defaults to the main repo root from a subdirectory", async () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "ab-repo-")));
+  execFileSync("git", ["init", "-q", root]);
+  const sub = join(root, "a", "b");
+  mkdirSync(sub, { recursive: true });
+  expect(await noteCommand(["hi"], { cwd: sub, log: () => {} })).toBe(0);
+  expect(getUrl).toBe(`/api/board?repo=${encodeURIComponent(root)}`);
 });

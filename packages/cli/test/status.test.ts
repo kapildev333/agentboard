@@ -41,7 +41,22 @@ test("status prints alive false when daemon.json is stale", async () => {
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   writeFileSync(join(home, "daemon.json"), JSON.stringify({ port: (server.address() as AddressInfo).port, token: "t", pid: 1 }));
   const lines: string[] = [];
-  expect(await statusCommand((s) => lines.push(s))).toBe(1);
+  expect(await statusCommand([], (s) => lines.push(s))).toBe(1);
   server.close();
   expect(JSON.parse(lines[0]!)).toEqual({ alive: false });
+});
+
+test("status --json prints an error object when /api/status fails", async () => {
+  const server = createServer((_req, res) => {
+    res.statusCode = 200;
+    res.end("{}");
+  });
+  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+  const port = (server.address() as AddressInfo).port;
+  writeFileSync(join(home, "daemon.json"), JSON.stringify({ port, token: "t", pid: 4242 }));
+  const lines: string[] = [];
+  // "{}" is not a valid StatusResponse, so parsing fails the same way a bad daemon answer would.
+  expect(await statusCommand(["--json"], (s) => lines.push(s))).toBe(1);
+  server.close();
+  expect(JSON.parse(lines[0]!)).toHaveProperty("error");
 });

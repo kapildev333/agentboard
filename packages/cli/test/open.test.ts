@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { openCommand } from "../src/commands/open.js";
+import { ensureDaemon } from "../src/daemonFile.js";
 
 const noSpawn = (() => {
   throw new Error("must not spawn");
@@ -104,4 +105,8 @@ test("open fails when the daemon refuses the login code", async () => {
   writeFileSync(join(home, "daemon.json"), JSON.stringify({ port: (old.address() as AddressInfo).port, token, pid: 1 }));
   await expect(openCommand([home], { spawn: noSpawn, openBrowser: () => {}, log: () => {} })).rejects.toThrow(/refused the login code/);
   old.close();
+});
+
+test("ensureDaemon times out instead of crashing when the daemon cannot be spawned", async () => {
+  await expect(ensureDaemon(join(home, "missing"), undefined, 300)).rejects.toThrow("did not start");
 });
