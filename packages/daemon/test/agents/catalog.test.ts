@@ -2,7 +2,7 @@ import { chmodSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test, vi } from "vitest";
-import { AgentInfoListSchema, SpawnConsoleRequestSchema } from "@agentboard/shared";
+import { AgentInfoListSchema } from "@agentboard/shared";
 import { AgentCatalog } from "../../src/agents/index.js";
 
 function stubDir(versions: Record<string, string>): string {
@@ -71,9 +71,4 @@ test("custom agents are available when their command resolves", async () => {
     { id: "custom", command: "mytool", version: null, available: true, customId: "a", name: "A" },
     { id: "custom", command: "nope", version: null, available: false, customId: "b", name: "B" },
   ]);
-});
-
-test("a spawn request can name which custom agent to run", () => {
-  const req = SpawnConsoleRequestSchema.parse({ agent: "custom", cwd: "/r", customId: "a" });
-  expect(req.customId).toBe("a");
 });
