@@ -12,7 +12,7 @@ export function useNotifications({ onFocus }: { onFocus: (nodeId: string) => voi
     // Asks for notification permission once, on the first user gesture.
     let asked = false;
     const requestOnce = () => {
-      if (asked || typeof Notification === "undefined" || Notification.permission !== "default") return;
+      if (asked || typeof Notification === "undefined") return;
       asked = true;
       void Notification.requestPermission();
     };
