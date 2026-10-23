@@ -1,8 +1,9 @@
 import { openCommand } from "./commands/open.js";
+import { spawnCommand } from "./commands/spawn.js";
 import { startCommand } from "./commands/start.js";
 import { statusCommand } from "./commands/status.js";
 
-const USAGE = "usage: agentboard <start | open [path] | status>";
+const USAGE = "usage: agentboard <start | open [path] | status | spawn <agent> | note <text>>";
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
@@ -14,6 +15,8 @@ export async function main(argv: string[]): Promise<number> {
     case "open":
       await openCommand(rest);
       return 0;
+    case "spawn":
+      return spawnCommand(rest);
     case "status":
       return statusCommand();
     default:
