@@ -102,9 +102,9 @@ While any console on the board needs you, the tab title reads `(N) AgentBoard`. 
 - **Diff:** lists the files changed against `HEAD` with their status letter and shows the unified diff. Untracked files are not listed.
 - **Commit:** a message field; Submit runs `git add -A` and `git commit -m <message>`. "nothing to commit" is reported inline.
 - **Push:** `git push -u origin HEAD`.
-- **Open PR:** `gh pr create --title <last commit subject> --body ""` in that folder, then opens the pull request URL it prints. `gh` must be installed and logged in.
+- **Open PR:** `gh pr create --title <last commit subject> --body ""` in that folder, then shows the pull request URL it prints as a link. `gh` must be installed and logged in.
 
-Errors from git or gh appear under the buttons.
+One action runs at a time, and the status line refreshes after a commit or push. Errors from git or gh appear under the buttons.
 
 ## Open in VS Code, Zed or Finder
 
