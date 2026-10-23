@@ -11,7 +11,8 @@ export type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 
 export function SpawnDialog({ fetch, cwd, onSpawned }: { fetch: Fetch; cwd: string; onSpawned: (n: ConsoleNode) => void }) {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
-  const [agent, setAgent] = useState<string>("");
+  // A custom entry is told apart by its customId; built-in ids are unique on their own.
+  const [choice, setChoice] = useState<AgentInfo>();
   const [useWorktree, setUseWorktree] = useState(false);
   const [branch, setBranch] = useState("");
   const [prompt, setPrompt] = useState("");
@@ -36,7 +37,8 @@ export function SpawnDialog({ fetch, cwd, onSpawned }: { fetch: Fetch; cwd: stri
     setError("");
     try {
       const body = SpawnConsoleRequestSchema.parse({
-        agent,
+        agent: choice?.id,
+        ...(choice?.customId && { customId: choice.customId }),
         cwd,
         worktree: useWorktree ? name : undefined,
         prompt: prompt || undefined,
@@ -61,9 +63,9 @@ export function SpawnDialog({ fetch, cwd, onSpawned }: { fetch: Fetch; cwd: stri
       <fieldset>
         <legend>Agent</legend>
         {agents.map((a) => (
-        <label key={a.id} style={{ display: "block", opacity: a.available ? 1 : 0.4 }}>
-          <input type="radio" name="agent" value={a.id} disabled={!a.available} checked={agent === a.id} onChange={() => setAgent(a.id)} />
-          {a.id} {a.available ? a.version : "not installed"}
+        <label key={`${a.id}:${a.customId ?? ""}`} style={{ display: "block", opacity: a.available ? 1 : 0.4 }}>
+          <input type="radio" name="agent" disabled={!a.available} checked={choice === a} onChange={() => setChoice(a)} />
+          {a.name ?? a.id} {a.available ? a.version : "not installed"}
         </label>
         ))}
       </fieldset>
@@ -73,7 +75,7 @@ export function SpawnDialog({ fetch, cwd, onSpawned }: { fetch: Fetch; cwd: stri
       </label>
       {useWorktree && <input aria-label="branch name" value={branch} onChange={(e) => setBranch(e.target.value)} />}
       <textarea aria-label="first prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
-      <button type="submit" disabled={!agent || busy || (useWorktree && !name)}>Spawn</button>
+      <button type="submit" disabled={!choice || busy || (useWorktree && !name)}>Spawn</button>
       {error && <p role="alert">{error}</p>}
     </form>
   );
