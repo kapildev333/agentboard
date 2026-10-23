@@ -41,6 +41,8 @@ export type SocketHandler<T extends ClientMessage["t"]> =
   (message: Extract<ClientMessage, { t: T }>, reply: (message: DaemonMessage) => void) => Promise<void>;
 
 export async function createServer(opts: ServerOptions) {
+  // same("", "") is true, so an empty token would let every request in.
+  if (!/^[\w-]{32,}$/.test(opts.token)) throw new Error("token must be at least 32 characters of [A-Za-z0-9_-]");
   let port = 0;
   const server = http.createServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://x");
