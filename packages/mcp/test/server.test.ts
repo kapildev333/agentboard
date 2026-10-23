@@ -76,7 +76,7 @@ test("add_note appends a note to the board and puts it back", async () => {
   expect(nodes.at(-1)).toMatchObject({ type: "note", text: "remember" });
 });
 
-const text = (res: { content: unknown }) => (res.content as { text: string }[])[0]!.text;
+const text = (res: object) => ((res as { content: { text: string }[] }).content)[0]!.text;
 
 test("spawn_console sends AGENTBOARD_CONSOLE_ID as callerConsoleId", async () => {
   const { seen, client } = setup(() => node, { AGENTBOARD_CONSOLE_ID: "c-parent" });
