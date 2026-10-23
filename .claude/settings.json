@@ -5,6 +5,7 @@
     "sessionUrl": false
   },
   "workflowSizeGuideline": "large",
+  "worktree": { "bgIsolation": "none" },
   "env": {
     "CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS": "40"
   },
