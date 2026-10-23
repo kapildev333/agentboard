@@ -81,8 +81,7 @@ export async function createServer(opts: ServerOptions) {
     if (refused) return end(res, refused);
     if (req.method === "POST" && url.pathname === "/auth/code") {
       // Header token only: the CLI and MCP mint codes, a page holding the cookie does not.
-      const header = req.headers["x-agentboard-token"];
-      if (typeof header !== "string") return end(res, 401);
+      if (authOf(req) !== "header") return end(res, 401);
       return json(res, 200, { code: issueCode() });
     }
     const route = compiled.find((r) => r.method === req.method && r.pattern.test(url.pathname));
@@ -106,8 +105,8 @@ export async function createServer(opts: ServerOptions) {
     return auth === "cookie" && !proven ? 403 : 0;
   };
   const authOf = (req: http.IncomingMessage): "header" | "cookie" | null => {
-    const header = req.headers["x-agentboard-token"];
-    if (typeof header === "string") return same(header, opts.token) ? "header" : null;
+    const header = headerToken(req);
+    if (header !== undefined) return same(header, opts.token) ? "header" : null;
     const name = `agentboard_${port}=`;
     const cookie = req.headers.cookie?.split(";").map((c) => c.trim()).find((c) => c.startsWith(name));
     return cookie !== undefined && sessions.has(cookie.slice(name.length)) ? "cookie" : null;
@@ -178,6 +177,16 @@ function ownHost(req: http.IncomingMessage, port: number): boolean {
 function ownOrigin(req: http.IncomingMessage, port: number): boolean {
   const origin = req.headers.origin;
   return origin === undefined || origin === `http://127.0.0.1:${port}` || origin === `http://localhost:${port}`;
+}
+
+// X-AgentBoard-Token, or Authorization: Bearer for callers such as the notify relay (ruling D16).
+// A non-Bearer Authorization yields "", which never matches the token.
+function headerToken(req: http.IncomingMessage): string | undefined {
+  const header = req.headers["x-agentboard-token"];
+  if (typeof header === "string") return header;
+  const auth = req.headers.authorization;
+  if (auth === undefined) return undefined;
+  return /^Bearer (\S+)$/i.exec(auth)?.[1] ?? "";
 }
 
 const isIndex = (pathname: string) => pathname === "/" || pathname === "/index.html";
