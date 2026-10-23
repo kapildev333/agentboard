@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loginEnv, PtyManager } from "../../src/pty/index.js";
+import { loginEnv, parseEnv, PtyManager } from "../../src/pty/index.js";
 
 const until = (read: () => string, needle: string, ms = 2000) =>
   new Promise<void>((resolve, reject) => {
@@ -77,6 +77,50 @@ describe("PtyManager", () => {
     expect(exited).toBe(true);
   });
 
+  it("spawn refuses an id that is already in use", async () => {
+    const m = new PtyManager();
+    sh(m, "d");
+    expect(() => sh(m, "d")).toThrow(/already/);
+    await m.kill("d");
+  });
+
+  it("resize and onExit are safe after the process exited by itself", async () => {
+    const m = new PtyManager();
+    sh(m, "x");
+    let first: number | undefined;
+    m.onExit("x", (c) => (first = c));
+    m.write("x", "exit 3\n");
+    await until(() => String(first ?? ""), "3");
+    expect(() => m.resize("x", 90, 20)).not.toThrow();
+    let late: number | undefined;
+    m.onExit("x", (c) => (late = c));
+    expect(late).toBe(3);
+  });
+
+  it("kill takes down children that ignore SIGHUP", async () => {
+    let fire: (() => void) | undefined;
+    const m = new PtyManager({ set: (fn) => ((fire = fn), 1), clear: () => {} });
+    m.spawn({
+      id: "g",
+      command: "/bin/sh",
+      args: ["-c", "trap '' HUP; (trap '' HUP; while :; do sleep 1; done) & echo child=$!; wait"],
+      cwd: "/tmp",
+      env: { PATH: process.env.PATH ?? "" },
+      cols: 80,
+      rows: 24,
+    });
+    let out = "";
+    m.onData("g", (d) => (out += d));
+    await until(() => out, "child=");
+    const child = Number(/child=(\d+)/.exec(out)![1]);
+    const done = m.kill("g");
+    await new Promise((r) => setTimeout(r, 200));
+    fire!();
+    await done;
+    await new Promise((r) => setTimeout(r, 200));
+    expect(() => process.kill(child, 0)).toThrow();
+  });
+
   it("replay returns the buffered output to a late attacher", async () => {
     const m = new PtyManager();
     let out = "";
@@ -100,5 +144,16 @@ describe("loginEnv", () => {
     const vars = await loginEnv();
     expect(vars.PATH).toBeTruthy();
     expect(await loginEnv()).toBe(vars);
+  });
+});
+
+describe("parseEnv", () => {
+  it("splits NUL-separated entries at the first = and keeps odd names and values intact", () => {
+    const text = "A=1\0B=x\ny=z\0BASH_FUNC_f%%=() { :\n}\0C=a=b\0";
+    expect(parseEnv(text)).toEqual({ A: "1", B: "x\ny=z", "BASH_FUNC_f%%": "() { :\n}", C: "a=b" });
+  });
+
+  it("skips entries with no usable name", () => {
+    expect(parseEnv("motd line\0A=1\0")).toEqual({ A: "1" });
   });
 });
