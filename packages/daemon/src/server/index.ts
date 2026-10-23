@@ -83,6 +83,8 @@ export async function createServer(opts: ServerOptions) {
       .catch(() => {});
   };
   server.on("upgrade", (req: http.IncomingMessage, socket: Duplex, head: Buffer) => {
+    // http drops its own listeners on upgrade; an unhandled reset here would take the daemon down.
+    socket.on("error", () => socket.destroy());
     const url = target(req);
     if (!url) return void socket.destroy();
     const status = url.pathname !== "/ws" ? 404 : refuse(req, true);
