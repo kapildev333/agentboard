@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -37,8 +37,10 @@ test("open with no daemon spawns one and prints the URL", async () => {
   }) as never;
   const opened: string[] = [];
   const lines: string[] = [];
-  await openCommand(["/some repo"], { spawn, openBrowser: (u) => opened.push(u), log: (s) => lines.push(s) });
-  const url = `http://127.0.0.1:${port}/?token=${token}&repo=${encodeURIComponent("/some repo")}`;
+  const repo = join(home, "some repo");
+  mkdirSync(repo);
+  await openCommand([repo], { spawn, openBrowser: (u) => opened.push(u), log: (s) => lines.push(s) });
+  const url = `http://127.0.0.1:${port}/?token=${token}&repo=${encodeURIComponent(repo)}`;
   expect(spawned).toHaveLength(1);
   expect(spawned[0]).toContain("start");
   expect(options[0]).toMatchObject({ detached: true, stdio: "ignore" });
