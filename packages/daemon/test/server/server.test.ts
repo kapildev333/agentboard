@@ -1,5 +1,5 @@
 import http from "node:http";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test } from "vitest";
@@ -123,4 +123,34 @@ test("a valid request reaches its handler and the response is validated", async 
 
   expect(await (await fetch(`${s.origin}/api/status`, { headers })).json()).toEqual({ consoles: [] });
   expect((await fetch(`${s.origin}/api/agents`, { headers })).status).toBe(404);
+});
+
+test("no CORS header is ever present", async () => {
+  const s = await start({ routes: { "GET /api/status": async () => ({ consoles: [] }) } });
+  const evil = { origin: "https://evil.example" };
+  const responses = [
+    await fetch(`${s.origin}/api/status`, { headers: { ...evil, "x-agentboard-token": token } }),
+    await fetch(`${s.origin}/api/status`, { headers: evil }),
+    await fetch(`${s.origin}/api/status`, {
+      method: "OPTIONS",
+      headers: { ...evil, "access-control-request-method": "POST", "access-control-request-headers": "x-agentboard-token" },
+    }),
+    await fetch(`${s.origin}/?token=${token}`, { headers: evil, redirect: "manual" }),
+    await fetch(`${s.origin}/`, { headers: { ...evil, "x-agentboard-token": token } }),
+  ];
+  expect(responses.map((r) => r.status)).toEqual([200, 401, 403, 302, 200]);
+  for (const r of responses) expect([...r.headers.keys()].filter((k) => k.startsWith("access-control-"))).toEqual([]);
+});
+
+test("static files never leave staticDir", async () => {
+  const base = mkdtempSync(join(tmpdir(), "agentboard-base-"));
+  mkdirSync(join(base, "static"));
+  writeFileSync(join(base, "static", "app.js"), "ok");
+  writeFileSync(join(base, "secret.txt"), "secret");
+  const s = await start({ staticDir: join(base, "static") });
+  const headers = { host: `127.0.0.1:${s.port}`, "x-agentboard-token": token };
+  expect((await get(s.port, "/app.js", headers)).statusCode).toBe(200);
+  for (const path of ["/../secret.txt", "/%2e%2e/secret.txt", "/..%2fsecret.txt", "/%2e%2e%2fsecret.txt"]) {
+    expect((await get(s.port, path, headers)).statusCode).toBe(404);
+  }
 });
