@@ -11,3 +11,4 @@ test-results/
 .worktrees/
 .claude/worktrees/
 .claude/settings.local.json
+.claude/briefs/L*.md
