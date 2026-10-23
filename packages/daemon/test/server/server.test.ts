@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import net from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import WebSocket from "ws";
 import { createServer, type ServerOptions } from "../../src/server/index.js";
 
@@ -68,25 +68,43 @@ test("a wrong Host is refused with 403", async () => {
     .toEqual({ opened: false, status: 403 });
 });
 
-test("the one-time query token becomes a cookie and the redirect drops it", async () => {
+test("the open code works once, becomes a cookie, and the redirect drops it", async () => {
   const s = await start();
-  const first = await fetch(`${s.origin}/?token=${token}&ws=1`, { redirect: "manual" });
+  const nav = { "sec-fetch-site": "none" };
+  const code = s.issueCode();
+  const first = await fetch(`${s.origin}/?code=${code}&ws=1`, { redirect: "manual", headers: nav });
   expect(first.status).toBe(302);
   expect(first.headers.get("location")).toBe("/?ws=1");
   const cookie = first.headers.get("set-cookie")!;
-  expect(cookie).toMatch(new RegExp(`^agentboard=${token};`));
   expect(cookie).toMatch(/HttpOnly/);
   expect(cookie).toMatch(/SameSite=Strict/);
   expect(cookie).toMatch(/Path=\//);
 
-  const page = await fetch(`${s.origin}/?ws=1`, { headers: { cookie: cookie.split(";")[0] } });
+  const page = await fetch(`${s.origin}/?ws=1`, { headers: { ...nav, cookie: cookie.split(";")[0] } });
   expect(page.status).toBe(200);
   expect(page.headers.get("content-type")).toMatch(/text\/html/);
   expect(await page.text()).toContain("<title>board</title>");
 
-  expect((await fetch(`${s.origin}/?token=wrong`, { redirect: "manual" })).status).toBe(401);
-  expect((await fetch(`${s.origin}/api/status?token=${token}`)).status).toBe(401);
-  expect((await fetch(`${s.origin}/`, { headers: { cookie: "agentboard=wrong" } })).status).toBe(401);
+  expect((await fetch(`${s.origin}/?code=${code}`, { redirect: "manual", headers: nav })).status).toBe(401);
+  expect((await fetch(`${s.origin}/?code=wrong`, { redirect: "manual", headers: nav })).status).toBe(401);
+  expect((await fetch(`${s.origin}/?token=${token}`, { redirect: "manual", headers: nav })).status).toBe(401);
+
+  const minted = await fetch(`${s.origin}/auth/code`, { method: "POST", headers: { "x-agentboard-token": token } });
+  expect(minted.status).toBe(200);
+  const { code: fromCli } = await minted.json() as { code: string };
+  expect((await fetch(`${s.origin}/?code=${fromCli}`, { redirect: "manual", headers: nav })).status).toBe(302);
+  expect((await fetch(`${s.origin}/auth/code`, {
+    method: "POST", headers: { origin: s.origin, cookie: cookie.split(";")[0] },
+  })).status).toBe(401);
+
+  vi.useFakeTimers({ toFake: ["Date"] });
+  try {
+    const stale = s.issueCode();
+    vi.setSystemTime(Date.now() + 61_000);
+    expect((await fetch(`${s.origin}/?code=${stale}`, { redirect: "manual", headers: nav })).status).toBe(401);
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 test("a valid request reaches its handler and the response is validated", async () => {
@@ -136,7 +154,7 @@ test("no CORS header is ever present", async () => {
       method: "OPTIONS",
       headers: { ...evil, "access-control-request-method": "POST", "access-control-request-headers": "x-agentboard-token" },
     }),
-    await fetch(`${s.origin}/?token=${token}`, { headers: evil, redirect: "manual" }),
+    await fetch(`${s.origin}/?code=${s.issueCode()}`, { headers: evil, redirect: "manual" }),
     await fetch(`${s.origin}/`, { headers: { ...evil, "x-agentboard-token": token } }),
   ];
   expect(responses.map((r) => r.status)).toEqual([200, 401, 403, 302, 200]);
