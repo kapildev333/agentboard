@@ -2,6 +2,7 @@ import "@xterm/xterm/css/xterm.css";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { CONSOLE_DRAG_HANDLE } from "./dragHandle";
 import { useConsoleSocket, type SocketFactory } from "./useConsoleSocket";
 
 export interface ConsoleNodeProps {
@@ -10,9 +11,6 @@ export interface ConsoleNodeProps {
   fontSize?: number;
   statusBadge?: ReactNode;
 }
-
-/** Set as `dragHandle` on console nodes so only the header drags them. */
-export const CONSOLE_DRAG_HANDLE = ".console-drag-handle";
 
 export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }: ConsoleNodeProps) {
   const el = useRef<HTMLDivElement>(null);
@@ -61,7 +59,7 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
     <div
       style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}
     >
-      <header className="console-drag-handle">
+      <header className={CONSOLE_DRAG_HANDLE.slice(1)}>
         {data.node.title} {statusBadge}
       </header>
       <div

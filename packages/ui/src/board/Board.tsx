@@ -13,6 +13,7 @@ import "@xyflow/react/dist/style.css";
 import { useEffect, useMemo, useState } from "react";
 import type { Workspace } from "@agentboard/shared";
 import type { BoardNode } from "@agentboard/shared";
+import { CONSOLE_DRAG_HANDLE } from "../console/dragHandle";
 import { useBoard } from "./store";
 
 type Data = { node: BoardNode };
@@ -47,6 +48,7 @@ const toFlow = (nodes: BoardNode[], selected: Set<string>): Node<Data>[] =>
     width: n.w,
     height: n.h,
     selected: selected.has(n.id),
+    dragHandle: n.type === "console" ? CONSOLE_DRAG_HANDLE : undefined,
     data: { node: n },
   }));
 

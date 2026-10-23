@@ -17,6 +17,8 @@ export const defaultSocketFactory: SocketFactory = () =>
 
 export function useConsoleSocket(consoleId: string, factory: SocketFactory = defaultSocketFactory, onOutput?: (data: string) => void) {
   const socket = useRef<SocketLike | null>(null);
+  const make = useRef(factory);
+  make.current = factory;
   const out = useRef(onOutput);
   out.current = onOutput;
   const [exited, setExited] = useState(false);
@@ -28,7 +30,7 @@ export function useConsoleSocket(consoleId: string, factory: SocketFactory = def
   useEffect(() => {
     let disposed = false;
     const connect = (first: boolean) => {
-      const s = factory();
+      const s = make.current();
       socket.current = s;
       s.onopen = () => {
         // The daemon replays its ring buffer on attach, so clear the screen it already fills.
@@ -54,7 +56,7 @@ export function useConsoleSocket(consoleId: string, factory: SocketFactory = def
       disposed = true;
       socket.current?.close();
     };
-  }, [consoleId, factory, send]);
+  }, [consoleId, send]);
 
   return {
     exited,
