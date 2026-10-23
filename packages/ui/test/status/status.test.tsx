@@ -68,7 +68,7 @@ it("the notification is tagged by node, and its click focuses the window, closes
   const onFocus = vi.fn(() => void order.push("node"));
   renderHook(() => useNotifications({ onFocus }));
   act(() => setStatuses({ c1: "needs_you", c2: "idle" }));
-  expect(N.mock.calls[0]![1]).toEqual({ body: "claude", tag: "c1", renotify: true });
+  expect(N.mock.calls[0]).toEqual(["T-c1 needs you", { body: "claude", tag: "c1", renotify: true }]);
   const note = N.mock.instances[0] as unknown as { onclick: () => void; close: () => void };
   note.close = vi.fn(() => void order.push("close"));
   note.onclick();
@@ -174,15 +174,27 @@ it("only a change to needs_you notifies, once per console", () => {
   act(() => setStatuses({ c1: "needs_you", c2: "needs_you", c3: "needs_you" }));
   expect(N).toHaveBeenCalledTimes(1);
   expect(N.mock.calls[0]![1]).toMatchObject({ tag: "c2" });
+  act(() => setStatuses({ c1: "needs_you", c2: "needs_you", c3: "needs_you" }));
+  expect(N).toHaveBeenCalledTimes(1);
 });
 
-it("a pointerdown then a keydown request permission once", () => {
+it("a keydown then a pointerdown request permission once", () => {
   const N = fakeNotification();
   Object.assign(N, { permission: "default" });
   renderHook(() => useNotifications({ onFocus: () => {} }));
-  window.dispatchEvent(new Event("pointerdown"));
   window.dispatchEvent(new Event("keydown"));
   expect(N.requestPermission).toHaveBeenCalledTimes(1);
+  window.dispatchEvent(new Event("pointerdown"));
+  expect(N.requestPermission).toHaveBeenCalledTimes(1);
+});
+
+it("without the Notification API the title still badges and a gesture does not throw", () => {
+  vi.stubGlobal("Notification", undefined);
+  hidden(true);
+  renderHook(() => useNotifications({ onFocus: () => {} }));
+  act(() => setStatuses({ c1: "needs_you", c2: "idle" }));
+  window.dispatchEvent(new Event("pointerdown"));
+  expect(document.title).toBe("(1) AgentBoard");
 });
 
 it("the map shows the active workspace only, the title counts every workspace", () => {
@@ -194,6 +206,7 @@ it("the map shows the active workspace only, the title counts every workspace", 
   });
   render(<MissionMap onFocus={() => {}} />);
   renderHook(() => useNotifications({ onFocus: () => {} }));
+  expect(screen.getAllByRole("group")).toHaveLength(1);
   expect(screen.queryByText(/T-far/)).toBeNull();
   expect(screen.getByText(/T-c1/)).toBeTruthy();
   expect(document.title).toBe("(1) AgentBoard");
