@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { SpawnConsoleRequestSchema } from "@agentboard/shared";
+import { api } from "../api.js";
 import { ensureDaemon } from "../daemonFile.js";
 
 export async function spawnCommand(args: string[], deps: { log?: (line: string) => void } = {}): Promise<number> {
@@ -19,13 +20,7 @@ export async function spawnCommand(args: string[], deps: { log?: (line: string) 
       callerConsoleId: process.env.AGENTBOARD_CONSOLE_ID,
     });
     const info = await ensureDaemon(body.cwd);
-    const res = await fetch(`http://127.0.0.1:${info.port}/api/consoles`, {
-      method: "POST",
-      headers: { "x-agentboard-token": info.token, "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const json = (await res.json().catch(() => ({}))) as { error?: string };
-    if (!res.ok) throw new Error(json.error ?? `daemon answered ${res.status}`);
+    const json = await api(info, "POST", "/api/consoles", body);
     log(JSON.stringify(json));
     return 0;
   } catch (e) {
