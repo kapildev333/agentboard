@@ -27,12 +27,12 @@ export function useConsoleSocket(consoleId: string, factory: SocketFactory = def
 
   useEffect(() => {
     let disposed = false;
-    const connect = (retry: boolean) => {
+    const connect = (first: boolean) => {
       const s = factory();
       socket.current = s;
       s.onopen = () => {
         // The daemon replays its ring buffer on attach, so clear the screen it already fills.
-        if (!retry) out.current?.("\x1bc");
+        if (!first) out.current?.("\x1bc");
         send({ t: "attach", consoleId });
         if (size.current) send({ t: "resize", consoleId, ...size.current });
       };
@@ -46,7 +46,7 @@ export function useConsoleSocket(consoleId: string, factory: SocketFactory = def
         }
       };
       s.onclose = () => {
-        if (!disposed && retry) connect(false);
+        if (!disposed && first) connect(false);
       };
     };
     connect(true);

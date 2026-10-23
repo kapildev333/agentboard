@@ -1,5 +1,4 @@
 import "@xterm/xterm/css/xterm.css";
-import { useStore } from "@xyflow/react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -21,7 +20,6 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
   const { sendInput, sendResize, exited } = useConsoleSocket(data.node.id, socketFactory, (d) => term.current?.write(d));
   const io = useRef({ sendInput, sendResize });
   io.current = { sendInput, sendResize };
-  const zoom = useStore((s) => s.transform[2]);
   const [focused, setFocused] = useState(false);
   const fit = useRef<FitAddon | null>(null);
 
@@ -31,7 +29,7 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
     t.loadAddon(f);
     t.open(el.current!);
     t.attachCustomKeyEventHandler((e) => {
-      if (e.type !== "keydown" || !(e.metaKey || e.ctrlKey)) return true;
+      if (e.type !== "keydown" || !(/Mac/.test(navigator.userAgent) ? e.metaKey : e.ctrlKey)) return true;
       if (e.key === "c" && t.hasSelection()) return false; // browser copies the selection
       // false stops xterm only; the browser's own paste event still reaches xterm's textarea.
       if (e.key === "v") return false;
@@ -57,11 +55,7 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
     fit.current?.fit();
   }, [fontSize]);
 
-  // One renderer (xterm's DOM) at every zoom: WebGL floors cell width, so swapping reflowed running agents.
-  useEffect(() => {
-    const id = setTimeout(() => fit.current?.fit(), 150);
-    return () => clearTimeout(id);
-  }, [zoom]);
+  // One renderer (xterm's DOM) at every zoom. No zoom refit: fit() measures layout pixels, which a React Flow zoom never changes.
 
   return (
     <div
