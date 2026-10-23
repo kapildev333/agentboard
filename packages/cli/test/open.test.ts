@@ -108,5 +108,5 @@ test("open fails when the daemon refuses the login code", async () => {
 });
 
 test("ensureDaemon times out instead of crashing when the daemon cannot be spawned", async () => {
-  await expect(ensureDaemon(join(home, "missing"), undefined, 300)).rejects.toThrow("did not start");
+  await expect(ensureDaemon(join(home, "missing"), undefined, 300)).rejects.toThrow("did not start within 0.3 seconds");
 });
