@@ -110,3 +110,26 @@ test("open fails when the daemon refuses the login code", async () => {
 test("ensureDaemon times out instead of crashing when the daemon cannot be spawned", async () => {
   await expect(ensureDaemon(join(home, "missing"), undefined, 300)).rejects.toThrow("did not start within 0.3 seconds");
 });
+
+test("a daemon that exits during start fails fast with its exit code (L19)", async () => {
+  const handlers: Record<string, (code: number) => void> = {};
+  const spawn = (() => {
+    setTimeout(() => handlers.exit?.(3), 20);
+    return { unref() {}, on: (e: string, f: (code: number) => void) => ((handlers[e] = f), undefined) };
+  }) as never;
+  const started = Date.now();
+  await expect(ensureDaemon(home, spawn, 5000)).rejects.toThrow("daemon exited (3); run agentboard start to see why");
+  expect(Date.now() - started).toBeLessThan(2000);
+});
+
+test("ensureDaemon starts the CLI's own bin, not whatever script is argv[1] (L19)", async () => {
+  const spawned: string[][] = [];
+  const spawn = ((cmd: string, args: string[]) => {
+    spawned.push([cmd, ...args]);
+    return { unref() {}, on() {} };
+  }) as never;
+  await ensureDaemon(home, spawn, 150).catch(() => {});
+  expect(spawned[0]![0]).toBe(process.execPath);
+  expect(spawned[0]![1]).toMatch(/packages\/cli\/(src|dist)\/bin\.(ts|js)$/);
+  expect(spawned[0]![2]).toBe("start");
+});
