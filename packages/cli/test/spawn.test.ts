@@ -91,6 +91,18 @@ test("spawn with a missing --repo fails before reaching for a daemon (L23)", asy
   expect(seen).toHaveLength(0);
 });
 
+test("spawn custom --id sends the customId", async () => {
+  expect(await spawnCommand(["custom", "--id", "fake"], { log: () => {} })).toBe(0);
+  expect(JSON.parse(seen.find((r) => r.method === "POST")!.body)).toMatchObject({ agent: "custom", customId: "fake" });
+});
+
+test("spawn custom without --id fails before any request", async () => {
+  const lines: string[] = [];
+  expect(await spawnCommand(["custom"], { log: (s) => lines.push(s) })).toBe(1);
+  expect(JSON.parse(lines[0]!).error).toBe("custom agents need --id <id> (see agentboard status --json for the ids)");
+  expect(seen).toHaveLength(0);
+});
+
 test("spawn --repo . sends the current directory as cwd", async () => {
   expect(await spawnCommand(["claude", "--repo", "."], { log: () => {} })).toBe(0);
   const post = seen.find((r) => r.method === "POST")!;
