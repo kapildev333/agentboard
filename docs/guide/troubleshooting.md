@@ -4,9 +4,9 @@ Start with `agentboard status --json`. It tells you whether a daemon answers, on
 
 ## The daemon did not start
 
-**`agentboard: daemon did not start within 10 seconds`** (from `open`, `spawn` or `note`)
+**`agentboard: daemon exited (1); run agentboard start to see why`** or **`daemon did not start within 10 seconds`** (from `open`, `spawn` or `note`)
 
-Those commands start `agentboard start` in the background with its output discarded. Run the daemon in the foreground once to see the real error:
+Those commands start `agentboard start` in the background with its output discarded. They fail as soon as that process exits, or after 10 seconds if it never answers. Run the daemon in the foreground once to see the real error:
 
 ```sh
 cd ~/code/your-repo
@@ -86,7 +86,7 @@ Then, per agent:
   - Run `/hooks` inside the console to see the injected hooks.
   - A denied permission or an interrupt sends no Stop event, so the badge keeps its last state until the next turn.
 - **Gemini CLI.** The hooks come from a temporary settings file named in `GEMINI_CLI_SYSTEM_DEFAULTS_PATH`. An admin policy that disables hooks also disables these.
-- **OpenCode.** Install the plugin bundle in `~/.config/opencode/plugins/` ([Plugins](plugins.md#the-opencode-plugin)). The daemon's own pointer to `~/.agentboard/plugins/opencode/agentboard.ts` has nothing behind it in this version. Also check that `zod` resolves from the plugin's folder.
+- **OpenCode.** Board consoles load `packages/plugins/opencode/dist/agentboard.js` from your checkout, so it must be built (`npm run build`). Print `$OPENCODE_CONFIG_CONTENT` in the console; it names the file. A globally installed copy also needs `zod` to resolve from its folder ([Plugins](plugins.md#the-opencode-plugin)).
 - **Codex.**
   - Codex reports only the end of a turn.
   - Working shows only after you press Enter in the console.
