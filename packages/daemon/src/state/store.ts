@@ -41,7 +41,7 @@ export class StateStore {
     try {
       raw = JSON.parse(text);
     } catch (e) {
-      throw new Error(`invalid board file ${file}: ${(e as Error).message}`);
+      throw new Error(`invalid board file ${file}: ${(e as Error).message}`, { cause: e });
     }
     const parsed = BoardSchema.safeParse(migrate(raw, repoPath));
     if (!parsed.success) throw new Error(`invalid board file ${file}: ${parsed.error.message}`);
