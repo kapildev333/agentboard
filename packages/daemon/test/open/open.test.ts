@@ -28,7 +28,19 @@ test("openIn spawns the right command for each editor", async () => {
   expect(calls).toEqual([
     { command: "code", args: [dir] },
     { command: "zed", args: [dir] },
-    { command: "open", args: [dir] },
+    // D23: on macOS Finder reveals the folder in its parent and never launches a bundle.
+    { command: "open", args: ["-R", dir] },
+  ]);
+});
+
+test("finder opens the folder on linux and windows", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "ab-open-"));
+  const { spawn, calls } = fakeSpawn();
+  await openIn("finder", dir, spawn, "linux");
+  await openIn("finder", dir, spawn, "win32");
+  expect(calls).toEqual([
+    { command: "xdg-open", args: [dir] },
+    { command: "explorer", args: [dir] },
   ]);
 });
 
