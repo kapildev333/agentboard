@@ -14,16 +14,19 @@ export type ServerOptions = {
 export async function createServer(opts: ServerOptions) {
   let port = 0;
   const server = http.createServer((req, res) => {
-    if (req.method !== "GET" && !ownOrigin(req, port)) return end(res, 403);
-    if (!hasToken(req, opts.token)) return end(res, 401);
+    const refused = refuse(req, req.method !== "GET");
+    if (refused) return end(res, refused);
     end(res, 404);
   });
-  const wss = new WebSocketServer({ noServer: true });
-  server.on("upgrade", (req: http.IncomingMessage, socket: Duplex, head: Buffer) => {
-    const status = new URL(req.url ?? "/", "http://x").pathname !== "/ws" ? 404
-      : !ownOrigin(req, port) ? 403
+  // Host stops DNS rebinding, Origin stops cross-site requests, the token stops everything else.
+  const refuse = (req: http.IncomingMessage, checkOrigin: boolean): number =>
+    !ownHost(req, port) ? 403
+      : checkOrigin && !ownOrigin(req, port) ? 403
       : !hasToken(req, opts.token) ? 401
       : 0;
+  const wss = new WebSocketServer({ noServer: true });
+  server.on("upgrade", (req: http.IncomingMessage, socket: Duplex, head: Buffer) => {
+    const status = new URL(req.url ?? "/", "http://x").pathname !== "/ws" ? 404 : refuse(req, true);
     if (status) {
       socket.end(`HTTP/1.1 ${status} ${http.STATUS_CODES[status]}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
       return;
@@ -40,6 +43,10 @@ export async function createServer(opts: ServerOptions) {
       wss.close();
       server.closeAllConnections(); server.close(() => resolve()); }),
   };
+}
+
+function ownHost(req: http.IncomingMessage, port: number): boolean {
+  return req.headers.host === `127.0.0.1:${port}` || req.headers.host === `localhost:${port}`;
 }
 
 // An absent Origin is a non-browser client (a CLI hook); browsers always send one on these requests.
