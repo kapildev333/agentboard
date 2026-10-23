@@ -116,7 +116,7 @@ test("a spawned console streams output over the socket, takes input, turns worki
     const st = (await d.call("GET", "/api/status")).body as { consoles: ConsoleNode[] };
     return st.consoles.find((c) => c.id === node.id && c.status === "working");
   });
-  expect(status1.status).toBe("working");
+  expect(status1!.status).toBe("working");
   const boardMsg = sock.messages.filter((m) => m.t === "board").at(-1) as { board: Board } | undefined;
   expect(consolesOf(boardMsg!.board).map((c) => c.id)).toContain(node.id);
 });

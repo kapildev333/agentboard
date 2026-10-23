@@ -24,6 +24,8 @@ export const ConsoleNodeSchema = z.object({
   cwd: z.string(),
   worktree: WorktreeSchema.optional(),
   session: z.object({ provider: AgentIdSchema, id: z.string() }).optional(),
+  /** Which custom agent from settings a custom console runs, so it can start again after a restart. */
+  customId: z.string().optional(),
   status: ConsoleStatusSchema,
   createdAt: z.string(),
   lastActiveAt: z.string(),
