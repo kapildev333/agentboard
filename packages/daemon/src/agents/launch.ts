@@ -11,7 +11,6 @@ export interface LaunchContext {
   daemonUrl: string;
   token: string;
   name: string;
-  cwd: string;
   prompt?: string;
   /** Required when the agent is "custom". */
   custom?: CustomAgent;
@@ -20,20 +19,20 @@ export interface LaunchContext {
 function build(agent: AgentId, ctx: LaunchContext, resume: boolean): Launch {
   const { consoleId, daemonUrl, token, sessionId, name, prompt } = ctx;
   const input = { consoleId, daemonUrl, token, sessionId, resume };
-  // `--` keeps a prompt that starts with a dash from being read as a flag.
+  // `--` (claude, codex) and the `--flag=value` form (gemini and opencode, which parse with yargs and drop a
+  // separate value that starts with a dash) keep a prompt that starts with a dash from being read as a flag.
   const withPrompt = (l: Launch, tail: string[]): Launch => (prompt && !resume ? { ...l, args: [...l.args, ...tail] } : l);
   switch (agent) {
-    case "claude": {
-      const env = { AGENTBOARD_URL: daemonUrl, AGENTBOARD_CONSOLE_ID: consoleId, AGENTBOARD_TOKEN: token, AGENTBOARD_AGENT: "claude" };
-      return withPrompt({ ...claudeLaunch({ ...input, name }), env }, ["--", prompt ?? ""]);
-    }
+    case "claude":
+      return withPrompt(claudeLaunch({ ...input, name }), ["--", prompt ?? ""]);
     case "codex":
       return withPrompt(codexLaunch(input), ["--", prompt ?? ""]);
     case "gemini":
-      return withPrompt(geminiLaunch(input), ["--prompt-interactive", prompt ?? ""]);
+      return withPrompt(geminiLaunch(input), [`--prompt-interactive=${prompt}`]);
     case "opencode":
-      return withPrompt(opencodeLaunch(input), ["--prompt", prompt ?? ""]);
+      return withPrompt(opencodeLaunch(input), [`--prompt=${prompt}`]);
     case "custom": {
+      if (resume) throw new Error("a custom agent cannot resume");
       if (!ctx.custom) throw new Error("custom agent launch needs ctx.custom");
       return {
         command: ctx.custom.command,
