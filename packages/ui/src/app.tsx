@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { NodeProps } from "@xyflow/react";
-import { BoardSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type ConsoleNode as ConsoleData, type NoteNode, type Settings } from "@agentboard/shared";
+import { BoardSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type NoteNode, type Settings } from "@agentboard/shared";
 import { Board, WorkspaceTabs, autosaveBoard, useBoard } from "./board";
 import { ConsoleNode, type SocketLike } from "./console";
 import { GitCard } from "./git";
@@ -20,44 +20,59 @@ const readRecent = (): string[] => {
     return [];
   }
 };
-const defaultConnect = (): SocketLike =>
-  new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`) as unknown as SocketLike;
+const defaultConnect = (client: string): SocketLike =>
+  new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws?client=${client}`) as unknown as SocketLike;
 
 /**
- * Folds a board the daemon broadcast into the page's: the daemon owns each console's status and session, and
- * consoles it started elsewhere (CLI, MCP) are added. Layout stays the page's. A board with no unsaved local
+ * Folds a board the daemon broadcast into the page's. The daemon owns each console's status and session, the
+ * nodes added or removed elsewhere (CLI, MCP) and their content (a note's text); the page keeps positions,
+ * sizes and the viewport, and nodes it added or removed since it last synced. A board with no unsaved local
  * edit stays unsaved, so a status change never triggers a PUT.
  */
 export function mergeDaemonBoard(daemon: BoardData, closed: Set<string>): void {
   const { board, loaded } = useBoard.getState();
   if (daemon.repoPath !== board.repoPath) return;
-  const theirs = new Map(consoles(daemon).map((n) => [n.id, n]));
+  // Ids the daemon knew when the page last synced: one of these missing from the page was removed here.
+  const synced = new Set(loaded.workspaces.flatMap((w) => w.nodes.map((n) => n.id)));
+  const theirs = new Map(daemon.workspaces.flatMap((w) => w.nodes).map((n) => [n.id, n]));
+  const content = (n: BoardNode) => JSON.stringify({ ...n, x: 0, y: 0, w: 0, h: 0 });
   let changed = false;
   let workspaces = board.workspaces.map((ws) => {
     let touched = false;
-    const nodes = ws.nodes.map((n) => {
-      if (n.type !== "console") return n;
+    const nodes = ws.nodes.flatMap((n): BoardNode[] => {
       const t = theirs.get(n.id);
       theirs.delete(n.id);
-      if (!t || (t.status === n.status && t.session?.id === n.session?.id)) return n;
+      if (!t) {
+        if (n.type === "console" || !synced.has(n.id)) return [n];
+        touched = true;
+        return [];
+      }
+      if (n.type === "console") {
+        if (t.type !== "console" || (t.status === n.status && t.session?.id === n.session?.id)) return [n];
+        touched = true;
+        return [{ ...n, status: t.status, session: t.session, lastActiveAt: t.lastActiveAt }];
+      }
+      if (content(t) === content(n)) return [n];
       touched = true;
-      return { ...n, status: t.status, session: t.session, lastActiveAt: t.lastActiveAt };
+      return [{ ...t, x: n.x, y: n.y, w: n.w, h: n.h }];
     });
     if (!touched) return ws;
     changed = true;
     return { ...ws, nodes };
   });
   for (const t of theirs.values()) {
-    if (closed.has(t.id)) continue;
+    if (t.type === "console" ? closed.has(t.id) : synced.has(t.id)) continue;
     const home = daemon.workspaces.find((w) => w.nodes.some((n) => n.id === t.id))?.id;
     const target = workspaces.find((w) => w.id === home) ?? workspaces.find((w) => w.id === board.activeWorkspaceId) ?? workspaces[0];
     if (!target) continue;
     workspaces = workspaces.map((w) => (w === target ? { ...w, nodes: [...w.nodes, t] } : w));
     changed = true;
   }
-  if (!changed) return;
-  const next = { ...board, workspaces };
-  useBoard.setState(board === loaded ? { board: next, loaded: next } : { board: next });
+  const rev = Math.max(board.rev ?? 0, daemon.rev ?? 0);
+  if (!changed && rev === board.rev) return;
+  const next = { ...board, workspaces, rev };
+  // What the daemon holds is what the page has now synced to, so the next merge reads removals against it.
+  useBoard.setState(board === loaded ? { board: next, loaded: next } : { board: next, loaded: { ...loaded, workspaces: daemon.workspaces } });
 }
 
 function ConsoleView(props: NodeProps) {
@@ -111,7 +126,7 @@ const focusNode = (id: string) => {
 // Stable, so effects keyed on fetch (the spawn dialog's agent list, the git card) run once.
 const browserFetch: Fetch = (input, init) => globalThis.fetch(input, init);
 
-export function App({ fetch = browserFetch, search = location.search, connect = defaultConnect }: { fetch?: Fetch; search?: string; connect?: () => SocketLike }) {
+export function App({ fetch = browserFetch, search = location.search, connect = defaultConnect }: { fetch?: Fetch; search?: string; connect?: (client: string) => SocketLike }) {
   const repo = new URLSearchParams(search).get("repo");
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();
@@ -124,19 +139,32 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
     let live = true;
     const closed = new Set<string>();
     const cleanups: (() => void)[] = [];
-    (async () => {
+    const clientId = crypto.randomUUID();
+    const read = async () => {
       const res = await fetch(`/api/board?repo=${encodeURIComponent(repo)}`);
       if (res.status === 401 || res.status === 403) throw new Error("Not logged in: run `agentboard open` in the repo to get a fresh login link.");
       if (!res.ok) throw new Error(`could not load the board (${res.status})`);
-      const board = BoardSchema.parse(await res.json());
+      return BoardSchema.parse(await res.json());
+    };
+    // The daemon numbers every save; 409 means another client saved since this copy was read, so start over from theirs.
+    const save = async (sent: BoardData) => {
+      const res = await fetch("/api/board", { method: "PUT", headers: { "content-type": "application/json", "x-agentboard-client": clientId }, body: JSON.stringify(sent) }).catch(() => null);
+      if (res?.status === 409) return void (await read().then((b) => live && useBoard.getState().setBoard(b)).catch(() => {}));
+      if (!res?.ok) return;
+      const { rev } = PutBoardResponseSchema.parse(await res.json());
+      const { board: now } = useBoard.getState();
+      const next = { ...now, rev };
+      // Edits made while the save was in flight stay unsaved.
+      useBoard.setState(now === sent ? { board: next, loaded: next } : { board: next });
+    };
+    (async () => {
+      const board = await read();
       if (!live) return;
       useBoard.getState().setBoard(board);
       localStorage.setItem(RECENT, JSON.stringify([repo, ...readRecent().filter((r) => r !== repo)].slice(0, 10)));
       setReady(true);
       cleanups.push(
-        autosaveBoard((b) => {
-          void fetch("/api/board", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(b) });
-        }),
+        autosaveBoard((b) => void save(b)),
         // A console that leaves the board (Close, delete key, workspace delete) is ended by the daemon.
         useBoard.subscribe((s, prev) => {
           if (s.board === prev.board || s.board.repoPath !== prev.board.repoPath) return;
@@ -149,7 +177,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
         }),
       );
       const open = () => {
-        const s = connect();
+        const s = connect(clientId);
         s.onmessage = (e) => {
           try {
             const m = parseDaemonMessage(JSON.parse(String(e.data)));
