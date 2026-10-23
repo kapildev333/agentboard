@@ -1,7 +1,7 @@
 import { spawn as nodeSpawn } from "node:child_process";
 import { statSync } from "node:fs";
 import { resolve } from "node:path";
-import { isAlive, readDaemonInfo } from "../daemonFile.js";
+import { ensureDaemon } from "../daemonFile.js";
 
 export interface OpenDeps {
   spawn?: typeof nodeSpawn;
@@ -28,23 +28,7 @@ export async function openCommand(args: string[], deps: OpenDeps = {}): Promise<
   const repo = resolve(args[0] ?? ".");
   if (!statSync(repo, { throwIfNoEntry: false })?.isDirectory()) throw new Error(`not a directory: ${repo}`);
 
-  let info = await readDaemonInfo();
-  if (!info || !(await isAlive(info))) {
-    const daemon = spawn(process.execPath, [process.argv[1] ?? "", "start"], { cwd: repo, stdio: "ignore", detached: true, windowsHide: true });
-    daemon.on("error", () => {}); // surfaces as the timeout below
-    daemon.unref();
-    const deadline = Date.now() + 10_000;
-    info = null;
-    while (Date.now() < deadline) {
-      const next = await readDaemonInfo();
-      if (next && (await isAlive(next))) {
-        info = next;
-        break;
-      }
-      await new Promise((r) => setTimeout(r, 100));
-    }
-    if (!info) throw new Error("daemon did not start within 10 seconds");
-  }
+  const info = await ensureDaemon(repo, spawn);
   // The token never goes in a URL: trade it for a one-time code.
   const res = await fetch(`http://127.0.0.1:${info.port}/auth/code`, {
     method: "POST",
