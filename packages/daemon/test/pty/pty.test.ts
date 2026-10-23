@@ -85,11 +85,11 @@ describe("PtyManager", () => {
     m.write("p", "echo first\n");
     await until(() => out, "first");
     expect(m.replay("p")).toContain("first");
-    m.write("p", "head -c 300000 /dev/zero | tr '\\0' x; echo END\n");
-    await until(() => out, "END");
+    m.write("p", "head -c 300000 /dev/zero | tr '\\0' x; echo E$((1))ND\n");
+    await until(() => out, "E1ND");
     const r = m.replay("p");
     expect(r.length).toBe(200 * 1024);
-    expect(r).toContain("END");
+    expect(r).toContain("E1ND");
     expect(r).not.toContain("first");
     await m.kill("p");
   });
