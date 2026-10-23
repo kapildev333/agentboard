@@ -17,7 +17,13 @@ const commands: Record<Editor, (platform: string, path: string) => [string, stri
     platform === "darwin" ? ["open", ["-R", path]] : platform === "win32" ? ["explorer", [path]] : ["xdg-open", [path]],
 };
 
+// Own properties only: "constructor" or "__proto__" must not reach the command table.
+function checkEditor(editor: unknown): asserts editor is Editor {
+  if (typeof editor !== "string" || !Object.hasOwn(commands, editor)) throw new OpenError(`unknown editor: ${JSON.stringify(editor)}`);
+}
+
 export async function openIn(editor: Editor, path: string, spawn: Spawn = nodeSpawn, platform = process.platform): Promise<void> {
+  checkEditor(editor);
   // Absolute only, so a path can never be read as an option; spawned as its resolved target, never as a link.
   if (!isAbsolute(path)) throw new OpenError(`path must be absolute: ${JSON.stringify(path)}`);
   const target = await realpath(path).catch(() => null);
@@ -33,8 +39,8 @@ export async function openIn(editor: Editor, path: string, spawn: Spawn = nodeSp
 // The body is the POST /api/open request: { editor, path }. L12 maps a thrown Error to the HTTP response.
 export async function handleOpen(body: unknown, spawn: Spawn = nodeSpawn): Promise<{ ok: true }> {
   const { editor, path } = (body ?? {}) as Record<string, unknown>;
-  if (typeof editor !== "string" || !Object.hasOwn(commands, editor)) throw new OpenError(`unknown editor: ${JSON.stringify(editor)}`);
+  checkEditor(editor);
   if (typeof path !== "string") throw new OpenError("path must be a string");
-  await openIn(editor as Editor, path, spawn);
+  await openIn(editor, path, spawn);
   return { ok: true };
 }
