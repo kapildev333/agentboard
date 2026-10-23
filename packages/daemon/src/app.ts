@@ -152,6 +152,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     });
     pty.onExit(node.id, (code) => {
       running.delete(node.id);
+      adopting.delete(node.id); // a Resume starts with its recorded session, not an open adoption (D39)
       tracker.markExit(node.id, code);
       server.broadcast({ t: "exit", consoleId: node.id, code });
     });
