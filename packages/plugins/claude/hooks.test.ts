@@ -1,0 +1,78 @@
+import { spawn } from "node:child_process";
+import http from "node:http";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { expect, test } from "vitest";
+
+const script = fileURLToPath(new URL("hooks/post.mjs", import.meta.url));
+const stdin = JSON.stringify({ hook_event_name: "Stop", session_id: "s1" });
+
+const run = (env: Record<string, string>) =>
+  new Promise<{ code: number | null; out: string; ms: number }>((resolve) => {
+    const t = Date.now();
+    const p = spawn(process.execPath, [script], { env: { PATH: process.env.PATH ?? "", ...env } });
+    let out = "";
+    p.stdout.on("data", (c) => (out += c));
+    p.stderr.on("data", (c) => (out += c));
+    p.on("exit", (code) => resolve({ code, out, ms: Date.now() - t }));
+    p.stdin.end(stdin);
+  });
+
+const fake = async () => {
+  const reqs: { method?: string; url?: string; token?: unknown; body: unknown }[] = [];
+  const server = http.createServer((req, res) => {
+    let b = "";
+    req.on("data", (c) => (b += c));
+    req.on("end", () => {
+      reqs.push({ method: req.method, url: req.url, token: req.headers["x-agentboard-token"], body: JSON.parse(b) });
+      res.end("{}");
+    });
+  });
+  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+  const { port } = server.address() as { port: number };
+  return { reqs, port, close: () => new Promise((r) => server.close(r)) };
+};
+
+test("exits 0 and posts nothing without the environment", async () => {
+  const s = await fake();
+  const r = await run({});
+  await s.close();
+  expect(r).toMatchObject({ code: 0, out: "" });
+  expect(r.ms).toBeLessThan(2000);
+  expect(s.reqs).toEqual([]);
+});
+
+test("posts the wrapped event with the token when the environment is set", async () => {
+  const s = await fake();
+  const r = await run({ AGENTBOARD_URL: `http://127.0.0.1:${s.port}`, AGENTBOARD_CONSOLE_ID: "c9", AGENTBOARD_TOKEN: "tk" });
+  await s.close();
+  expect(r).toMatchObject({ code: 0, out: "" });
+  expect(s.reqs).toEqual([
+    {
+      method: "POST",
+      url: "/hook/c9",
+      token: "tk",
+      body: { agent: "claude", event: "Stop", payload: { hook_event_name: "Stop", session_id: "s1" } },
+    },
+  ]);
+});
+
+test("exits 0 when the daemon is down", async () => {
+  const s = await fake();
+  await s.close();
+  const r = await run({ AGENTBOARD_URL: `http://127.0.0.1:${s.port}`, AGENTBOARD_CONSOLE_ID: "c9" });
+  expect(r).toMatchObject({ code: 0, out: "" });
+  expect(r.ms).toBeLessThan(4000);
+});
+
+test("hooks.json names every event with the post script", () => {
+  const { hooks } = JSON.parse(readFileSync(new URL("hooks/hooks.json", import.meta.url), "utf8"));
+  const events = ["Stop", "Notification", "UserPromptSubmit", "PermissionRequest", "SessionEnd"];
+  expect(Object.keys(hooks).sort()).toEqual([...events].sort());
+  for (const e of events)
+    expect(hooks[e][0].hooks[0]).toMatchObject({
+      type: "command",
+      command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/post.mjs"',
+      timeout: 5,
+    });
+});
