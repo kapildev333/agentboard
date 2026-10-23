@@ -132,9 +132,16 @@ A note is a yellow card holding text. You add one from a terminal or an agent; t
 - `agentboard note "<text>"` puts it under the lowest node of the active workspace.
 - The MCP `add_note` tool puts it at the top-left of the active workspace.
 
-**Notes added from the CLI or MCP can be lost.** An open board never shows them. The daemon saves the note, and its status broadcasts carry it, but the page takes only consoles from those broadcasts. Worse, the page's next save writes its own copy of the board and deletes the note.
+A note added from the CLI or MCP appears on every open page at once, with no reload. It works like this:
 
-Once you have panned, zoomed, dragged or changed workspaces on a page, it also saves whenever a console changes status, so reloading afterwards can be too late. Close the board, or reload it and leave it untouched, before adding a note; reload again after. An agent that adds a note through MCP while you work on the board loses it when its turn ends. Lane L1B (#80) is fixing this.
+- **The daemon tells the other pages.** It saves the board, raises the board's `rev` number, and sends the board to every open page except the one that saved it, over a `board` WebSocket message.
+- **The page merges what it receives:**
+  - From the daemon it takes nodes added or removed elsewhere, a note's text, and each console's status.
+  - It keeps its own viewport, and the position and size of any node you moved since its last sync.
+  - It also keeps any node it added or removed itself since then.
+- **A stale save is refused.** A save from a page holding an older `rev` than the daemon answers `409`. The page then re-reads the board from the daemon, and edits it had not yet saved are dropped.
+
+**One limit:** two tabs on the same board are not supported in this version. The spec says a second open should focus the existing tab, which is not built yet. With two tabs open, a save from one can make the other re-read and drop its unsaved layout changes.
 
 Select a note and press Backspace to remove it.
 
