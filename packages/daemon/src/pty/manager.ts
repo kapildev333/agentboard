@@ -26,6 +26,10 @@ export class PtyManager {
     this.get(id).pty.write(data);
   }
 
+  resize(id: string, cols: number, rows: number): void {
+    this.get(id).pty.resize(cols, rows);
+  }
+
   onData(id: string, cb: (data: string) => void): () => void {
     const d = this.get(id).pty.onData(cb);
     return () => d.dispose();
