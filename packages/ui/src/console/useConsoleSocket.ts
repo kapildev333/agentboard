@@ -16,6 +16,7 @@ export const defaultSocketFactory: SocketFactory = () =>
 
 export function useConsoleSocket(consoleId: string, factory: SocketFactory = defaultSocketFactory) {
   const socket = useRef<SocketLike | null>(null);
+  const size = useRef<{ cols: number; rows: number } | null>(null);
   const send = useCallback((m: object) => {
     if (socket.current?.readyState === OPEN) socket.current.send(JSON.stringify(m));
   }, []);
@@ -25,7 +26,10 @@ export function useConsoleSocket(consoleId: string, factory: SocketFactory = def
     const connect = (retry: boolean) => {
       const s = factory();
       socket.current = s;
-      s.onopen = () => send({ t: "attach", consoleId });
+      s.onopen = () => {
+        send({ t: "attach", consoleId });
+        if (size.current) send({ t: "resize", consoleId, ...size.current });
+      };
       s.onclose = () => {
         if (!disposed && retry) connect(false);
       };
@@ -38,6 +42,10 @@ export function useConsoleSocket(consoleId: string, factory: SocketFactory = def
   }, [consoleId, factory, send]);
 
   return {
+    sendResize: (cols: number, rows: number) => {
+      size.current = { cols, rows };
+      send({ t: "resize", consoleId, cols, rows });
+    },
     sendInput: (data: string) => send({ t: "input", consoleId, data }),
   };
 }
