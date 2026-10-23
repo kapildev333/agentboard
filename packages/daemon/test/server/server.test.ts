@@ -1,5 +1,6 @@
 import http from "node:http";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import net from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test } from "vitest";
@@ -195,4 +196,25 @@ test("an empty or weak token is refused at start", async () => {
   for (const bad of ["", "short", "x".repeat(31), `${"x".repeat(32)} `, `${"x".repeat(32)};`]) {
     await expect(createServer({ port: 0, token: bad, staticDir: tmpdir(), routes: {} })).rejects.toThrow(/token/);
   }
+});
+
+function raw(port: number, request: string) {
+  return new Promise<string>((resolve) => {
+    let out = "";
+    const socket = net.connect(port, "127.0.0.1", () => socket.write(request));
+    socket.on("data", (d) => { out += d.toString(); });
+    socket.on("close", () => resolve(out));
+    socket.on("error", () => resolve(out));
+    setTimeout(() => socket.destroy(), 500);
+  });
+}
+
+test("a request target the URL parser rejects is answered 400 and the server stays up", async () => {
+  const s = await start();
+  const host = `Host: 127.0.0.1:${s.port}\r\n`;
+  expect(await raw(s.port, `GET // HTTP/1.1\r\n${host}Connection: close\r\n\r\n`)).toMatch(/^HTTP\/1\.1 400/);
+  const up = await raw(s.port, `GET // HTTP/1.1\r\n${host}Connection: Upgrade\r\nUpgrade: websocket\r\n`
+    + `Sec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n`);
+  expect(up).not.toMatch(/101/);
+  expect((await fetch(`${s.origin}/api/status`)).status).toBe(401);
 });
