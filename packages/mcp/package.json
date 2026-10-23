@@ -15,6 +15,6 @@
     "zod": "4.6.7"
   },
   "bin": {
-    "agentboard-mcp": "dist/bin.js"
+    "agentboard-mcp": "bin/agentboard-mcp.js"
   }
 }
