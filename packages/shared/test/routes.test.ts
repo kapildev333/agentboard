@@ -1,24 +1,23 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "vitest";
 import * as shared from "@agentboard/shared";
 import { routes } from "@agentboard/shared";
 
-test("every route names schemas that exist", () => {
-  const keys = routes.map((r) => `${r.method} ${r.path}`);
-  expect(keys).toEqual(expect.arrayContaining([
-    "GET /api/board", "PUT /api/board", "POST /api/consoles", "DELETE /api/consoles/:id",
-    "POST /api/consoles/:id/resume", "GET /api/agents", "GET /api/status", "POST /hook/:consoleId",
-    "GET /api/git/status", "GET /api/git/diff", "POST /api/git/worktree", "POST /api/git/commit",
-    "POST /api/git/push", "POST /api/git/pr",
-  ]));
-  expect(new Set(keys).size).toBe(keys.length);
-  for (const r of routes) {
-    for (const n of [r.request, r.response]) if (n) expect(shared).toHaveProperty(n);
-  }
+const examples: Record<string, { request: unknown; response: unknown }> = JSON.parse(
+  readFileSync(new URL("../src/fixtures/routes.json", import.meta.url), "utf8"),
+);
+
+test("every route has an example keyed by 'METHOD path', and nothing else does", () => {
+  expect(Object.keys(examples).sort()).toEqual(routes.map((r) => `${r.method} ${r.path}`).sort());
 });
 
-test("POST /api/consoles request and response schemas validate", () => {
-  const r = routes.find((x) => x.method === "POST" && x.path === "/api/consoles")!;
-  expect(shared[r.request!].safeParse({ agent: "claude", cwd: "/tmp/r" }).success).toBe(true);
-  expect(shared[r.request!].safeParse({ agent: "vim", cwd: "/tmp/r" }).success).toBe(false);
-  expect(r.response).toBe("ConsoleNodeSchema");
+test.each(routes.map((r) => [`${r.method} ${r.path}`, r] as const))("%s examples round-trip", (key, r) => {
+  const ex = examples[key]!;
+  if (r.request) expect(shared[r.request].parse(ex.request)).toEqual(ex.request);
+  else expect(ex.request).toBeNull();
+  expect(shared[r.response].parse(ex.response)).toEqual(ex.response);
+});
+
+test("POST /api/consoles rejects an unknown agent", () => {
+  expect(shared.SpawnConsoleRequestSchema.safeParse({ agent: "vim", cwd: "/tmp/r" }).success).toBe(false);
 });
