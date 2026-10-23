@@ -134,4 +134,12 @@ describe("ConsoleNode", () => {
     act(() => x.term.handlers.resize({ cols: 100, rows: 30 }));
     expect(sockets[0]!.sent.at(-1)).toBe(JSON.stringify({ t: "resize", consoleId: "c1", cols: 100, rows: 30 }));
   });
+
+  it("output messages are written to the terminal", () => {
+    mount();
+    act(() => sockets[0]!.open());
+    act(() => sockets[0]!.receive({ t: "output", consoleId: "c1", data: "hello" }));
+    act(() => sockets[0]!.receive({ t: "output", consoleId: "other", data: "nope" }));
+    expect(x.term.written).toEqual(["hello"]);
+  });
 });
