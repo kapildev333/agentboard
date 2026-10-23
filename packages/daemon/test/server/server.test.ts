@@ -1,3 +1,4 @@
+import http from "node:http";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -49,4 +50,19 @@ test("a WebSocket upgrade from a foreign Origin is refused", async () => {
   expect(await upgrade(url, { "x-agentboard-token": token, origin: "https://evil.example" }))
     .toEqual({ opened: false, status: 403 });
   expect(await upgrade(url, { "x-agentboard-token": token, origin: s.origin })).toEqual({ opened: true });
+});
+
+function get(port: number, path: string, headers: Record<string, string>) {
+  return new Promise<http.IncomingMessage>((resolve, reject) => {
+    http.get({ host: "127.0.0.1", port, path, headers }, (res) => { res.resume(); resolve(res); }).on("error", reject);
+  });
+}
+
+test("a wrong Host is refused with 403", async () => {
+  const s = await start();
+  expect((await get(s.port, "/api/status", { host: `evil.example:${s.port}`, "x-agentboard-token": token })).statusCode).toBe(403);
+  expect((await get(s.port, "/api/status", { host: "localhost:1", "x-agentboard-token": token })).statusCode).toBe(403);
+  expect((await get(s.port, "/", { host: `localhost:${s.port}`, "x-agentboard-token": token })).statusCode).not.toBe(403);
+  expect(await upgrade(`ws://127.0.0.1:${s.port}/ws`, { host: `evil.example:${s.port}`, "x-agentboard-token": token }))
+    .toEqual({ opened: false, status: 403 });
 });
