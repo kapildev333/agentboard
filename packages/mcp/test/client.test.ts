@@ -29,3 +29,23 @@ test("daemon.json is re-read on every request", async () => {
   await client.getStatus();
   expect(urls).toEqual(["http://127.0.0.1:1111/api/status", "http://127.0.0.1:2222/api/status"]);
 });
+
+test("the MCP server and the CLI read daemon.json through one function (L24, L10)", async () => {
+  const { loadDaemonInfo } = await import("@agentboard/cli");
+  expect(readDaemonInfo).toBe(loadDaemonInfo);
+});
+
+test("note ids are unique within one millisecond (L24)", async () => {
+  const board = { version: 1, repoPath: "/r", activeWorkspaceId: "w", workspaces: [{ id: "w", name: "w", viewport: { x: 0, y: 0, zoom: 1 }, nodes: [] }] };
+  const f = (async (_: string, init?: RequestInit) => new Response(JSON.stringify(init?.method === "PUT" ? { ok: true } : board))) as typeof fetch;
+  const client = new DaemonClient(() => ({ port: 1, token: "t", pid: 1 }), f, {});
+  const now = Date.now;
+  Date.now = () => 42;
+  try {
+    const [a, b] = [await client.addNote({ text: "a" }), await client.addNote({ text: "b" })];
+    expect(a.id).not.toBe(b.id);
+    expect(a.id).toMatch(/^note-[0-9a-f-]{36}$/);
+  } finally {
+    Date.now = now;
+  }
+});

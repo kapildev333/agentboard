@@ -7,9 +7,10 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "npm run build -w @agentboard/shared && tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
+    "@agentboard/cli": "0.0.0",
     "@modelcontextprotocol/sdk": "1.32.1",
     "@agentboard/shared": "0.0.0",
     "zod": "4.6.7"
