@@ -1,32 +1,39 @@
 import { EventEmitter } from "node:events";
-import { mkdtempSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { expect, test } from "vitest";
-import { OpenError, handleOpen, openIn } from "../../src/open/index.js";
+import { afterAll, expect, test } from "vitest";
+import { OpenError, handleOpen, openIn, type Editor } from "../../src/open/index.js";
 
 type Call = { command: string; args: readonly string[] };
 
 // A child that reports a successful spawn on the next tick, so no editor ever opens.
 function fakeSpawn() {
   const calls: Call[] = [];
-  const spawn = (command: string, args: readonly string[]) => {
+  const options: unknown[] = [];
+  const spawn = (command: string, args: readonly string[], opts: unknown) => {
     calls.push({ command, args });
+    options.push(opts);
     const child = Object.assign(new EventEmitter(), { unref() {} });
     process.nextTick(() => child.emit("spawn"));
     return child;
   };
-  return { spawn, calls };
+  return { spawn, calls, options };
 }
+
+const dirs: string[] = [];
+afterAll(() => dirs.splice(0).forEach((d) => rmSync(d, { recursive: true, force: true })));
 
 // macOS tmpdir sits under a symlink, so the spawned argv is the resolved path.
 function tempDir() {
-  return realpathSync(mkdtempSync(join(tmpdir(), "ab-open-")));
+  const d = mkdtempSync(join(tmpdir(), "ab-open-"));
+  dirs.push(d);
+  return realpathSync(d);
 }
 
 test("openIn spawns the right command for each editor", async () => {
   const dir = tempDir();
-  const { spawn, calls } = fakeSpawn();
+  const { spawn, calls, options } = fakeSpawn();
   await openIn("code", dir, spawn);
   await openIn("zed", dir, spawn);
   await openIn("finder", dir, spawn, "darwin");
@@ -36,6 +43,21 @@ test("openIn spawns the right command for each editor", async () => {
     // D23: on macOS Finder reveals the folder in its parent and never launches a bundle.
     { command: "open", args: ["-R", dir] },
   ]);
+  expect(options).toEqual([
+    { stdio: "ignore", detached: true },
+    { stdio: "ignore", detached: true },
+    { stdio: "ignore", detached: true },
+  ]);
+});
+
+test("openIn refuses an editor outside the three before it touches the filesystem or spawns", async () => {
+  const dir = tempDir();
+  const { spawn, calls } = fakeSpawn();
+  for (const name of ["constructor", "toString", "__proto__", "vim"]) {
+    const editor: string = name;
+    await expect(openIn(editor as Editor, dir, spawn)).rejects.toThrow(OpenError);
+  }
+  expect(calls).toEqual([]);
 });
 
 test("finder opens the folder on linux and windows", async () => {
