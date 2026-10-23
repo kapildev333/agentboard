@@ -8,7 +8,7 @@ const USAGE = "usage: agentboard <start | open [path] | status | spawn <agent> |
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
-  // Later lanes add `mcp`, `spawn`, `note` and `status --json` as further cases.
+  // A later lane adds `mcp` as a further case.
   switch (cmd) {
     case "start":
       await startCommand();
