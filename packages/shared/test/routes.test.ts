@@ -21,3 +21,12 @@ test.each(routes.map((r) => [`${r.method} ${r.path}`, r] as const))("%s examples
 test("POST /api/consoles rejects an unknown agent", () => {
   expect(shared.SpawnConsoleRequestSchema.safeParse({ agent: "vim", cwd: "/tmp/r" }).success).toBe(false);
 });
+
+test("POST /api/consoles accepts an optional customId", () => {
+  expect(shared.SpawnConsoleRequestSchema.parse({ agent: "custom", cwd: "/tmp/r", customId: "mine" }).customId).toBe("mine");
+});
+
+test("GET /api/agents keeps customId and name on custom entries", () => {
+  const entry = { id: "custom", command: "mytool", version: null, available: true, customId: "mine", name: "Mine" };
+  expect(shared.AgentInfoListSchema.parse([entry])).toEqual([entry]);
+});
