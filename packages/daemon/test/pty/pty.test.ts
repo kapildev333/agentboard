@@ -21,8 +21,8 @@ describe("PtyManager", () => {
     let out = "";
     sh(m, "a");
     m.onData("a", (d) => (out += d));
-    m.write("a", "echo hi\n");
-    await until(() => out, "hi");
+    m.write("a", "echo $((6*7))\n");
+    await until(() => out, "42");
     await m.kill("a");
   });
 
@@ -129,12 +129,10 @@ describe("PtyManager", () => {
     m.write("p", "echo first\n");
     await until(() => out, "first");
     expect(m.replay("p")).toContain("first");
-    m.write("p", "head -c 300000 /dev/zero | tr '\\0' x; echo E$((1))ND\n");
+    m.write("p", "seq 1 100000; echo E$((1))ND\n");
     await until(() => out, "E1ND");
-    const r = m.replay("p");
-    expect(r.length).toBe(200 * 1024);
-    expect(r).toContain("E1ND");
-    expect(r).not.toContain("first");
+    expect(out.length).toBeGreaterThan(400 * 1024);
+    expect(m.replay("p")).toBe(out.slice(-200 * 1024));
     await m.kill("p");
   });
 });
@@ -155,5 +153,9 @@ describe("parseEnv", () => {
 
   it("skips entries with no usable name", () => {
     expect(parseEnv("motd line\0A=1\0")).toEqual({ A: "1" });
+  });
+
+  it("keeps the first variable when an rc file printed something before it", () => {
+    expect(parseEnv("motd\nPATH=/x\0")).toEqual({ PATH: "/x" });
   });
 });
