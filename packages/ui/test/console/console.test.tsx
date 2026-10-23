@@ -124,4 +124,14 @@ describe("ConsoleNode", () => {
       JSON.stringify({ t: "input", consoleId: "c1", data: "x" }),
     ]);
   });
+
+  it("a resize sends cols and rows", () => {
+    mount();
+    act(() => sockets[0]!.open());
+    x.fit.fit.mockClear();
+    act(() => roCallback());
+    expect(x.fit.fit).toHaveBeenCalled();
+    act(() => x.term.handlers.resize({ cols: 100, rows: 30 }));
+    expect(sockets[0]!.sent.at(-1)).toBe(JSON.stringify({ t: "resize", consoleId: "c1", cols: 100, rows: 30 }));
+  });
 });
