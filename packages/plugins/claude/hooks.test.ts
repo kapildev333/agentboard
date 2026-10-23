@@ -67,7 +67,7 @@ test("exits 0 when the daemon is down", async () => {
 
 test("hooks.json names every event with the post script", () => {
   const { hooks } = JSON.parse(readFileSync(new URL("hooks/hooks.json", import.meta.url), "utf8"));
-  const events = ["Stop", "Notification", "UserPromptSubmit", "PermissionRequest", "SessionEnd"];
+  const events = ["Stop", "Notification", "UserPromptSubmit", "PermissionRequest", "PreToolUse", "SessionEnd"];
   expect(Object.keys(hooks).sort()).toEqual([...events].sort());
   for (const e of events)
     expect(hooks[e][0].hooks[0]).toMatchObject({
