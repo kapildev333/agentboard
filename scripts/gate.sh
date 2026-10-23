@@ -2,6 +2,7 @@
 # The gate that replaces CI. Run from any worktree; prints PASS as the last line on success.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
+exec > >(sed "s#${HOME}#~#g") 2>&1   # the gate tail lands in pull request bodies: never print the home path
 base="${GATE_BASE:-origin/main}"
 echo "== gate: $(git rev-parse --short HEAD) on $(git branch --show-current 2>/dev/null || echo detached)"
 command -v gitleaks >/dev/null || { echo "gate: gitleaks missing (brew install gitleaks)"; exit 1; }
