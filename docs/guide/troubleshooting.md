@@ -57,11 +57,16 @@ node-pty's prebuilt `spawn-helper` lost its execute bit, because `npm ci` runs w
 npm run fix-pty
 ```
 
-Run `npm run fix-pty` after every `npm ci`. The same message also appears when the command does not exist at all: check a custom agent's **command** in Settings. On Linux there is no prebuilt binary; run `npm rebuild node-pty` instead.
+Run `npm run fix-pty` after every `npm ci`. On Linux there is no prebuilt binary; run `npm rebuild node-pty --ignore-scripts=false` instead. The repository's `.npmrc` turns install scripts off, so a plain `npm rebuild node-pty` does nothing.
+
+A missing program never causes this message:
+
+- A built-in agent with nothing on the agent PATH is refused with `<agent> is not on the agent PATH`.
+- A custom agent whose **command** does not exist is greyed out in the spawn dialog. Spawned through MCP anyway, it turns Exited with a blank terminal.
 
 ## The login code expired
 
-The page shows an empty `401`, or "Not logged in: run `agentboard open` in the repo to get a fresh login link." Possible causes:
+Loading the page shows an empty `401`. A page that was already open shows "The daemon stopped…" or "Not logged in: run `agentboard open` in the repo to get a fresh login link." Possible causes:
 
 - **The link is old.** A login link works once, within 60 seconds. Opening it twice, opening it late, or opening it after a restart gets 401.
 - **The daemon restarted.** Its sessions are gone, and so is the port your tab was talking to.
@@ -86,7 +91,7 @@ Then, per agent:
   - Run `/hooks` inside the console to see the injected hooks.
   - A denied permission or an interrupt sends no Stop event, so the badge keeps its last state until the next turn.
 - **Gemini CLI.** The hooks come from a temporary settings file named in `GEMINI_CLI_SYSTEM_DEFAULTS_PATH`. An admin policy that disables hooks also disables these.
-- **OpenCode.** Board consoles load `packages/plugins/opencode/dist/agentboard.js` from your checkout, so it must be built (`npm run build`). Print `$OPENCODE_CONFIG_CONTENT` in the console; it names the file. A globally installed copy also needs `zod` to resolve from its folder ([Plugins](plugins.md#the-opencode-plugin)).
+- **OpenCode.** Board consoles load `packages/plugins/opencode/dist/agentboard.js` from your checkout, so it must be built (`npm run build`). Print `$OPENCODE_CONFIG_CONTENT` in the console; it names the file.
 - **Codex.**
   - Codex reports only the end of a turn.
   - Working shows only after you press Enter in the console.
@@ -113,11 +118,12 @@ The same holds for the MCP server: register `agentboard-mcp` from `npm link -w @
 
 | Symptom | Cause and fix |
 | --- | --- |
-| The spawn dialog says "not installed" for a CLI you have | The daemon reads PATH from your login shell (`$SHELL -ilc env`) once, at start. Fix your shell profile and restart the daemon |
+| The spawn dialog says "not installed" for a CLI you have | Agents are found on the agent PATH: `AGENTBOARD_AGENT_PATH` if set, else the PATH your login shell (`$SHELL -ilc env`) gave the daemon at start. Fix that PATH and restart the daemon |
+| A spawn answers `<agent> is not on the agent PATH` | Same cause: the agent's executable is not on the agent PATH |
+| An agent shows no version | Versions appear only after that agent's first console has started; listing never runs an agent |
 | Spawn with a worktree fails with `internal error` | The branch or `.worktrees/<branch>` already exists. Pick another name, or remove the old one with `git worktree remove .worktrees/<branch>` and `git branch -d <branch>` |
 | A closed console's worktree is still there | Closing a console never removes its worktree in this version. Remove it with `git worktree remove` |
 | VS Code or Zed buttons answer `internal error` | `code` or `zed` is not on the daemon's PATH (the daemon logs nothing about it). Install the shell command, then restart the daemon from a shell that has it |
-| **Open PR** fails | `gh` must be installed and logged in, and the branch pushed |
+| **Commit**, **Push** or **Open PR** shows `internal error` | Every git or gh failure answers a bare 500 today, for example a commit with nothing to commit, a push with no remote, or `gh` missing or logged out. Run the same command in the console to see the message |
 | `agentboard spawn custom` answers `unknown custom agent: undefined` | The CLI cannot choose a custom agent yet. Use the spawn dialog, or MCP `spawn_console` with `customId` |
-| Mouse selection in a terminal is offset | Selection is only accurate at 100% zoom. Zoom to 100% to select |
 | A note from MCP lands under another node | `add_note` places notes at the top-left. Drag it away |
