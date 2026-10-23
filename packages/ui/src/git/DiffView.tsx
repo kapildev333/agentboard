@@ -15,6 +15,7 @@ export function DiffView({ fetch, path }: { fetch: typeof globalThis.fetch; path
   }, [fetch, path]);
   if (error) return <p role="alert">{error}</p>;
   if (!diff) return null;
+  let inHunk = false;
   return (
     <div>
       <ul>
@@ -26,7 +27,10 @@ export function DiffView({ fetch, path }: { fetch: typeof globalThis.fetch; path
       </ul>
       <pre style={{ fontFamily: "monospace" }}>
         {diff.patch.split("\n").map((line, i) => {
-          const header = line.startsWith("+++") || line.startsWith("---");
+          // ---/+++ are headers only before a file's first @@; "diff --git" starts the next file.
+          if (line.startsWith("diff ")) inHunk = false;
+          else if (line.startsWith("@@")) inHunk = true;
+          const header = !inHunk && (line.startsWith("+++") || line.startsWith("---"));
           const kind = header ? undefined : line.startsWith("+") ? "added" : line.startsWith("-") ? "removed" : undefined;
           return (
             <div key={i} className={kind} style={kind ? { color: colors[kind] } : undefined}>

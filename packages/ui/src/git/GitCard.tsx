@@ -28,6 +28,7 @@ export function GitCard({
   const [committing, setCommitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string>();
+  const [statusError, setStatusError] = useState<string>();
   // Validates the request body and the reply; shows any failure inline and returns undefined.
   const post = async <T,>(route: string, request: { parse(b: unknown): unknown }, reply: { parse(b: unknown): T }, body: unknown) => {
     setError(undefined);
@@ -47,16 +48,16 @@ export function GitCard({
       try {
         const res = await fetch(`/api/git/status?path=${encodeURIComponent(path)}`);
         setStatus(GitStatusSchema.parse(await readJson(res)));
-        setError(undefined);
+        setStatusError(undefined);
       } catch (e) {
-        setError((e as Error).message);
+        setStatusError((e as Error).message);
       }
     };
     void load();
     const t = setInterval(load, intervalMs);
     return () => clearInterval(t);
   }, [fetch, path, intervalMs]);
-  if (!status) return error ? <p role="alert">{error}</p> : null;
+  if (!status) return statusError ? <p role="alert">{statusError}</p> : null;
   return (
     <div>
       <b>{status.branch}</b> <span>ahead {status.ahead}</span> <span>behind {status.behind}</span>{" "}
@@ -93,7 +94,7 @@ export function GitCard({
           <button type="submit">Submit</button>
         </form>
       )}
-      {error && <p role="alert">{error}</p>}
+      {(error ?? statusError) && <p role="alert">{error ?? statusError}</p>}
       {showDiff && <DiffView fetch={fetch} path={path} />}
     </div>
   );
