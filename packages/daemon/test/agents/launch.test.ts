@@ -10,7 +10,6 @@ const ctx: LaunchContext = {
   daemonUrl: "http://127.0.0.1:4321",
   token: "t0k",
   name: "api worker",
-  cwd: "/work/repo",
 };
 const after = (args: string[], flag: string) => args[args.indexOf(flag) + 1];
 
@@ -48,12 +47,18 @@ test.each([
   if (agent === "claude") expect(args).not.toContain("--session-id");
 });
 
-test("a prompt is passed on launch for each agent", () => {
-  const p = { ...ctx, prompt: "fix it" };
-  expect(launchArgs("claude", p).args.slice(-2)).toEqual(["--", "fix it"]);
-  expect(launchArgs("codex", p).args.slice(-2)).toEqual(["--", "fix it"]);
-  expect(after(launchArgs("gemini", p).args, "--prompt-interactive")).toBe("fix it");
-  expect(after(launchArgs("opencode", p).args, "--prompt")).toBe("fix it");
+test("a prompt is passed on launch for each agent, even one starting with a dash", () => {
+  const p = { ...ctx, prompt: "-fix it" };
+  expect(launchArgs("claude", p).args.slice(-2)).toEqual(["--", "-fix it"]);
+  expect(launchArgs("codex", p).args.slice(-2)).toEqual(["--", "-fix it"]);
+  expect(launchArgs("gemini", p).args).toContain("--prompt-interactive=-fix it");
+  expect(launchArgs("opencode", p).args).toContain("--prompt=-fix it");
+});
+
+test("no launch puts the token in argv", () => {
+  for (const agent of ["claude", "codex", "gemini", "opencode"] as const) {
+    expect(launchArgs(agent, { ...ctx, prompt: "p" }).args.join(" ")).not.toContain(ctx.token);
+  }
 });
 
 test("a custom agent runs its configured command", () => {
@@ -62,7 +67,11 @@ test("a custom agent runs its configured command", () => {
   expect(command).toBe("mytool");
   expect(args).toEqual(["--fast"]);
   expect(env).toMatchObject({ AGENTBOARD_AGENT: "custom", AGENTBOARD_CONSOLE_ID: "c1", AGENTBOARD_URL: ctx.daemonUrl });
-  expect(resumeArgs("custom", "x", { ...ctx, custom }).args).toEqual(["--fast"]);
+});
+
+test("resumeArgs for a custom agent throws rather than start a fresh session", () => {
+  const custom = { id: "t", name: "T", command: "mytool", args: [] };
+  expect(() => resumeArgs("custom", "x", { ...ctx, custom })).toThrow(/resume/);
 });
 
 test("launchArgs for a custom agent without a configured command throws", () => {
