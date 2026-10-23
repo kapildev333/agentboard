@@ -23,3 +23,11 @@ export function sessionFromHook(agent: AgentId, event: string, payload: unknown)
       return undefined;
   }
 }
+
+// D39: Claude keeps running after SessionEnd on /clear and /resume but continues under a new session id,
+// so the next id the console sees is adopted once; without it D34 would drop every later hook.
+export function adoptsNextSession(event: string, payload: unknown): boolean {
+  return event === "SessionEnd" && ["clear", "resume"].includes(field(payload, "reason") as string);
+}
+
+export const sessionIdOf = (payload: unknown): string | undefined => text(field(payload, "session_id"));

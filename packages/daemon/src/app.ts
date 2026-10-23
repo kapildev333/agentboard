@@ -10,7 +10,7 @@ import { GitService, createGitHandlers } from "./git/index.js";
 import { handleOpen } from "./open/index.js";
 import { PtyManager, loginEnv } from "./pty/index.js";
 import { createServer, type RouteHandlers } from "./server/index.js";
-import { acceptHook, sessionFromHook } from "./session.js";
+import { acceptHook, adoptsNextSession, sessionFromHook, sessionIdOf } from "./session.js";
 import { DaemonFile, StateStore, agentboardHome } from "./state/index.js";
 import { StatusTracker } from "./status/index.js";
 
@@ -67,6 +67,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
   const boards = new Map<string, Board>();
   const loading = new Map<string, Promise<Board>>();
   const running = new Set<string>();
+  const adopting = new Set<string>(); // consoles waiting for their next session id (D39)
   const settingsFile = () => join(agentboardHome(), "settings.json");
 
   const loadBoard = (repo: string): Promise<Board> => {
@@ -238,6 +239,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       const f = mustFind(id!);
       // Off the board first, so the exit this kill causes finds no node and a racing PUT cannot bring it back.
       running.delete(id!);
+      adopting.delete(id!);
       f.ws.nodes = f.ws.nodes.filter((n) => n.id !== id);
       changed(f.board);
       if (pty.list().includes(id!)) await pty.kill(id!);
@@ -259,7 +261,14 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     "GET /api/status": async () => ({ consoles: [...boards.values()].flatMap(consoles) }),
     "POST /hook/:consoleId": async (body, { consoleId }) => {
       const f = mustFind(consoleId!);
+      const next = sessionIdOf(body.payload);
+      if (adopting.has(consoleId!) && next && next !== f.node.session?.id) {
+        adopting.delete(consoleId!);
+        f.node.session = { provider: f.node.agent, id: next };
+        changed(f.board);
+      }
       if (!acceptHook(f.node, body.payload)) return { ok: true };
+      if (adoptsNextSession(body.event, body.payload)) adopting.add(consoleId!);
       const sid = sessionFromHook(f.node.agent, body.event, body.payload);
       if (sid && f.node.session?.id !== sid) {
         f.node.session = { provider: f.node.agent, id: sid };
