@@ -7,7 +7,8 @@ AgentBoard is not published to npm. You build it from a checkout and link its co
 - Node 22 and npm 10.
 - git. `gh` is needed only for the git card's **Open PR** button.
 - A current browser. The end-to-end tests run Chromium.
-- macOS. Linux should work, but nobody has tested it, and node-pty ships no Linux prebuild, so you may need `npm rebuild node-pty --ignore-scripts=false`. The flag matters because the repository's `.npmrc` turns install scripts off, and without it the rebuild does nothing. Windows is not supported yet.
+- macOS. Windows is not supported yet.
+- Linux has not been tested. node-pty ships no Linux prebuild, so you need a C++ toolchain (`make`, `g++` and Python), and `npm rebuild node-pty --ignore-scripts=false` in place of `npm run fix-pty`. The flag matters: the repository's `.npmrc` turns install scripts off, and without it the rebuild does nothing.
 - At least one agent CLI on your PATH: `claude`, `codex`, `gemini` or `opencode`. Without one, you can still run any command as a custom agent (see [Using the board](using-the-board.md#settings-and-custom-agents)).
 
 ## Install from the checkout
@@ -74,10 +75,10 @@ An empty `401` page means one of these:
 - the code was used or has expired, or
 - the browser's session is no longer known to the daemon, for example after a restart.
 
-A page that is already open shows a message instead:
+Two messages can appear on the page itself:
 
-- When the daemon stops, it reads "The daemon stopped. Run `agentboard open` in the repo to reopen the board."
-- When a request is refused, it reads "Not logged in: run `agentboard open` in the repo to get a fresh login link."
+- A page that is already open shows "The daemon stopped. Run `agentboard open` in the repo to reopen the board." when the daemon goes away.
+- "Not logged in: run `agentboard open` in the repo to get a fresh login link." appears only when the page's first board load is refused.
 
 ## What the browser shows
 
