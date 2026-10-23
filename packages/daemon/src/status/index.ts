@@ -1,22 +1,14 @@
 import { mapSignal, type AgentId, type ConsoleStatus } from "@agentboard/shared";
 
 export type StatusRules = { needsYou?: RegExp[]; idle?: RegExp[] };
-export type Timers = {
-  set: (fn: () => void, ms: number) => unknown;
-  clear: (handle: unknown) => void;
-};
 
 const QUIET_MS = 20_000;
 
-type Entry = { agent: AgentId; rules: StatusRules; status: ConsoleStatus; timer?: unknown; armed?: boolean };
+type Entry = { agent: AgentId; rules: StatusRules; status: ConsoleStatus; timer?: unknown; armed?: boolean; ended?: boolean };
 
 export class StatusTracker {
   private entries = new Map<string, Entry>();
   private listeners = new Set<(id: string, status: ConsoleStatus, previous: ConsoleStatus) => void>();
-
-  constructor(
-    private timers: Timers = { set: (fn, ms) => setTimeout(fn, ms), clear: (h) => clearTimeout(h as never) },
-  ) {}
 
   markStarting(consoleId: string, agent: AgentId, options: StatusRules = {}): void {
     // keep the old status so a restart reports its real previous and a repeat call emits nothing
@@ -27,7 +19,7 @@ export class StatusTracker {
 
   handleHook(consoleId: string, body: { event: string; payload?: unknown }): void {
     const e = this.entries.get(consoleId);
-    if (!e || e.status === "exited") return;
+    if (!e || e.ended) return;
     const next = mapSignal(e.agent, body.event, body.payload);
     if (!next) return;
     if (next === "idle") e.armed = false;
@@ -42,7 +34,7 @@ export class StatusTracker {
 
   markOutput(consoleId: string, chunk: string): void {
     const e = this.entries.get(consoleId);
-    if (!e || e.status === "exited") return;
+    if (!e || e.ended) return;
     // hooks and plugins are authoritative once running; the first output only ends starting
     if (e.agent !== "codex" && e.agent !== "custom") {
       if (e.status === "starting") this.set(consoleId, "idle");
@@ -58,11 +50,14 @@ export class StatusTracker {
     if (next) this.set(consoleId, next);
     this.clearTimer(consoleId);
     // only custom consoles go idle from silence; codex waits for its notify hook
-    if (e.agent === "custom" && next === "working") e.timer = this.timers.set(() => this.set(consoleId, "idle"), QUIET_MS);
+    if (e.agent === "custom" && next === "working") e.timer = setTimeout(() => this.set(consoleId, "idle"), QUIET_MS);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- code is part of the card's signature
   markExit(consoleId: string, _code?: number | null): void {
+    // only a PTY exit is final; a hook-driven exited can be followed by more work (Claude /clear)
+    const e = this.entries.get(consoleId);
+    if (e) e.ended = true;
     this.set(consoleId, "exited");
   }
 
@@ -82,7 +77,7 @@ export class StatusTracker {
 
   private clearTimer(consoleId: string): void {
     const e = this.entries.get(consoleId);
-    if (e?.timer !== undefined) this.timers.clear(e.timer);
+    if (e?.timer !== undefined) clearTimeout(e.timer as never);
     if (e) e.timer = undefined;
   }
 
