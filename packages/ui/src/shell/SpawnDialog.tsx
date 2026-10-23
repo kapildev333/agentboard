@@ -13,6 +13,7 @@ export function SpawnDialog({ fetch, cwd, onSpawned }: { fetch: Fetch; cwd: stri
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   // A custom entry is told apart by its customId; built-in ids are unique on their own.
   const [choice, setChoice] = useState<AgentInfo>();
+  const keyOf = (a?: AgentInfo) => a && `${a.id}:${a.customId ?? ""}`;
   const [useWorktree, setUseWorktree] = useState(false);
   const [branch, setBranch] = useState("");
   const [prompt, setPrompt] = useState("");
@@ -63,8 +64,8 @@ export function SpawnDialog({ fetch, cwd, onSpawned }: { fetch: Fetch; cwd: stri
       <fieldset>
         <legend>Agent</legend>
         {agents.map((a) => (
-        <label key={`${a.id}:${a.customId ?? ""}`} style={{ display: "block", opacity: a.available ? 1 : 0.4 }}>
-          <input type="radio" name="agent" disabled={!a.available} checked={choice === a} onChange={() => setChoice(a)} />
+        <label key={keyOf(a)} style={{ display: "block", opacity: a.available ? 1 : 0.4 }}>
+          <input type="radio" name="agent" disabled={!a.available} checked={keyOf(choice) === keyOf(a)} onChange={() => setChoice(a)} />
           {a.name ?? a.id} {a.available ? a.version : "not installed"}
         </label>
         ))}

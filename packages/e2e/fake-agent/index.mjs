@@ -1,6 +1,8 @@
 // Stands in for every agent CLI in the e2e (ruling D31): prints a prompt, echoes what is typed,
 // answers each line and posts a hook event per line. `spam` prints a line every 10 ms until Ctrl-C;
 // `ask` prints a question the custom needs-you rule matches.
+/* global fetch, setInterval, clearInterval */
+import process from "node:process";
 import readline from "node:readline";
 
 const { AGENTBOARD_URL: url, AGENTBOARD_CONSOLE_ID: id, AGENTBOARD_TOKEN: token } = process.env;
