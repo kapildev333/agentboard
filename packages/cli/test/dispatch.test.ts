@@ -1,8 +1,15 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { main } from "../src/index.js";
+
+beforeEach(() => {
+  process.env.AGENTBOARD_HOME = mkdtempSync(join(tmpdir(), "ab-cli-"));
+});
+afterEach(() => {
+  delete process.env.AGENTBOARD_HOME;
+});
 
 test("an unknown command prints usage and returns 2", async () => {
   const err = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -12,12 +19,10 @@ test("an unknown command prints usage and returns 2", async () => {
 });
 
 test("status with no daemon returns 1", async () => {
-  process.env.AGENTBOARD_HOME = mkdtempSync(join(tmpdir(), "ab-cli-"));
   const log = vi.spyOn(console, "log").mockImplementation(() => {});
   expect(await main(["status"])).toBe(1);
   expect(log).toHaveBeenCalledWith('{"alive":false}');
   log.mockRestore();
-  delete process.env.AGENTBOARD_HOME;
 });
 
 test("open routes to the open command", async () => {
