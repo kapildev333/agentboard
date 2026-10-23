@@ -1,7 +1,7 @@
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { expect, type Page } from "@playwright/test";
@@ -9,20 +9,34 @@ import { expect, type Page } from "@playwright/test";
 const bin = fileURLToPath(new URL("../daemon/dist/bin.js", import.meta.url));
 export const fakeAgent = fileURLToPath(new URL("./fake-agent/index.mjs", import.meta.url));
 
-export type Home = { root: string; home: string; repo: string; path: string; cleanup(): void };
+export const agentboardBin = fileURLToPath(new URL("../cli/bin/agentboard.js", import.meta.url));
+const mcpBin = fileURLToPath(new URL("../mcp/bin/agentboard-mcp.js", import.meta.url));
 
-/** A temp AGENTBOARD_HOME with the fake agent registered as a custom agent, a git repo, and an empty PATH for the catalog. */
-export function makeHome(): Home {
+export type Home = { root: string; home: string; repo: string; path: string; cues: string; cleanup(): void };
+/** What the fake agent runs when a cue name is typed: a shell line, or MCP tools/call requests in order. */
+export type Cue = { sh: string } | { mcp: { name: string; arguments: Record<string, unknown> }[] };
+
+/**
+ * A temp AGENTBOARD_HOME with the fake agent registered as a custom agent, a git repo, and an empty PATH for the catalog.
+ * `cues` go to a file the fake agent reads, run with the built agentboard and agentboard-mcp bins first on PATH and
+ * AGENTBOARD_HOME pinned to the temp home, so a cue never reaches the owner's own daemon.
+ */
+export function makeHome(cues: (h: Home) => Record<string, Cue> = () => ({})): Home {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "agentboard-e2e-")));
-  const [home, repo, path] = ["home", "repo", "path"].map((d) => join(root, d)) as [string, string, string];
-  for (const d of [home, repo, path]) mkdirSync(d);
+  const [home, repo, path, bin] = ["home", "repo", "path", "bin"].map((d) => join(root, d)) as [string, string, string, string];
+  for (const d of [home, repo, path, bin]) mkdirSync(d);
   execFileSync("git", ["init", "-q", "-b", "main", repo]);
+  symlinkSync(agentboardBin, join(bin, "agentboard"));
+  symlinkSync(mcpBin, join(bin, "agentboard-mcp"));
+  const h: Home = { root, home, repo, path, cues: join(root, "cues.json"), cleanup: () => rmSync(root, { recursive: true, force: true }) };
+  const env = { AGENTBOARD_HOME: home, PATH: [bin, dirname(process.execPath), process.env.PATH].join(":") };
+  writeFileSync(h.cues, JSON.stringify({ env, cues: cues(h) }));
   const settings = {
     fontSize: 13,
-    customAgents: [{ id: "fake", name: "Fake", command: process.execPath, args: [fakeAgent], needsYou: "approve\\?" }],
+    customAgents: [{ id: "fake", name: "Fake", command: process.execPath, args: [fakeAgent, h.cues], needsYou: "approve\\?" }],
   };
   writeFileSync(join(home, "settings.json"), JSON.stringify(settings));
-  return { root, home, repo, path, cleanup: () => rmSync(root, { recursive: true, force: true }) };
+  return h;
 }
 
 export type Daemon = { child: ChildProcess; origin: string; port: number; token: string; loginUrl(repo: string): Promise<string>; kill(): Promise<void> };
