@@ -3,6 +3,9 @@ import type { EventEmitter } from "node:events";
 import { realpath, stat } from "node:fs/promises";
 import { isAbsolute } from "node:path";
 
+// A bad request from the client: L12 answers 400. Anything else (a failed spawn) is a 500.
+export class OpenError extends Error {}
+
 export type Editor = "code" | "zed" | "finder";
 export type Spawn = (command: string, args: readonly string[], options: SpawnOptions) => EventEmitter & { unref(): void };
 
@@ -16,9 +19,9 @@ const commands: Record<Editor, (platform: string, path: string) => [string, stri
 
 export async function openIn(editor: Editor, path: string, spawn: Spawn = nodeSpawn, platform = process.platform): Promise<void> {
   // Absolute only, so a path can never be read as an option; spawned as its resolved target, never as a link.
-  if (!isAbsolute(path)) throw new Error(`path must be absolute: ${JSON.stringify(path)}`);
+  if (!isAbsolute(path)) throw new OpenError(`path must be absolute: ${JSON.stringify(path)}`);
   const target = await realpath(path).catch(() => null);
-  if (!target || !(await stat(target)).isDirectory()) throw new Error(`not a directory: ${JSON.stringify(path)}`);
+  if (!target || !(await stat(target)).isDirectory()) throw new OpenError(`not a directory: ${JSON.stringify(path)}`);
   const [command, args] = commands[editor](platform, target);
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: "ignore", detached: true });
@@ -30,8 +33,8 @@ export async function openIn(editor: Editor, path: string, spawn: Spawn = nodeSp
 // The body is the POST /api/open request: { editor, path }. L12 maps a thrown Error to the HTTP response.
 export async function handleOpen(body: unknown, spawn: Spawn = nodeSpawn): Promise<{ ok: true }> {
   const { editor, path } = (body ?? {}) as Record<string, unknown>;
-  if (typeof editor !== "string" || !Object.hasOwn(commands, editor)) throw new Error(`unknown editor: ${String(editor)}`);
-  if (typeof path !== "string") throw new Error("path must be a string");
+  if (typeof editor !== "string" || !Object.hasOwn(commands, editor)) throw new OpenError(`unknown editor: ${JSON.stringify(editor)}`);
+  if (typeof path !== "string") throw new OpenError("path must be a string");
   await openIn(editor as Editor, path, spawn);
   return { ok: true };
 }
