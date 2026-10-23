@@ -212,7 +212,8 @@ function raw(port: number, request: string) {
 test("a request target the URL parser rejects is answered 400 and the server stays up", async () => {
   const s = await start();
   const host = `Host: 127.0.0.1:${s.port}\r\n`;
-  expect(await raw(s.port, `GET // HTTP/1.1\r\n${host}Connection: close\r\n\r\n`)).toMatch(/^HTTP\/1\.1 400/);
+  expect(await raw(s.port, `GET // HTTP/1.1\r\n${host}Connection: close\r\n\r\n`)).toMatch(/^HTTP\/1\.1 401/);
+  expect(await raw(s.port, `OPTIONS * HTTP/1.1\r\n${host}Connection: close\r\n\r\n`)).toMatch(/^HTTP\/1\.1 400/);
   const up = await raw(s.port, `GET // HTTP/1.1\r\n${host}Connection: Upgrade\r\nUpgrade: websocket\r\n`
     + `Sec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n`);
   expect(up).not.toMatch(/101/);
