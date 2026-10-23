@@ -17,6 +17,7 @@ it("the card renders a status fixture", async () => {
   render(<GitCard fetch={fetch as typeof globalThis.fetch} path="/r" />);
   expect(await screen.findByText(/feat-x/)).toBeTruthy();
   expect(screen.getByText(/ahead 2/)).toBeTruthy();
+  expect(screen.getByText(/behind 0/)).toBeTruthy();
   expect(screen.getByText(/dirty 3/)).toBeTruthy();
   expect(screen.getByText(/wire the thing/)).toBeTruthy();
 });
@@ -88,7 +89,7 @@ it("open PR posts and opens the url", async () => {
 
 it("a non-http PR url is not opened and shows an error", async () => {
   const open = vi.fn();
-  const fetch = router({ "GET /api/git/status": () => json(status), "POST /api/git/pr": () => json({ url: "javascript:alert(1)" }) });
+  const fetch = router({ "GET /api/git/status": () => json(status), "POST /api/git/pr": () => json({ url: "javascript:alert('https://x')" }) });
   render(<GitCard fetch={fetch} path="/r" open={open} />);
   fireEvent.click(await screen.findByText("Open PR"));
   expect(await screen.findByRole("alert")).toBeTruthy();
@@ -212,4 +213,33 @@ it("the commit form closes after a successful commit", async () => {
   fireEvent.change(screen.getByLabelText("Commit message"), { target: { value: "fix it" } });
   fireEvent.click(screen.getByText("Submit"));
   await vi.waitFor(() => expect(screen.queryByLabelText("Commit message")).toBeNull());
+});
+
+it("polls every 10 s while mounted and stops on unmount", async () => {
+  vi.useFakeTimers();
+  try {
+    let statusCalls = 0;
+    const fetch = router({ "GET /api/git/status": () => (statusCalls++, json(status)) });
+    const { unmount } = render(<GitCard fetch={fetch} path="/r" />);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(statusCalls).toBe(2);
+    unmount();
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(statusCalls).toBe(2);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it("a failed commit shows the error and keeps the message", async () => {
+  const fetch = router({
+    "GET /api/git/status": () => json(status),
+    "POST /api/git/commit": () => json({ error: "nothing to commit" }, 500),
+  });
+  render(<GitCard fetch={fetch} path="/r" />);
+  fireEvent.click(await screen.findByText("Commit"));
+  fireEvent.change(screen.getByLabelText("Commit message"), { target: { value: "fix it" } });
+  fireEvent.click(screen.getByText("Submit"));
+  expect((await screen.findByRole("alert")).textContent).toBe("nothing to commit");
+  expect((screen.getByLabelText("Commit message") as HTMLInputElement).value).toBe("fix it");
 });
