@@ -3,7 +3,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "vitest";
-import { openIn } from "../../src/open/index.js";
+import { handleOpen, openIn } from "../../src/open/index.js";
 
 type Call = { command: string; args: readonly string[] };
 
@@ -39,6 +39,17 @@ test("a path that is not a directory is rejected", async () => {
   await expect(openIn("code", file, spawn)).rejects.toThrow(/not a directory/);
   await expect(openIn("code", join(tmpdir(), "ab-no-such-dir"), spawn)).rejects.toThrow(/not a directory/);
   expect(calls).toEqual([]);
+});
+
+test("handleOpen checks the body shape and returns ok", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "ab-open-"));
+  const { spawn, calls } = fakeSpawn();
+  await expect(handleOpen({ editor: "vim", path: dir }, spawn)).rejects.toThrow(/unknown editor/);
+  await expect(handleOpen({ editor: "code" }, spawn)).rejects.toThrow(/path must be a string/);
+  await expect(handleOpen(null, spawn)).rejects.toThrow(/unknown editor/);
+  expect(calls).toEqual([]);
+  expect(await handleOpen({ editor: "code", path: dir }, spawn)).toEqual({ ok: true });
+  expect(calls).toEqual([{ command: "code", args: [dir] }]);
 });
 
 test("a missing binary rejects with a one-line message", async () => {
