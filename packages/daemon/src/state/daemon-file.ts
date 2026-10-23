@@ -18,7 +18,7 @@ export class DaemonFile {
     await mkdir(dirname(file), { recursive: true, mode: 0o700 });
     // mode only applies on create, so a stale .tmp is removed first; rename keeps readers from seeing a partial file
     await rm(`${file}.tmp`, { force: true });
-    const fh = await open(`${file}.tmp`, "w", 0o600);
+    const fh = await open(`${file}.tmp`, "wx", 0o600); // O_EXCL: a tmp file planted after the rm fails the write
     try {
       await fh.writeFile(JSON.stringify(info));
       await fh.sync();
@@ -28,7 +28,9 @@ export class DaemonFile {
     await rename(`${file}.tmp`, file);
   }
 
+  // Only this daemon's own file: a second daemon that refused to start must not delete the live one's.
   async remove(): Promise<void> {
-    await rm(daemonFilePath(), { force: true });
+    const info = await this.read().catch(() => null);
+    if (info?.pid === process.pid) await rm(daemonFilePath(), { force: true });
   }
 }
