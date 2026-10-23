@@ -143,3 +143,20 @@ test("a missing binary rejects with a one-line message", async () => {
   expect((err as Error).message).toBe("could not start zed: spawn zed ENOENT");
   expect((err as Error).message).not.toContain("\n");
 });
+
+test("an OpenError is a client error the server answers with 400 (L22)", () => {
+  expect(new OpenError("bad").status).toBe(400);
+});
+
+test("every spawned editor is unref'd so the daemon never waits on it (L22)", async () => {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "agentboard-open-unref-")));
+  let unrefs = 0;
+  const spawn = () => {
+    const child = Object.assign(new EventEmitter(), { unref: () => void unrefs++ });
+    process.nextTick(() => child.emit("spawn"));
+    return child;
+  };
+  for (const editor of ["code", "zed", "finder"] as Editor[]) await openIn(editor, dir, spawn);
+  expect(unrefs).toBe(3);
+  rmSync(dir, { recursive: true });
+});
