@@ -20,7 +20,8 @@ const rows: Row[] = [
     status: "needs_you",
   },
   { agent: "claude", event: "PermissionRequest", status: "needs_you" },
-  { agent: "claude", event: "SessionEnd", status: "exited" },
+  // Claude Code keeps running after SessionEnd on /clear and /resume
+  { agent: "claude", event: "SessionEnd", when: (p) => !["clear", "resume"].includes(field(p, "reason") as string), status: "exited" },
   // payload is the OpenCode event's properties: { sessionID, status: { type } }
   { agent: "opencode", event: "session.status", when: (p) => field(field(p, "status"), "type") === "busy", status: "working" },
   { agent: "opencode", event: "tool.execute.before", status: "working" },
