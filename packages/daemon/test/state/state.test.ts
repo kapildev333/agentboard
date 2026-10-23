@@ -1,8 +1,8 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { StateStore } from "../../src/state/index.js";
+import { boardPath, StateStore } from "../../src/state/index.js";
 
 let home: string;
 beforeEach(async () => {
@@ -20,5 +20,14 @@ test("save then load returns an equal board", async () => {
   board.workspaces[0]!.nodes.push({ id: "n1", type: "note", title: "t", x: 1, y: 2, w: 3, h: 4, text: "hi" });
   await store.save(board);
   await store.flush();
+  expect(await new StateStore().load("/repo/a")).toEqual(board);
+});
+
+test("an interrupted write leaves the previous file intact", async () => {
+  const store = new StateStore();
+  const board = await store.load("/repo/a");
+  await store.save(board);
+  await store.flush();
+  await writeFile(`${boardPath("/repo/a")}.tmp`, '{"version":1,"repo');
   expect(await new StateStore().load("/repo/a")).toEqual(board);
 });
