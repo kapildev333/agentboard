@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { expect, test } from "vitest";
 import { handleOpen, openIn } from "../../src/open/index.js";
 
@@ -62,6 +62,22 @@ test("handleOpen checks the body shape and returns ok", async () => {
   expect(calls).toEqual([]);
   expect(await handleOpen({ editor: "code", path: dir }, spawn)).toEqual({ ok: true });
   expect(calls).toEqual([{ command: "code", args: [dir] }]);
+});
+
+test("a relative path is refused, so no argv can be read as an option", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "ab-open-"));
+  const { spawn, calls } = fakeSpawn();
+  await expect(openIn("code", relative(process.cwd(), dir), spawn)).rejects.toThrow(/must be absolute/);
+  expect(calls).toEqual([]);
+});
+
+test("a symlink is spawned as the directory it points to", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "ab-open-"));
+  const link = join(mkdtempSync(join(tmpdir(), "ab-link-")), "l");
+  symlinkSync(dir, link);
+  const { spawn, calls } = fakeSpawn();
+  await openIn("code", link, spawn);
+  expect(calls).toEqual([{ command: "code", args: [realpathSync(dir)] }]);
 });
 
 test("a missing binary rejects with a one-line message", async () => {
