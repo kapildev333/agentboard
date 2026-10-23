@@ -6,7 +6,7 @@ import { expect, test } from "vitest";
 import { GitService } from "../../src/git/index.js";
 
 const git = (cwd: string, ...args: string[]) =>
-  execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.com", ...args], { cwd, encoding: "utf8" }).trim();
+  execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.com", ...args], { cwd, encoding: "utf8", stdio: "pipe" }).trim();
 
 function tmp(prefix: string) {
   return mkdtempSync(join(tmpdir(), `ab-${prefix}-`));
@@ -114,4 +114,55 @@ test("createPr calls gh with the title and body", async () => {
   const { url } = await s.createPr("/wt", { title: "T", body: "B" });
   expect(url).toBe("https://github.com/o/r/pull/7");
   expect(calls).toEqual([["gh", ["pr", "create", "--title", "T", "--body", "B"], "/wt"]]);
+});
+
+test("worktreeAdd rejects option-like names and bases before any side effect", async () => {
+  const repo = makeRepo();
+  git(repo, "branch", "other");
+  for (const [name, base] of [["-D", "main"], ["-m", "main"], ["ok", "--detach"]]) {
+    await expect(svc().worktreeAdd(repo, name, base)).rejects.toThrow(/must not start with '-'/);
+  }
+  expect(git(repo, "branch", "--format=%(refname:short)").split("\n").sort()).toEqual(["main", "other"]);
+  expect(existsSync(join(repo, ".worktrees"))).toBe(false);
+});
+
+test("two worktreeAdd calls leave one exclude entry", async () => {
+  const repo = makeRepo();
+  await svc().worktreeAdd(repo, "one", "main");
+  await svc().worktreeAdd(repo, "two", "main");
+  const lines = readFileSync(join(repo, ".git/info/exclude"), "utf8").split("\n");
+  expect(lines.filter((l) => l === ".worktrees/")).toHaveLength(1);
+});
+
+test("worktreeAdd works when the repo path is itself a linked worktree", async () => {
+  const repo = makeRepo();
+  const { path: linked } = await svc().worktreeAdd(repo, "outer", "main");
+  const { path } = await svc().worktreeAdd(linked, "inner", "main");
+  expect(existsSync(path)).toBe(true);
+  expect(readFileSync(join(repo, ".git/info/exclude"), "utf8")).toContain(".worktrees/");
+});
+
+test("worktreeRemove treats a local commit with an origin but no upstream as unpushed", async () => {
+  const repo = makeRepo();
+  const remote = tmp("remote");
+  git(remote, "init", "--bare", "-b", "main");
+  git(repo, "remote", "add", "origin", remote);
+  git(repo, "push", "-u", "origin", "main");
+  const { path } = await svc().worktreeAdd(repo, "feat-n", "main");
+  writeFileSync(join(path, "n.txt"), "n\n");
+  git(path, "add", ".");
+  git(path, "commit", "-m", "never pushed");
+  await expect(svc().worktreeRemove(path, { force: false })).rejects.toMatchObject({ code: "unpushed" });
+});
+
+test("commit throws when there is nothing to commit", async () => {
+  const repo = makeRepo();
+  await expect(svc().commit(repo, "empty")).rejects.toThrow(/nothing to commit/);
+});
+
+test("status and diff work on a repo with no commits", async () => {
+  const repo = tmp("empty");
+  git(repo, "init", "-b", "main");
+  expect(await svc().status(repo)).toMatchObject({ branch: "main", lastCommit: null });
+  expect(await svc().diff(repo)).toEqual({ files: [], patch: "" });
 });
