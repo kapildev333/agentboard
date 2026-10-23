@@ -33,6 +33,7 @@ fs.writeFileSync("CHANGELOG.md",s.slice(0,h+1).join("\n")+"\n\n"+sec+"\n\n"+rest
   else
     { echo "# Changelog"; echo; echo "$section"; echo; [ -f CHANGELOG.md ] && cat CHANGELOG.md; } > CHANGELOG.new && mv CHANGELOG.new CHANGELOG.md
   fi
+  mkdir -p docs/releases && cp "$OLDPWD/$notes" "docs/releases/$tag.md" 2>/dev/null || cp "$notes" "docs/releases/$tag.md"
   git add -A && git commit -q -m "chore: release $tag"
   git push -q -u origin HEAD
 )
