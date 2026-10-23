@@ -158,8 +158,13 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
             // not a board message
           }
         };
+        // A restarted daemon listens on a new port with a new token, so this tab cannot reconnect; say so
+        // rather than keep showing statuses nobody updates. A dropped socket to a live daemon reconnects.
         s.onclose = () => {
-          if (live) setTimeout(open, 1000);
+          if (!live) return;
+          fetch("/api/status")
+            .then((r) => (r.ok ? void setTimeout(open, 1000) : Promise.reject(new Error(String(r.status)))))
+            .catch(() => live && setError("The daemon stopped. Run `agentboard open` in the repo to reopen the board."));
         };
         cleanups.push(() => s.close());
       };
