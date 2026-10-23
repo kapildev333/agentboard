@@ -250,3 +250,22 @@ test("a refused upgrade whose client resets early does not crash the server", as
   await new Promise((r) => setTimeout(r, 100));
   expect((await fetch(`${s.origin}/api/status`)).status).toBe(401);
 });
+
+test("the cookie carries a random session named with the port, never the token", async () => {
+  const s = await start({ routes: { "GET /api/status": async () => ({ consoles: [] }) } });
+  const nav = { "sec-fetch-site": "none" };
+  const login = async () => (await fetch(`${s.origin}/?code=${s.issueCode()}`, { redirect: "manual", headers: nav }))
+    .headers.get("set-cookie")!.split(";")[0];
+  const pair = await login();
+  const [name, value] = pair.split("=");
+  expect(name).toBe(`agentboard_${s.port}`);
+  expect(value).not.toContain(token);
+  expect(value).toMatch(/^[\w-]{32,}$/);
+  expect(await login()).not.toBe(pair);
+
+  const api = (cookie: string) => fetch(`${s.origin}/api/status`, { headers: { "sec-fetch-site": "same-origin", cookie } });
+  expect((await api(pair)).status).toBe(200);
+  expect((await api(`agentboard_${s.port}=${token}`)).status).toBe(401);
+  expect((await api(`agentboard=${value}`)).status).toBe(401);
+  expect((await api(`agentboard_1=${value}`)).status).toBe(401);
+});
