@@ -7,9 +7,10 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "npm run build -w @agentboard/shared && tsc -p tsconfig.build.json"
   },
   "dependencies": {
+    "@agentboard/shared": "0.0.0",
     "node-pty": "1.1.0",
     "simple-git": "4.0.2"
   }

@@ -105,7 +105,9 @@ export async function createServer(opts: ServerOptions) {
     close: () => new Promise<void>((resolve) => {
       for (const ws of wss.clients) ws.terminate();
       wss.close();
-      server.closeAllConnections(); server.close(() => resolve()); }),
+      server.closeAllConnections();
+      server.close(() => resolve());
+    }),
   };
 }
 
