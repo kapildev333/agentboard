@@ -76,4 +76,21 @@ describe("PtyManager", () => {
     await done;
     expect(exited).toBe(true);
   });
+
+  it("replay returns the buffered output to a late attacher", async () => {
+    const m = new PtyManager();
+    let out = "";
+    sh(m, "p");
+    m.onData("p", (d) => (out += d));
+    m.write("p", "echo first\n");
+    await until(() => out, "first");
+    expect(m.replay("p")).toContain("first");
+    m.write("p", "head -c 300000 /dev/zero | tr '\\0' x; echo END\n");
+    await until(() => out, "END");
+    const r = m.replay("p");
+    expect(r.length).toBe(200 * 1024);
+    expect(r).toContain("END");
+    expect(r).not.toContain("first");
+    await m.kill("p");
+  });
 });
