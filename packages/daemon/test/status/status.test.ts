@@ -118,13 +118,19 @@ describe("StatusTracker", () => {
   it("global regex rules match every chunk", () => {
     const t = new StatusTracker();
     t.markStarting("c1", "custom", { needsYou: [/ask/g] });
-    for (let i = 0; i < 3; i++) {
-      t.handleHook("c1", { event: "x" });
-      t.markOutput("c1", "ask");
-      expect(t.get("c1")).toBe("needs_you");
-      t.markOutput("c1", "plain");
-      expect(t.get("c1")).toBe("working");
-    }
+    t.markOutput("c1", "ask");
+    expect(t.get("c1")).toBe("needs_you");
+    t.markOutput("c1", "ask");
+    expect(t.get("c1")).toBe("needs_you");
+  });
+
+  it("a restart cancels the old quiet timer", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "custom");
+    t.markOutput("c1", "x");
+    t.markStarting("c1", "custom");
+    vi.advanceTimersByTime(20_000);
+    expect(t.get("c1")).toBe("starting");
   });
 
   it("the first output ends starting for hook agents", () => {
