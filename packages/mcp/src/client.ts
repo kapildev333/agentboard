@@ -1,17 +1,13 @@
-import { readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import * as shared from "@agentboard/shared";
 import { DaemonInfoSchema, routes, type SchemaName } from "@agentboard/shared";
 
+// One reader with the CLI (L24, L10): the daemon's path rules, and it throws when there is no daemon.json.
+export { loadDaemonInfo as readDaemonInfo } from "@agentboard/cli";
+
 type Route = (typeof routes)[number];
 type Env = Record<string, string | undefined>;
-
-export function readDaemonInfo(env: Env = process.env) {
-  const home = env.AGENTBOARD_HOME ?? join(homedir(), ".agentboard");
-  return DaemonInfoSchema.parse(JSON.parse(readFileSync(join(home, "daemon.json"), "utf8")));
-}
 
 const schema = (name: SchemaName) => shared[name] as unknown as z.ZodType;
 
@@ -71,7 +67,7 @@ export class DaemonClient {
     const ws = board.workspaces.find((w) => w.id === board.activeWorkspaceId) ?? board.workspaces[0];
     if (!ws) throw new Error("board has no workspace");
     const note = {
-      id: `note-${Date.now().toString(36)}`,
+      id: `note-${randomUUID()}`,
       type: "note" as const,
       title: "Note",
       x: 0, y: 0, w: 280, h: 200,

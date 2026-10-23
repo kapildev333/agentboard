@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -59,4 +59,11 @@ test("status --json prints an error object when /api/status fails", async () => 
   expect(await statusCommand(["--json"], (s) => lines.push(s))).toBe(1);
   server.close();
   expect(JSON.parse(lines[0]!)).toHaveProperty("error");
+});
+
+test("an empty AGENTBOARD_HOME reads ~/.agentboard/daemon.json, as the daemon writes it (L10)", async () => {
+  const fake = mkdtempSync(join(tmpdir(), "ab-home-"));
+  mkdirSync(join(fake, ".agentboard"));
+  writeFileSync(join(fake, ".agentboard", "daemon.json"), JSON.stringify({ port: 9, token: "t", pid: 3 }));
+  expect(await readDaemonInfo({ AGENTBOARD_HOME: "", HOME: fake })).toEqual({ port: 9, token: "t", pid: 3 });
 });

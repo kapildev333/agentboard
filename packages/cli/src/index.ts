@@ -1,3 +1,4 @@
+export { loadDaemonInfo, readDaemonInfo } from "./daemonFile.js";
 import { noteCommand } from "./commands/note.js";
 import { openCommand } from "./commands/open.js";
 import { spawnCommand } from "./commands/spawn.js";

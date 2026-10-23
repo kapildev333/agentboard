@@ -1,13 +1,17 @@
 import { spawn as nodeSpawn } from "node:child_process";
-import { readFile } from "node:fs/promises";
-import { homedir } from "node:os";
-import { join } from "node:path";
-import { DaemonInfoSchema, type DaemonInfo } from "@agentboard/shared";
+import { readFileSync } from "node:fs";
+import { DaemonInfoSchema, daemonFilePath, type DaemonInfo } from "@agentboard/shared";
 
-export async function readDaemonInfo(): Promise<DaemonInfo | null> {
-  const file = join(process.env.AGENTBOARD_HOME ?? join(homedir(), ".agentboard"), "daemon.json");
+type Env = Record<string, string | undefined>;
+
+/** The one daemon.json reader for the CLI and the MCP server; throws when the file is missing or malformed. */
+export function loadDaemonInfo(env: Env = process.env): DaemonInfo {
+  return DaemonInfoSchema.parse(JSON.parse(readFileSync(daemonFilePath(env), "utf8")));
+}
+
+export async function readDaemonInfo(env: Env = process.env): Promise<DaemonInfo | null> {
   try {
-    return DaemonInfoSchema.parse(JSON.parse(await readFile(file, "utf8")));
+    return loadDaemonInfo(env);
   } catch {
     return null;
   }
