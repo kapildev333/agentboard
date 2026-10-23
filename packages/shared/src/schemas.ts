@@ -77,12 +77,15 @@ export const SpawnConsoleRequestSchema = z.object({
   worktree: z.string().optional(),
   prompt: z.string().optional(),
   callerConsoleId: z.string().optional(),
+  customId: z.string().optional(),
 });
 export const AgentInfoSchema = z.object({
   id: AgentIdSchema,
   command: z.string(),
   version: z.string().nullable(),
   available: z.boolean(),
+  customId: z.string().optional(),
+  name: z.string().optional(),
 });
 export const AgentInfoListSchema = z.array(AgentInfoSchema);
 export const StatusResponseSchema = z.object({ consoles: z.array(ConsoleNodeSchema) });

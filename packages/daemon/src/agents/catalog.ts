@@ -10,9 +10,6 @@ export interface CustomAgent {
   args: string[];
 }
 
-// GET /api/agents entries: custom ones keep their settings id and name so a spawn can name them (SpawnConsoleRequest.customId).
-export type CatalogEntry = AgentInfo & { customId?: string; name?: string };
-
 export interface ScanOptions {
   path?: string;
   exec?: typeof execFile;
@@ -36,7 +33,7 @@ function resolveCommand(command: string, path: string): string | null {
   return null;
 }
 
-async function scan({ path = process.env.PATH ?? "", exec = execFile, custom = [] }: ScanOptions = {}): Promise<CatalogEntry[]> {
+async function scan({ path = process.env.PATH ?? "", exec = execFile, custom = [] }: ScanOptions = {}): Promise<AgentInfo[]> {
   // The timer is the hard limit: it does not depend on the child honouring a signal.
   const version = (file: string) =>
     new Promise<string | null>((resolve) => {
@@ -46,7 +43,7 @@ async function scan({ path = process.env.PATH ?? "", exec = execFile, custom = [
         resolve(err ? null : String(stdout).trim().split("\n")[0] || null);
       });
     });
-  const info = async (id: AgentInfo["id"], command: string, probe: boolean): Promise<CatalogEntry> => {
+  const info = async (id: AgentInfo["id"], command: string, probe: boolean): Promise<AgentInfo> => {
     const file = resolveCommand(command, path);
     return { id, command, version: file && probe ? await version(file) : null, available: file !== null };
   };
