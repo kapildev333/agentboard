@@ -1,6 +1,6 @@
 {
   "name": "agentboard",
-  "description": "Shows Claude Code sessions as live nodes on the AgentBoard board and adds a /board command.",
+  "description": "Reports Claude Code status to the AgentBoard board and adds a /board command.",
   "version": "0.1.0",
   "author": { "name": "agentboard" }
 }
