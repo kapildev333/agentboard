@@ -66,7 +66,13 @@ A missing program never causes this message:
 
 ## The login code expired
 
-Loading the page shows an empty `401`. A page that was already open shows "The daemon stopped…" or "Not logged in: run `agentboard open` in the repo to get a fresh login link." Possible causes:
+You see one of three things:
+
+- **Loading the page** shows an empty `401`.
+- **A page that was already open** shows "The daemon stopped. Run `agentboard open` in the repo to reopen the board."
+- **"Not logged in: run `agentboard open` in the repo to get a fresh login link."** appears only when a page's first board load is refused.
+
+Possible causes:
 
 - **The link is old.** A login link works once, within 60 seconds. Opening it twice, opening it late, or opening it after a restart gets 401.
 - **The daemon restarted.** Its sessions are gone, and so is the port your tab was talking to.
@@ -76,11 +82,12 @@ Run `agentboard open .` again for a fresh link.
 
 ## Status does not change, or hooks are not firing
 
-First check that the console was launched by the board. Only board consoles carry `AGENTBOARD_URL`, `AGENTBOARD_CONSOLE_ID` and `AGENTBOARD_TOKEN`. In a board console's terminal:
+First check that the console was launched by the board. Only board consoles carry `AGENTBOARD_URL`, `AGENTBOARD_CONSOLE_ID` and `AGENTBOARD_TOKEN`.
 
-```sh
-echo "$AGENTBOARD_URL $AGENTBOARD_CONSOLE_ID"
-```
+A console runs the agent, not a shell, so whatever you type goes to the agent as a prompt. To read those variables:
+
+- In Claude Code, use bash mode: type `! echo "$AGENTBOARD_URL $AGENTBOARD_CONSOLE_ID"`.
+- In any other agent, ask it to run `echo "$AGENTBOARD_URL $AGENTBOARD_CONSOLE_ID"` and show you the output.
 
 A Claude session you started in a normal terminal never reports to the board, plugin or not. That is a known gap in this version.
 
@@ -91,7 +98,7 @@ Then, per agent:
   - Run `/hooks` inside the console to see the injected hooks.
   - A denied permission or an interrupt sends no Stop event, so the badge keeps its last state until the next turn.
 - **Gemini CLI.** The hooks come from a temporary settings file named in `GEMINI_CLI_SYSTEM_DEFAULTS_PATH`. An admin policy that disables hooks also disables these.
-- **OpenCode.** Board consoles load `packages/plugins/opencode/dist/agentboard.js` from your checkout, so it must be built (`npm run build`). Print `$OPENCODE_CONFIG_CONTENT` in the console; it names the file.
+- **OpenCode.** Board consoles load `packages/plugins/opencode/dist/agentboard.js` from your checkout, so it must be built (`npm run build`). Ask the agent to run `echo "$OPENCODE_CONFIG_CONTENT"` and show you the output; it names the file.
 - **Codex.**
   - Codex reports only the end of a turn.
   - Working shows only after you press Enter in the console.
