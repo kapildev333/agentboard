@@ -290,3 +290,31 @@ test("a spawn that cannot launch leaves no worktree behind", async () => {
   expect(res.status).toBe(400);
   expect(existsSync(join(s.repo, ".worktrees", "wt"))).toBe(false);
 });
+
+async function claudeConsole() {
+  const s = setup();
+  const d = await start(s);
+  // the stub claude from the agent PATH prints a version and exits at once; the node stays
+  const node = (await d.call("POST", "/api/consoles", { agent: "claude", cwd: s.repo })).body as ConsoleNode;
+  const status = async () => ((await d.call("GET", "/api/status")).body as { consoles: ConsoleNode[] }).consoles.find((c) => c.id === node.id)!;
+  const hook = (event: string, payload: object) => d.call("POST", `/hook/${node.id}`, { agent: "claude", event, payload });
+  return { d, node, status, hook };
+}
+
+test("an exit ends a pending adoption, so after clear, exit and Resume a nested run cannot take the session (D39)", async () => {
+  const { d, node, status, hook } = await claudeConsole();
+  const first = node.session!.id;
+  await hook("SessionEnd", { session_id: first, reason: "clear" });
+  await until(async () => (await status()).status === "exited");
+  expect((await d.call("POST", `/api/consoles/${node.id}/resume`)).status).toBe(200);
+  await hook("Stop", { session_id: "nested" });
+  expect((await status()).session!.id).toBe(first);
+});
+
+test("a SessionEnd clear from a foreign session arms nothing (D39)", async () => {
+  const { node, status, hook } = await claudeConsole();
+  const first = node.session!.id;
+  await hook("SessionEnd", { session_id: "nested", reason: "clear" });
+  await hook("Stop", { session_id: "other-nested" });
+  expect((await status()).session!.id).toBe(first);
+});
