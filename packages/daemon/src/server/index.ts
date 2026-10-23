@@ -52,6 +52,7 @@ export async function createServer(opts: ServerOptions) {
     codes.set(code, Date.now() + CODE_TTL_MS);
     return code;
   };
+  const sessions = new Set<string>();
   const takeCode = (code: string) => {
     const expires = codes.get(code);
     codes.delete(code);
@@ -65,8 +66,11 @@ export async function createServer(opts: ServerOptions) {
       if (!ownHost(req, port)) return end(res, 403);
       if (!takeCode(url.searchParams.get("code")!)) return end(res, 401);
       url.searchParams.delete("code");
+      const session = randomBytes(32).toString("base64url");
+      sessions.add(session);
       res.writeHead(302, {
-        "set-cookie": `agentboard=${opts.token}; HttpOnly; SameSite=Strict; Path=/`,
+        // SameSite ignores ports, so the name carries the port and the value is a session, not the token.
+        "set-cookie": `agentboard_${port}=${session}; HttpOnly; SameSite=Strict; Path=/`,
         location: url.pathname + url.search,
       }).end();
       return;
@@ -88,8 +92,15 @@ export async function createServer(opts: ServerOptions) {
   const refuse = (req: http.IncomingMessage, checkOrigin: boolean): number =>
     !ownHost(req, port) ? 403
       : checkOrigin && !ownOrigin(req, port) ? 403
-      : !hasToken(req, opts.token) ? 401
+      : !hasAuth(req) ? 401
       : 0;
+  const hasAuth = (req: http.IncomingMessage): boolean => {
+    const header = req.headers["x-agentboard-token"];
+    if (typeof header === "string") return same(header, opts.token);
+    const name = `agentboard_${port}=`;
+    const cookie = req.headers.cookie?.split(";").map((c) => c.trim()).find((c) => c.startsWith(name));
+    return cookie !== undefined && sessions.has(cookie.slice(name.length));
+  };
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_BODY });
   const attached = new Map<WebSocket, Set<string>>();
   const send = (ws: WebSocket, text: string) => { if (ws.readyState === WebSocket.OPEN) ws.send(text); };
@@ -154,13 +165,6 @@ function ownHost(req: http.IncomingMessage, port: number): boolean {
 function ownOrigin(req: http.IncomingMessage, port: number): boolean {
   const origin = req.headers.origin;
   return origin === undefined || origin === `http://127.0.0.1:${port}` || origin === `http://localhost:${port}`;
-}
-
-function hasToken(req: http.IncomingMessage, token: string): boolean {
-  const header = req.headers["x-agentboard-token"];
-  if (typeof header === "string") return same(header, token);
-  const cookie = req.headers.cookie?.split(";").map((c) => c.trim()).find((c) => c.startsWith("agentboard="));
-  return cookie !== undefined && same(cookie.slice("agentboard=".length), token);
 }
 
 const isIndex = (pathname: string) => pathname === "/" || pathname === "/index.html";
