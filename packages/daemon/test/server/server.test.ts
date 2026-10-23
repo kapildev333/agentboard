@@ -2,6 +2,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test } from "vitest";
+import WebSocket from "ws";
 import { createServer, type ServerOptions } from "../../src/server/index.js";
 
 const token = "test-token";
@@ -31,4 +32,21 @@ test("a foreign Origin on a POST is refused with 403", async () => {
     body: JSON.stringify({ agent: "claude", event: "Stop" }),
   });
   expect(res.status).toBe(403);
+});
+
+function upgrade(url: string, headers: Record<string, string>) {
+  return new Promise<{ opened: boolean; status?: number }>((resolve) => {
+    const ws = new WebSocket(url, { headers });
+    ws.on("open", () => { ws.close(); resolve({ opened: true }); });
+    ws.on("unexpected-response", (_req, res) => resolve({ opened: false, status: res.statusCode }));
+    ws.on("error", () => resolve({ opened: false }));
+  });
+}
+
+test("a WebSocket upgrade from a foreign Origin is refused", async () => {
+  const s = await start();
+  const url = `${s.origin.replace("http", "ws")}/ws`;
+  expect(await upgrade(url, { "x-agentboard-token": token, origin: "https://evil.example" }))
+    .toEqual({ opened: false, status: 403 });
+  expect(await upgrade(url, { "x-agentboard-token": token, origin: s.origin })).toEqual({ opened: true });
 });
