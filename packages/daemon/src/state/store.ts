@@ -22,13 +22,14 @@ export function migrate(raw: unknown, repoPath = ""): Board {
 }
 
 export class StateStore {
-  private pending = new Map<string, Board>();
+  // a fresh wrapper per save, so a write in flight is never mistaken for a later save of the same object
+  private pending = new Map<string, { board: Board }>();
   private timer: NodeJS.Timeout | null = null;
   private chain: Promise<void> = Promise.resolve();
 
   async load(repoPath: string): Promise<Board> {
     const pending = this.pending.get(repoPath);
-    if (pending) return pending;
+    if (pending) return pending.board;
     const file = boardPath(repoPath);
     let text: string;
     try {
@@ -49,7 +50,7 @@ export class StateStore {
   }
 
   async save(board: Board): Promise<void> {
-    this.pending.set(board.repoPath, board);
+    this.pending.set(board.repoPath, { board });
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => {
       // the board stays pending on failure; the next save or flush retries it
@@ -67,12 +68,12 @@ export class StateStore {
   }
 
   private async writePending(): Promise<void> {
-    for (const [repoPath, board] of [...this.pending]) {
+    for (const [repoPath, entry] of [...this.pending]) {
       const file = boardPath(repoPath);
       await mkdir(dirname(file), { recursive: true, mode: 0o700 });
-      await writeFile(`${file}.tmp`, JSON.stringify(board, null, 2));
+      await writeFile(`${file}.tmp`, JSON.stringify(entry.board, null, 2));
       await rename(`${file}.tmp`, file);
-      if (this.pending.get(repoPath) === board) this.pending.delete(repoPath);
+      if (this.pending.get(repoPath) === entry) this.pending.delete(repoPath);
     }
   }
 }
