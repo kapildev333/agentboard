@@ -5,17 +5,19 @@ import { stat } from "node:fs/promises";
 export type Editor = "code" | "zed" | "finder";
 export type Spawn = (command: string, args: readonly string[], options: SpawnOptions) => EventEmitter & { unref(): void };
 
-const commands: Record<Editor, (platform: string) => string> = {
-  code: () => "code",
-  zed: () => "zed",
-  finder: (platform) => (platform === "darwin" ? "open" : platform === "win32" ? "explorer" : "xdg-open"),
+// The command and argv for each editor. Finder on macOS reveals the folder in its parent (D23): `open` on a bundle would launch it.
+const commands: Record<Editor, (platform: string, path: string) => [string, string[]]> = {
+  code: (_, path) => ["code", [path]],
+  zed: (_, path) => ["zed", [path]],
+  finder: (platform, path) =>
+    platform === "darwin" ? ["open", ["-R", path]] : platform === "win32" ? ["explorer", [path]] : ["xdg-open", [path]],
 };
 
 export async function openIn(editor: Editor, path: string, spawn: Spawn = nodeSpawn, platform = process.platform): Promise<void> {
   if (!(await stat(path).catch(() => null))?.isDirectory()) throw new Error(`not a directory: ${path}`);
-  const command = commands[editor](platform);
+  const [command, args] = commands[editor](platform, path);
   return new Promise((resolve, reject) => {
-    const child = spawn(command, [path], { stdio: "ignore", detached: true });
+    const child = spawn(command, args, { stdio: "ignore", detached: true });
     child.once("error", (err) => reject(new Error(`could not start ${command}: ${err.message}`)));
     child.once("spawn", () => { child.unref(); resolve(); });
   });
