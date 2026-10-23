@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { ConsoleNode } from "../../src/console";
+import { CONSOLE_DRAG_HANDLE, ConsoleNode } from "../../src/console";
 
 const x = vi.hoisted(() => ({
   term: undefined as any,
@@ -81,13 +81,16 @@ const factory = () => {
   return s;
 };
 let roCallback: () => void;
+let observed: unknown[] = [];
 
 beforeAll(() => {
   globalThis.ResizeObserver = class {
     constructor(cb: () => void) {
       roCallback = cb;
     }
-    observe() {}
+    observe(el: unknown) {
+      observed.push(el);
+    }
     unobserve() {}
     disconnect() {}
   } as never;
@@ -95,6 +98,7 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   sockets = [];
+  observed = [];
 });
 
 const mount = (extra: object = {}) =>
@@ -150,6 +154,7 @@ describe("ConsoleNode", () => {
   it("exit shows the marker", () => {
     const { getByText, queryByText } = mount();
     act(() => sockets[0]!.open());
+    act(() => sockets[0]!.receive({ t: "exit", consoleId: "other", code: 0 }));
     expect(queryByText(/exited/)).toBeNull();
     act(() => sockets[0]!.receive({ t: "exit", consoleId: "c1", code: 0 }));
     expect(getByText(/exited/)).toBeTruthy();
@@ -202,5 +207,27 @@ describe("ConsoleNode", () => {
     expect(sockets[1]!.sent[0]).toBe(JSON.stringify({ t: "attach", consoleId: "c1" }));
     act(() => sockets[1]!.onclose!());
     expect(sockets).toHaveLength(2);
+  });
+
+  it("sends the fitted size only after attach, and does not reconnect after unmount", () => {
+    const { unmount } = mount();
+    act(() => x.term.handlers.resize({ cols: 100, rows: 30 }));
+    expect(sockets[0]!.sent).toEqual([]);
+    act(() => sockets[0]!.open());
+    expect(sockets[0]!.sent).toEqual([
+      JSON.stringify({ t: "attach", consoleId: "c1" }),
+      JSON.stringify({ t: "resize", consoleId: "c1", cols: 100, rows: 30 }),
+    ]);
+    unmount();
+    sockets[0]!.onclose!();
+    expect(sockets).toHaveLength(1);
+  });
+
+  it("the header is the drag handle and holds the badge; the terminal element is observed", () => {
+    const { container } = mount({ statusBadge: <span data-testid="badge">busy</span> });
+    const header = container.querySelector(CONSOLE_DRAG_HANDLE)!;
+    expect(header.tagName).toBe("HEADER");
+    expect(header.querySelector("[data-testid=badge]")).not.toBeNull();
+    expect(observed).toEqual([header.nextElementSibling]);
   });
 });
