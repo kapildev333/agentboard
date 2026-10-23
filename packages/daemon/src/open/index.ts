@@ -20,3 +20,12 @@ export async function openIn(editor: Editor, path: string, spawn: Spawn = nodeSp
     child.once("spawn", () => { child.unref(); resolve(); });
   });
 }
+
+// The body is the POST /api/open request: { editor, path }. L12 maps a thrown Error to the HTTP response.
+export async function handleOpen(body: unknown, spawn: Spawn = nodeSpawn): Promise<{ ok: true }> {
+  const { editor, path } = (body ?? {}) as Record<string, unknown>;
+  if (typeof editor !== "string" || !Object.hasOwn(commands, editor)) throw new Error(`unknown editor: ${String(editor)}`);
+  if (typeof path !== "string") throw new Error("path must be a string");
+  await openIn(editor as Editor, path, spawn);
+  return { ok: true };
+}
