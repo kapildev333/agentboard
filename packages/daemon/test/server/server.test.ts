@@ -357,3 +357,45 @@ test("the token is accepted as Authorization: Bearer as well as the header", asy
   expect((await fetch(`${s.origin}/auth/code`, { method: "POST", headers: { authorization: `Bearer ${token}` } })).status).toBe(200);
   expect(await upgrade(`${s.origin.replace("http", "ws")}/ws`, { authorization: `Bearer ${token}` })).toEqual({ opened: true });
 });
+
+test("an upgrade to an absolute-form URL is dropped and the server stays up", async () => {
+  const s = await start();
+  const up = await raw(s.port, `GET http://127.0.0.1:${s.port}/ws HTTP/1.1\r\nHost: 127.0.0.1:${s.port}\r\n`
+    + `Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\n`
+    + `Sec-WebSocket-Key: ${btoa("the sample nonce")}\r\nX-AgentBoard-Token: ${token}\r\n\r\n`);
+  expect(up).not.toMatch(/101/);
+  expect((await fetch(`${s.origin}/api/status`)).status).toBe(401);
+});
+
+test("an oversized WebSocket frame closes that socket and the server stays up", async () => {
+  const s = await start();
+  const ws = new WebSocket(`${s.origin.replace("http", "ws")}/ws`, { headers: { "x-agentboard-token": token } });
+  ws.on("error", () => {});
+  await new Promise<void>((r) => ws.on("open", r));
+  const closed = new Promise<void>((r) => ws.on("close", () => r()));
+  ws.send("x".repeat((1 << 20) + 1));
+  await closed;
+  expect((await fetch(`${s.origin}/api/status`)).status).toBe(401);
+});
+
+test("close resolves while a WebSocket is held open", async () => {
+  const s = await start();
+  const ws = new WebSocket(`${s.origin.replace("http", "ws")}/ws`, { headers: { "x-agentboard-token": token } });
+  ws.on("error", () => {});
+  try {
+    await new Promise<void>((r) => ws.on("open", r));
+    const closed = await Promise.race([
+      s.close().then(() => "closed"),
+      new Promise((r) => setTimeout(() => r("timeout"), 1000)),
+    ]);
+    expect(closed).toBe("closed");
+  } finally {
+    ws.terminate();
+  }
+});
+
+test("a wrong X-AgentBoard-Token is never rescued by a correct Bearer", async () => {
+  const s = await start({ routes: { "GET /api/status": async () => ({ consoles: [] }) } });
+  const res = await fetch(`${s.origin}/api/status`, { headers: { "x-agentboard-token": "wrong", authorization: `Bearer ${token}` } });
+  expect(res.status).toBe(401);
+});
