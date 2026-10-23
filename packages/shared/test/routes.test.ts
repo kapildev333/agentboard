@@ -30,3 +30,13 @@ test("GET /api/agents keeps customId and name on custom entries", () => {
   const entry = { id: "custom", command: "mytool", version: null, available: true, customId: "mine", name: "Mine" };
   expect(shared.AgentInfoListSchema.parse([entry])).toEqual([entry]);
 });
+
+test("a custom agent has an id, name, command and args; needsYou is optional", () => {
+  const agent = { id: "fake", name: "Fake", command: "fake", args: [] };
+  expect(shared.CustomAgentSchema.parse(agent)).toEqual(agent);
+  expect(shared.CustomAgentSchema.safeParse({ name: "Fake", command: "fake" }).success).toBe(false);
+});
+
+test("POST /api/open rejects an unknown editor", () => {
+  expect(shared.OpenRequestSchema.safeParse({ editor: "vim", path: "/tmp" }).success).toBe(false);
+});

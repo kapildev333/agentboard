@@ -1,11 +1,24 @@
 {
   "GET /api/board": {
-    "request": { "repo": "/tmp/demo-repo" },
+    "request": {
+      "repo": "/tmp/demo-repo"
+    },
     "response": {
       "version": 1,
       "repoPath": "/tmp/demo-repo",
       "activeWorkspaceId": "ws-main",
-      "workspaces": [{ "id": "ws-main", "name": "Main", "viewport": { "x": 0, "y": 0, "zoom": 1 }, "nodes": [] }]
+      "workspaces": [
+        {
+          "id": "ws-main",
+          "name": "Main",
+          "viewport": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+          },
+          "nodes": []
+        }
+      ]
     }
   },
   "PUT /api/board": {
@@ -17,24 +30,57 @@
         {
           "id": "ws-main",
           "name": "Main",
-          "viewport": { "x": 10, "y": 20, "zoom": 0.75 },
-          "nodes": [{ "id": "n1", "type": "note", "title": "Todo", "x": 0, "y": 0, "w": 200, "h": 100, "text": "hi" }]
+          "viewport": {
+            "x": 10,
+            "y": 20,
+            "zoom": 0.75
+          },
+          "nodes": [
+            {
+              "id": "n1",
+              "type": "note",
+              "title": "Todo",
+              "x": 0,
+              "y": 0,
+              "w": 200,
+              "h": 100,
+              "text": "hi"
+            }
+          ]
         }
       ]
     },
-    "response": { "ok": true }
+    "response": {
+      "ok": true
+    }
   },
   "POST /api/consoles": {
-    "request": { "agent": "opencode", "cwd": "/tmp/demo-repo", "worktree": "feat-x", "prompt": "run the tests", "callerConsoleId": "c-claude" },
+    "request": {
+      "agent": "opencode",
+      "cwd": "/tmp/demo-repo",
+      "worktree": "feat-x",
+      "prompt": "run the tests",
+      "callerConsoleId": "c-claude"
+    },
     "response": {
       "id": "c-new",
       "type": "console",
       "title": "OpenCode: feat-x",
-      "x": 680, "y": 0, "w": 640, "h": 400,
+      "x": 680,
+      "y": 0,
+      "w": 640,
+      "h": 400,
       "agent": "opencode",
       "cwd": "/tmp/demo-repo/.worktrees/feat-x",
-      "worktree": { "path": "/tmp/demo-repo/.worktrees/feat-x", "branch": "feat-x", "base": "main" },
-      "session": { "provider": "opencode", "id": "ses_new" },
+      "worktree": {
+        "path": "/tmp/demo-repo/.worktrees/feat-x",
+        "branch": "feat-x",
+        "base": "main"
+      },
+      "session": {
+        "provider": "opencode",
+        "id": "ses_new"
+      },
       "status": "starting",
       "createdAt": "2026-10-23T10:00:00.000Z",
       "lastActiveAt": "2026-10-23T10:00:00.000Z"
@@ -42,7 +88,9 @@
   },
   "DELETE /api/consoles/:id": {
     "request": null,
-    "response": { "ok": true }
+    "response": {
+      "ok": true
+    }
   },
   "POST /api/consoles/:id/resume": {
     "request": null,
@@ -50,10 +98,16 @@
       "id": "c-claude",
       "type": "console",
       "title": "Claude: auth refactor",
-      "x": 0, "y": 0, "w": 640, "h": 400,
+      "x": 0,
+      "y": 0,
+      "w": 640,
+      "h": 400,
       "agent": "claude",
       "cwd": "/tmp/demo-repo",
-      "session": { "provider": "claude", "id": "00000000-0000-4000-8000-000000000001" },
+      "session": {
+        "provider": "claude",
+        "id": "00000000-0000-4000-8000-000000000001"
+      },
       "status": "starting",
       "createdAt": "2026-10-23T09:00:00.000Z",
       "lastActiveAt": "2026-10-23T10:05:00.000Z"
@@ -62,8 +116,18 @@
   "GET /api/agents": {
     "request": null,
     "response": [
-      { "id": "claude", "command": "claude", "version": "2.1.0", "available": true },
-      { "id": "gemini", "command": "gemini", "version": null, "available": false }
+      {
+        "id": "claude",
+        "command": "claude",
+        "version": "2.1.0",
+        "available": true
+      },
+      {
+        "id": "gemini",
+        "command": "gemini",
+        "version": null,
+        "available": false
+      }
     ]
   },
   "GET /api/status": {
@@ -74,7 +138,10 @@
           "id": "c-codex",
           "type": "console",
           "title": "Codex: review",
-          "x": 0, "y": 0, "w": 640, "h": 400,
+          "x": 0,
+          "y": 0,
+          "w": 640,
+          "h": 400,
           "agent": "codex",
           "cwd": "/tmp/demo-repo",
           "status": "idle",
@@ -85,31 +152,128 @@
     }
   },
   "POST /hook/:consoleId": {
-    "request": { "agent": "claude", "event": "Notification", "payload": { "notification_type": "permission_prompt" } },
-    "response": { "ok": true }
+    "request": {
+      "agent": "claude",
+      "event": "Notification",
+      "payload": {
+        "notification_type": "permission_prompt"
+      }
+    },
+    "response": {
+      "ok": true
+    }
   },
   "GET /api/git/status": {
-    "request": { "path": "/tmp/demo-repo/.worktrees/feat-x" },
-    "response": { "branch": "feat-x", "ahead": 2, "behind": 0, "dirty": 3, "lastCommit": { "sha": "abc1234", "subject": "feat: add x" } }
+    "request": {
+      "path": "/tmp/demo-repo/.worktrees/feat-x"
+    },
+    "response": {
+      "branch": "feat-x",
+      "ahead": 2,
+      "behind": 0,
+      "dirty": 3,
+      "lastCommit": {
+        "sha": "abc1234",
+        "subject": "feat: add x"
+      }
+    }
   },
   "GET /api/git/diff": {
-    "request": { "path": "/tmp/demo-repo/.worktrees/feat-x" },
-    "response": { "files": [{ "path": "src/x.ts", "status": "M" }], "patch": "--- a/src/x.ts\n+++ b/src/x.ts\n@@ -1 +1 @@\n-a\n+b\n" }
+    "request": {
+      "path": "/tmp/demo-repo/.worktrees/feat-x"
+    },
+    "response": {
+      "files": [
+        {
+          "path": "src/x.ts",
+          "status": "M"
+        }
+      ],
+      "patch": "--- a/src/x.ts\n+++ b/src/x.ts\n@@ -1 +1 @@\n-a\n+b\n"
+    }
   },
   "POST /api/git/worktree": {
-    "request": { "repo": "/tmp/demo-repo", "name": "feat-x", "base": "main" },
-    "response": { "path": "/tmp/demo-repo/.worktrees/feat-x", "branch": "feat-x", "base": "main" }
+    "request": {
+      "repo": "/tmp/demo-repo",
+      "name": "feat-x",
+      "base": "main"
+    },
+    "response": {
+      "path": "/tmp/demo-repo/.worktrees/feat-x",
+      "branch": "feat-x",
+      "base": "main"
+    }
   },
   "POST /api/git/commit": {
-    "request": { "path": "/tmp/demo-repo/.worktrees/feat-x", "message": "feat: add x" },
-    "response": { "sha": "abc1234" }
+    "request": {
+      "path": "/tmp/demo-repo/.worktrees/feat-x",
+      "message": "feat: add x"
+    },
+    "response": {
+      "sha": "abc1234"
+    }
   },
   "POST /api/git/push": {
-    "request": { "path": "/tmp/demo-repo/.worktrees/feat-x" },
-    "response": { "ok": true }
+    "request": {
+      "path": "/tmp/demo-repo/.worktrees/feat-x"
+    },
+    "response": {
+      "ok": true
+    }
   },
   "POST /api/git/pr": {
-    "request": { "path": "/tmp/demo-repo/.worktrees/feat-x", "title": "Add x", "body": "Adds x." },
-    "response": { "url": "https://github.com/example/demo-repo/pull/1" }
+    "request": {
+      "path": "/tmp/demo-repo/.worktrees/feat-x",
+      "title": "Add x",
+      "body": "Adds x."
+    },
+    "response": {
+      "url": "https://github.com/example/demo-repo/pull/1"
+    }
+  },
+  "GET /api/settings": {
+    "request": null,
+    "response": {
+      "fontSize": 13,
+      "customAgents": [
+        {
+          "id": "fake",
+          "name": "Fake",
+          "command": "/usr/local/bin/fake",
+          "args": [
+            "--flag"
+          ],
+          "needsYou": "approve\\?"
+        }
+      ]
+    }
+  },
+  "PUT /api/settings": {
+    "request": {
+      "fontSize": 13,
+      "customAgents": [
+        {
+          "id": "fake",
+          "name": "Fake",
+          "command": "/usr/local/bin/fake",
+          "args": [
+            "--flag"
+          ],
+          "needsYou": "approve\\?"
+        }
+      ]
+    },
+    "response": {
+      "ok": true
+    }
+  },
+  "POST /api/open": {
+    "request": {
+      "editor": "code",
+      "path": "/tmp/demo-repo"
+    },
+    "response": {
+      "ok": true
+    }
   }
 }
