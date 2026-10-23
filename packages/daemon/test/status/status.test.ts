@@ -241,4 +241,17 @@ describe("StatusTracker", () => {
       expect(t.get("c1"), reason).toBe("working");
     }
   });
+
+  it("needs you holds through the prompt redrawn after the question, until the user types", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "custom", { needsYou: [/approve\?/] });
+    t.markOutput("c1", "approve? (y/n)\r\n");
+    t.markOutput("c1", "fake> ");
+    expect(t.get("c1")).toBe("needs_you");
+    vi.advanceTimersByTime(60_000);
+    expect(t.get("c1")).toBe("needs_you");
+    t.markInput("c1", "y");
+    t.markOutput("c1", "y");
+    expect(t.get("c1")).toBe("working");
+  });
 });
