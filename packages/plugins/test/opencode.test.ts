@@ -30,6 +30,7 @@ describe("AgentBoard plugin", () => {
     await hooks.event({ event: { type: "message.updated", properties: {} } });
     await hooks["tool.execute.before"]({ tool: "bash" });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
