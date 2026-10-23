@@ -53,6 +53,7 @@ Each daemon spec makes a temporary `AGENTBOARD_HOME` and a temporary git reposit
 | --- | --- |
 | `smoke.spec.ts` | Six consoles spawned from the spawn dialog show live output, echo typed input and report working in their badges and the mission map |
 | `load.spec.ts` | p95 keystroke echo under 50 ms while five other consoles print, and daemon memory under 1 GB after a minute of output |
+| `restart.spec.ts` | A reload keeps six consoles and their status; after a daemon crash and restart they show Stopped, and Resume works |
 | `security.spec.ts` | A foreign Origin carrying the board's cookie is refused on GET, PUT and WebSocket upgrades; a foreign Host is refused even with the token |
 | `spike/l03.spec.ts` | The L03 renderer spike: echo through xterm.js in React Flow and frame rates at three zoom levels |
 
