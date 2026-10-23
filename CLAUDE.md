@@ -13,3 +13,4 @@ A free local tool: a Node daemon runs coding-agent CLIs as terminals on a board 
 - Run `scripts/gate.sh` before opening a PR and paste its last 20 lines into the PR body.
 - Never ask the owner anything from inside a lane. A design choice the card leaves open: decide it, note it under "Decisions" in the PR body.
 - Scratch servers run on a random free port and are stopped by PID or by that port, never by `pkill -f`.
+- Never execute or install third-party agent binaries (codex, gemini, opencode, aider or others): macOS blocks unsigned ones with a malware dialog on the owner's screen. Build and unit-test the argument builders; running the real CLIs is the owner's check at a gate. Running `claude` itself is fine.
