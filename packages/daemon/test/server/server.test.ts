@@ -237,7 +237,7 @@ test("a request target the URL parser rejects is answered 400 and the server sta
   expect(await raw(s.port, `GET // HTTP/1.1\r\n${host}Connection: close\r\n\r\n`)).toMatch(/^HTTP\/1\.1 401/);
   expect(await raw(s.port, `OPTIONS * HTTP/1.1\r\n${host}Connection: close\r\n\r\n`)).toMatch(/^HTTP\/1\.1 400/);
   const up = await raw(s.port, `GET // HTTP/1.1\r\n${host}Connection: Upgrade\r\nUpgrade: websocket\r\n`
-    + `Sec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n`);
+    + `Sec-WebSocket-Version: 13\r\nSec-WebSocket-Key: ${btoa("the sample nonce")}\r\n\r\n`);
   expect(up).not.toMatch(/101/);
   expect((await fetch(`${s.origin}/api/status`)).status).toBe(401);
 });
@@ -246,7 +246,7 @@ test("a refused upgrade whose client resets early does not crash the server", as
   const s = await start();
   const request = `GET /ws HTTP/1.1\r\nHost: 127.0.0.1:${s.port}\r\nOrigin: https://evil.example\r\n`
     + `Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\n`
-    + `Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n`;
+    + `Sec-WebSocket-Key: ${btoa("the sample nonce")}\r\n\r\n`;
   await Promise.all(Array.from({ length: 50 }, () => new Promise<void>((resolve) => {
     const socket = net.connect(s.port, "127.0.0.1", () => socket.write(request, () => { socket.resetAndDestroy(); resolve(); }));
     socket.on("error", () => resolve());
