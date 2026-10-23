@@ -5,7 +5,6 @@ import { buildHookPost, buildSpawnPost, WATCHED, type OpencodeEvent, type SpawnA
 const NOT_RUNNING = "AgentBoard is not running";
 
 export const AgentBoard = async () => {
-  if (!buildHookPost(process.env, { type: "" })) return {};
   const send = async (event: OpencodeEvent) => {
     const post = buildHookPost(process.env, event);
     if (!post) return;
@@ -20,14 +19,20 @@ export const AgentBoard = async () => {
       // daemon gone: never break the agent
     }
   };
+  // event forwarding needs a console to report to; the tool always exists and answers "not running" itself
+  const hooks = buildHookPost(process.env, { type: "" })
+    ? {
+        event: async ({ event }: { event: OpencodeEvent }) => {
+          if (WATCHED.has(event.type)) await send(event);
+        },
+        // tool.execute.before is its own hook in OpenCode, not an event-stream type
+        "tool.execute.before": async (input: { tool?: string; sessionID?: string }) => {
+          await send({ type: "tool.execute.before", properties: input });
+        },
+      }
+    : {};
   return {
-    event: async ({ event }: { event: OpencodeEvent }) => {
-      if (WATCHED.has(event.type)) await send(event);
-    },
-    // tool.execute.before is its own hook in OpenCode, not an event-stream type
-    "tool.execute.before": async (input: { tool?: string; sessionID?: string }) => {
-      await send({ type: "tool.execute.before", properties: input });
-    },
+    ...hooks,
     tool: {
       agentboard_spawn: {
         description: "Open another coding agent (claude, codex, gemini, opencode or custom) as a new console on the AgentBoard in a given directory.",
