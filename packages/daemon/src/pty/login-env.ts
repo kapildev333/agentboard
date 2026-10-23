@@ -3,12 +3,14 @@ import { promisify } from "node:util";
 
 const run = promisify(execFile);
 
-// `env -0` output: NUL-separated NAME=value entries. Entries without a usable name (shell noise) are skipped.
+// `env -0` output: NUL-separated NAME=value entries. Entries without a name (shell noise) are skipped.
 export function parseEnv(text: string): Record<string, string> {
   const out: Record<string, string> = {};
   for (const entry of text.split("\0")) {
     const i = entry.indexOf("=");
-    if (i > 0 && !entry.slice(0, i).includes("\n")) out[entry.slice(0, i)] = entry.slice(i + 1);
+    // rc-file output before the first variable lands in the same entry, so the name starts after the last newline
+    const name = entry.slice(entry.lastIndexOf("\n", i) + 1, i);
+    if (i > 0 && name) out[name] = entry.slice(i + 1);
   }
   return out;
 }
