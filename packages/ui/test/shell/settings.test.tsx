@@ -9,14 +9,20 @@ describe("SettingsPanel", () => {
   it("the settings panel reports a font size change", () => {
     const onChange = vi.fn();
     render(<SettingsPanel settings={settings} onChange={onChange} />);
-    fireEvent.change(screen.getByLabelText("font size"), { target: { value: "18" } });
+    const input = screen.getByLabelText("font size");
+    fireEvent.change(input, { target: { value: "18" } });
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.blur(input);
     expect(onChange).toHaveBeenCalledWith({ ...settings, fontSize: 18 });
   });
 
   it("font size is clamped to 10..24", () => {
     const onChange = vi.fn();
     render(<SettingsPanel settings={settings} onChange={onChange} />);
-    fireEvent.change(screen.getByLabelText("font size"), { target: { value: "40" } });
+    const input = screen.getByLabelText("font size") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "40" } });
+    fireEvent.blur(input);
+    expect(input.value).toBe("24");
     expect(onChange).toHaveBeenCalledWith({ ...settings, fontSize: 24 });
   });
 
@@ -30,5 +36,25 @@ describe("SettingsPanel", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Add agent" }));
     expect(onChange.mock.lastCall![0].customAgents).toHaveLength(2);
+  });
+
+  it("typing 18 passes through 1 without clamping", () => {
+    render(<SettingsPanel settings={settings} onChange={vi.fn()} />);
+    const input = screen.getByLabelText("font size") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "1" } });
+    expect(input.value).toBe("1");
+  });
+
+  it("clearing the regex stores undefined", () => {
+    const onChange = vi.fn();
+    const s: Settings = { fontSize: 14, customAgents: [{ name: "a", command: "b", needsYou: "x" }] };
+    render(<SettingsPanel settings={s} onChange={onChange} />);
+    fireEvent.change(screen.getByLabelText("needs-you regex 0"), { target: { value: "" } });
+    expect(onChange.mock.lastCall![0].customAgents[0].needsYou).toBeUndefined();
+  });
+
+  it("Remove buttons are labelled from 1", () => {
+    render(<SettingsPanel settings={settings} onChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Remove agent 1" })).toBeTruthy();
   });
 });

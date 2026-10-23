@@ -58,4 +58,57 @@ describe("SpawnDialog", () => {
     expect((await screen.findByRole("alert")).textContent).toBe("no such repo");
     expect(onSpawned).not.toHaveBeenCalled();
   });
+
+  it("worktree branch (trimmed) and prompt reach the request body", async () => {
+    const fetch = fakeFetch();
+    render(<SpawnDialog fetch={fetch} cwd="/r" onSpawned={vi.fn()} />);
+    fireEvent.click(await screen.findByLabelText(/claude/));
+    fireEvent.click(screen.getByLabelText("new worktree"));
+    const spawn = screen.getByRole("button", { name: "Spawn" }) as HTMLButtonElement;
+    expect(spawn.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText("branch name"), { target: { value: "  feat-x " } });
+    fireEvent.change(screen.getByLabelText("first prompt"), { target: { value: "hello" } });
+    fireEvent.click(spawn);
+    await waitFor(() => expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(true));
+    const post = fetch.mock.calls.find(([, i]) => i?.method === "POST")!;
+    expect(JSON.parse(post[1]!.body as string)).toEqual({ agent: "claude", cwd: "/r", worktree: "feat-x", prompt: "hello" });
+  });
+
+  it("a second submit is blocked while the POST is in flight", async () => {
+    let release!: () => void;
+    const fetch = vi.fn(async (_u: string | URL | Request, init?: RequestInit) => {
+      if (init?.method !== "POST") return json(agents);
+      await new Promise<void>((r) => (release = r));
+      return json(node);
+    });
+    render(<SpawnDialog fetch={fetch} cwd="/r" onSpawned={vi.fn()} />);
+    fireEvent.click(await screen.findByLabelText(/claude/));
+    const spawn = screen.getByRole("button", { name: "Spawn" }) as HTMLButtonElement;
+    fireEvent.click(spawn);
+    await waitFor(() => expect(spawn.disabled).toBe(true));
+    release();
+    await waitFor(() => expect(spawn.disabled).toBe(false));
+  });
+
+  it("a non-JSON failure shows spawn failed (status)", async () => {
+    const fetch = vi.fn(async (_u: string | URL | Request, init?: RequestInit) =>
+      init?.method === "POST" ? new Response("<html>bad gateway</html>", { status: 502 }) : json(agents),
+    );
+    render(<SpawnDialog fetch={fetch} cwd="/r" onSpawned={vi.fn()} />);
+    fireEvent.click(await screen.findByLabelText(/claude/));
+    fireEvent.click(screen.getByRole("button", { name: "Spawn" }));
+    expect((await screen.findByRole("alert")).textContent).toBe("spawn failed (502)");
+  });
+
+  it("a failed agents load shows the error", async () => {
+    const fetch = vi.fn(async () => json({ error: "daemon down" }, 500));
+    render(<SpawnDialog fetch={fetch} cwd="/r" onSpawned={vi.fn()} />);
+    expect((await screen.findByRole("alert")).textContent).toBe("daemon down");
+  });
+
+  it("agents sit in a fieldset legend Agent", async () => {
+    render(<SpawnDialog fetch={fakeFetch()} cwd="/r" onSpawned={vi.fn()} />);
+    await screen.findByLabelText(/claude/);
+    expect(screen.getByRole("group", { name: "Agent" })).toBeTruthy();
+  });
 });
