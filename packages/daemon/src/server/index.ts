@@ -131,6 +131,8 @@ export async function createServer(opts: ServerOptions) {
     if (!url) return void socket.destroy();
     const status = url.pathname !== "/ws" ? 404 : refuse(req, true);
     if (status) {
+      // A half-open client would otherwise keep the socket, and close(), waiting forever.
+      socket.once("finish", () => socket.destroy());
       socket.end(`HTTP/1.1 ${status} ${http.STATUS_CODES[status]}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
       return;
     }
