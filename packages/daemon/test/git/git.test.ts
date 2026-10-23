@@ -31,3 +31,28 @@ test("worktreeAdd creates a branch and a worktree", async () => {
   expect(git(path, "branch", "--show-current")).toBe("feat-x");
   expect(readFileSync(join(repo, ".git/info/exclude"), "utf8")).toContain(".worktrees/");
 });
+
+test("worktreeRemove refuses a dirty worktree and succeeds with force", async () => {
+  const repo = makeRepo();
+  const { path } = await svc().worktreeAdd(repo, "feat-d", "main");
+  writeFileSync(join(path, "a.txt"), "changed\n");
+  await expect(svc().worktreeRemove(path, { force: false })).rejects.toMatchObject({ code: "dirty" });
+  await svc().worktreeRemove(path, { force: true });
+  expect(existsSync(path)).toBe(false);
+});
+
+test("worktreeRemove refuses unpushed commits", async () => {
+  const repo = makeRepo();
+  const remote = tmp("remote");
+  git(remote, "init", "--bare", "-b", "main");
+  git(repo, "remote", "add", "origin", remote);
+  git(repo, "push", "-u", "origin", "main");
+  const { path } = await svc().worktreeAdd(repo, "feat-u", "main");
+  git(path, "push", "-u", "origin", "feat-u");
+  writeFileSync(join(path, "b.txt"), "b\n");
+  git(path, "add", ".");
+  git(path, "commit", "-m", "local only");
+  await expect(svc().worktreeRemove(path, { force: false })).rejects.toMatchObject({ code: "unpushed" });
+  await svc().worktreeRemove(path, { force: true });
+  expect(existsSync(path)).toBe(false);
+});
