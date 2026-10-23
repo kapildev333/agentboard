@@ -83,3 +83,13 @@ test("note defaults to the main repo root from a subdirectory", async () => {
   expect(await noteCommand(["hi"], { cwd: sub, log: () => {} })).toBe(0);
   expect(getUrl).toBe(`/api/board?repo=${encodeURIComponent(root)}`);
 });
+
+test("note defaults to the main repo root from a linked worktree", async () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "ab-repo-")));
+  const linked = join(realpathSync(mkdtempSync(join(tmpdir(), "ab-wt-"))), "wt");
+  execFileSync("git", ["init", "-q", root]);
+  execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "init"], { cwd: root });
+  execFileSync("git", ["worktree", "add", "-q", linked, "-b", "wt"], { cwd: root });
+  expect(await noteCommand(["hi"], { cwd: linked, log: () => {} })).toBe(0);
+  expect(getUrl).toBe(`/api/board?repo=${encodeURIComponent(root)}`);
+});
