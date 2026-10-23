@@ -20,9 +20,11 @@ export class GitService {
   constructor(private deps: { exec: Exec }) {}
 
   async worktreeAdd(repoPath: string, name: string, base: string) {
+    for (const v of [name, base]) if (v.startsWith("-")) throw new Error(`"${v}" must not start with '-'`);
     const path = join(repoPath, ".worktrees", name);
-    await simpleGit(repoPath).raw(["worktree", "add", "-b", name, path, base]);
-    const exclude = join(repoPath, ".git", "info", "exclude");
+    const g = simpleGit(repoPath);
+    await g.raw(["worktree", "add", "-b", name, path, base]);
+    const exclude = (await g.raw(["rev-parse", "--path-format=absolute", "--git-path", "info/exclude"])).trim();
     const current = existsSync(exclude) ? readFileSync(exclude, "utf8") : "";
     if (!current.split("\n").includes(".worktrees/")) appendFileSync(exclude, `${current && !current.endsWith("\n") ? "\n" : ""}.worktrees/\n`);
     return { path, branch: name };
@@ -41,33 +43,37 @@ export class GitService {
   async status(path: string) {
     const g = simpleGit(path);
     const st = await g.status();
-    const [sha, subject, when] = (await g.raw(["log", "-1", "--format=%H%x00%s%x00%cI"])).trim().split("\0");
+    const [sha, subject, when] = (await this.hasHead(g))
+      ? (await g.raw(["log", "-1", "--format=%H%x00%s%x00%cI"])).trim().split("\0")
+      : [];
     return {
       branch: st.current ?? "HEAD",
       ahead: st.ahead,
       behind: st.behind,
       dirty: st.files.length,
-      lastCommit: { sha, subject, when },
+      lastCommit: sha ? { sha, subject, when } : null,
     };
   }
 
   // ponytail: tracked changes only; untracked files appear after `commit` stages them.
   async diff(path: string) {
     const g = simpleGit(path);
-    const files = (await g.raw(["diff", "HEAD", "--name-status"]))
+    // Before the first commit, diff against git's well-known empty tree.
+    const rev = (await this.hasHead(g)) ? "HEAD" : "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+    const files = (await g.raw(["diff", rev, "--name-status"]))
       .split("\n")
       .filter(Boolean)
       .map((l) => {
         const [status, ...rest] = l.split("\t");
         return { path: rest[rest.length - 1], status: status[0] };
       });
-    return { files, patch: await g.raw(["diff", "HEAD"]) };
+    return { files, patch: await g.raw(["diff", rev]) };
   }
 
   async commit(path: string, message: string) {
     const g = simpleGit(path);
     await g.add("-A");
-    await g.commit(message);
+    if (!(await g.commit(message)).commit) throw new Error("nothing to commit");
     return { sha: (await g.revparse(["HEAD"])).trim() };
   }
 
@@ -78,6 +84,11 @@ export class GitService {
   async createPr(path: string, pr: { title: string; body?: string }) {
     const out = await this.deps.exec("gh", ["pr", "create", "--title", pr.title, "--body", pr.body ?? ""], { cwd: path });
     return { url: out.trim() };
+  }
+
+  private async hasHead(g: SimpleGit): Promise<boolean> {
+    // simple-git resolves empty on a silent non-zero exit, so check the output too.
+    return g.raw(["rev-parse", "--verify", "-q", "HEAD"]).then((o) => o.trim() !== "", () => false);
   }
 
   private async hasUnpushed(g: SimpleGit): Promise<boolean> {
