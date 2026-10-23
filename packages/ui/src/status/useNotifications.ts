@@ -4,7 +4,7 @@ import { useBoard } from "../board";
 
 let asked = false;
 /** Asks for notification permission once, on the first user gesture. */
-export function requestOnce(): void {
+function requestOnce(): void {
   if (asked || typeof Notification === "undefined" || Notification.permission !== "default") return;
   asked = true;
   void Notification.requestPermission();
