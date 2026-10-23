@@ -3,6 +3,8 @@ import type { Board, BoardNode, Workspace } from "@agentboard/shared";
 
 type State = {
   board: Board;
+  /** The board as last loaded from outside; a board equal to it has nothing to save. */
+  loaded: Board;
   setBoard: (b: Board) => void;
   addNode: (n: BoardNode) => void;
   moveNode: (id: string, x: number, y: number) => void;
@@ -31,7 +33,8 @@ export const useBoard = create<State>()((set, get) => {
 
   return {
     board: empty,
-    setBoard: (board) => set({ board }),
+    loaded: empty,
+    setBoard: (board) => set({ board, loaded: board }),
     addNode: (n) => editActive((w) => ({ ...w, nodes: [...w.nodes, n] })),
     moveNode: (id, x, y) => editNode(id, (n) => ({ ...n, x, y })),
     resizeNode: (id, w, h) => editNode(id, (n) => ({ ...n, w, h })),
@@ -61,13 +64,14 @@ export const useBoard = create<State>()((set, get) => {
   };
 });
 
-/** Calls save(board) 500 ms after the last board change; returns the unsubscribe. */
-export function autosaveBoard(save: (b: Board) => void, delayMs = 500): () => void {
+/** Calls save(board) 500 ms after the last local change; boards from setBoard are not saved. Returns the unsubscribe. */
+export function autosaveBoard(save: (b: Board) => void): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const unsub = useBoard.subscribe((s, prev) => {
     if (s.board === prev.board) return;
     clearTimeout(timer);
-    timer = setTimeout(() => save(useBoard.getState().board), delayMs);
+    if (s.board === s.loaded) return;
+    timer = setTimeout(() => save(useBoard.getState().board), 500);
   });
   return () => {
     clearTimeout(timer);

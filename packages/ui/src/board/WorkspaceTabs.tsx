@@ -13,7 +13,7 @@ export function WorkspaceTabs() {
   return (
     <div role="tablist" style={{ display: "flex", gap: 4 }}>
       {workspaces.map((w) => (
-        <div key={w.id} role="tab" aria-selected={w.id === activeWorkspaceId} style={{ fontWeight: w.id === activeWorkspaceId ? 700 : 400 }}>
+        <div key={w.id} style={{ fontWeight: w.id === activeWorkspaceId ? 700 : 400 }}>
           {editing === w.id ? (
             <input
               autoFocus
@@ -23,7 +23,9 @@ export function WorkspaceTabs() {
               onKeyDown={(e) => (e.key === "Enter" ? commit(w.id) : e.key === "Escape" && setEditing(null))}
             />
           ) : (
-            <span
+            <button
+              role="tab"
+              aria-selected={w.id === activeWorkspaceId}
               onClick={() => switchWorkspace(w.id)}
               onDoubleClick={() => {
                 setDraft(w.name);
@@ -31,7 +33,7 @@ export function WorkspaceTabs() {
               }}
             >
               {w.name}
-            </span>
+            </button>
           )}
           {workspaces.length > 1 && (
             <button aria-label={`Delete ${w.name}`} onClick={() => deleteWorkspace(w.id)}>
