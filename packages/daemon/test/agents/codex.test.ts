@@ -13,6 +13,6 @@ test("codexLaunch resumes by id when asked", () => {
 test("codexLaunch passes notify via -c and the hook target via env", () => {
   const r = codexLaunch(base);
   expect(r.args[0]).toBe("-c");
-  expect(r.args[1]).toMatch(/^notify=\["node","[^"]*notify-relay\.js"\]$/);
-  expect(r.env).toMatchObject({ AGENTBOARD_URL: base.daemonUrl, AGENTBOARD_CONSOLE_ID: "c1", AGENTBOARD_TOKEN: "t0k" });
+  expect(JSON.parse(r.args[1]!.slice("notify=".length))).toEqual([process.execPath, expect.stringMatching(/notify-relay\.js$/)]);
+  expect(r.env).toMatchObject({ AGENTBOARD_URL: base.daemonUrl, AGENTBOARD_CONSOLE_ID: "c1", AGENTBOARD_TOKEN: "t0k", AGENTBOARD_AGENT: "codex" });
 });
