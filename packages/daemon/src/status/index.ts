@@ -30,6 +30,23 @@ export class StatusTracker {
     if (next) this.set(consoleId, next);
   }
 
+  markOutput(consoleId: string, chunk: string): void {
+    const e = this.entries.get(consoleId);
+    // hooks and plugins are authoritative for claude, gemini, opencode; only codex and custom read output
+    if (!e || e.status === "exited" || (e.agent !== "codex" && e.agent !== "custom")) return;
+    const match = (res?: RegExp[]) => res?.some((r) => r.test(chunk));
+    const idle = e.agent === "custom" && match(e.rules.idle);
+    // needs_you wins over idle
+    this.set(consoleId, match(e.rules.needsYou) ? "needs_you" : idle ? "idle" : "working");
+    this.clearTimer(consoleId);
+    // codex goes idle from its notify hook, never from silence
+    if (e.agent === "custom") e.timer = this.timers.set(() => this.set(consoleId, "idle"), QUIET_MS);
+  }
+
+  markExit(consoleId: string, _code: number | null): void {
+    this.set(consoleId, "exited");
+  }
+
   get(consoleId: string): ConsoleStatus {
     return this.entries.get(consoleId)?.status ?? "stopped";
   }
