@@ -66,3 +66,24 @@ test("a wrong Host is refused with 403", async () => {
   expect(await upgrade(`ws://127.0.0.1:${s.port}/ws`, { host: `evil.example:${s.port}`, "x-agentboard-token": token }))
     .toEqual({ opened: false, status: 403 });
 });
+
+test("the one-time query token becomes a cookie and the redirect drops it", async () => {
+  const s = await start();
+  const first = await fetch(`${s.origin}/?token=${token}&ws=1`, { redirect: "manual" });
+  expect(first.status).toBe(302);
+  expect(first.headers.get("location")).toBe("/?ws=1");
+  const cookie = first.headers.get("set-cookie")!;
+  expect(cookie).toMatch(new RegExp(`^agentboard=${token};`));
+  expect(cookie).toMatch(/HttpOnly/);
+  expect(cookie).toMatch(/SameSite=Strict/);
+  expect(cookie).toMatch(/Path=\//);
+
+  const page = await fetch(`${s.origin}/?ws=1`, { headers: { cookie: cookie.split(";")[0] } });
+  expect(page.status).toBe(200);
+  expect(page.headers.get("content-type")).toMatch(/text\/html/);
+  expect(await page.text()).toContain("<title>board</title>");
+
+  expect((await fetch(`${s.origin}/?token=wrong`, { redirect: "manual" })).status).toBe(401);
+  expect((await fetch(`${s.origin}/api/status?token=${token}`)).status).toBe(401);
+  expect((await fetch(`${s.origin}/`, { headers: { cookie: "agentboard=wrong" } })).status).toBe(401);
+});
