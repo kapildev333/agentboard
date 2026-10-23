@@ -1,4 +1,4 @@
-import { act, cleanup, render } from "@testing-library/react";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { ConsoleNode } from "../../src/console";
@@ -141,5 +141,17 @@ describe("ConsoleNode", () => {
     act(() => sockets[0]!.receive({ t: "output", consoleId: "c1", data: "hello" }));
     act(() => sockets[0]!.receive({ t: "output", consoleId: "other", data: "nope" }));
     expect(x.term.written).toEqual(["hello"]);
+  });
+
+  it("the focused node carries nodrag and nowheel", () => {
+    const { container } = mount();
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).not.toMatch(/nodrag/);
+    act(() => root.querySelector("div")!.focus());
+    fireEvent.focusIn(root);
+    expect(root.className).toMatch(/nodrag/);
+    expect(root.className).toMatch(/nowheel/);
+    fireEvent.focusOut(root);
+    expect(root.className).not.toMatch(/nowheel/);
   });
 });
