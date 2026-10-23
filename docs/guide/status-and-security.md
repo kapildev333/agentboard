@@ -63,7 +63,7 @@ Your own typing is echoed by the program, and the echo counts as output, so typi
 
 - **Hooks take over from output.** Until a Claude, Gemini or OpenCode console's first recognised hook event arrives, its status comes from its output like a custom agent's: output means working, 20 quiet seconds mean idle. From the first event on, the hooks own the status and output is ignored. A console whose hooks are broken therefore still shows something useful.
 - **Process exit is final.** When the process ends the console is exited, and no later event changes that until you resume it.
-- **Foreign sessions are ignored.** A hook post whose `session_id` differs from the console's recorded session is dropped. A nested `claude -p` run inherits the console's id and would otherwise report as its parent.
+- **Foreign sessions are ignored.** A hook post whose `session_id` differs from the console's recorded session is dropped. A nested `claude -p` run inherits the console's id and would otherwise report as its parent. The one exception (D39): after a Claude `SessionEnd` with reason `clear` or `resume`, the console adopts the next session id it sees, once, so `/clear` and `/resume` keep reporting.
 - **Repeats change nothing.** A repeated status emits nothing, so the double posts from the Claude plugin are harmless.
 - **The session id is stored for Resume.** The daemon takes Claude's id at spawn, Codex's from `thread-id`, Gemini's from `session_id`, and OpenCode's from `session.created`.
 
