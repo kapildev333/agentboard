@@ -33,9 +33,8 @@ export function mergeDaemonBoard(daemon: BoardData, closed: Set<string>): void {
   const { board, loaded } = useBoard.getState();
   if (daemon.repoPath !== board.repoPath) return;
   // Ids the daemon knew when the page last synced: one of these missing from the page was removed here.
-  const synced = new Set(loaded.workspaces.flatMap((w) => w.nodes.map((n) => n.id)));
+  const known = new Map(loaded.workspaces.flatMap((w) => w.nodes).map((n) => [n.id, n]));
   const theirs = new Map(daemon.workspaces.flatMap((w) => w.nodes).map((n) => [n.id, n]));
-  const content = (n: BoardNode) => JSON.stringify({ ...n, x: 0, y: 0, w: 0, h: 0 });
   let changed = false;
   let workspaces = board.workspaces.map((ws) => {
     let touched = false;
@@ -43,7 +42,7 @@ export function mergeDaemonBoard(daemon: BoardData, closed: Set<string>): void {
       const t = theirs.get(n.id);
       theirs.delete(n.id);
       if (!t) {
-        if (n.type === "console" || !synced.has(n.id)) return [n];
+        if (n.type === "console" || !known.has(n.id)) return [n];
         touched = true;
         return [];
       }
@@ -52,16 +51,20 @@ export function mergeDaemonBoard(daemon: BoardData, closed: Set<string>): void {
         touched = true;
         return [{ ...n, status: t.status, session: t.session, lastActiveAt: t.lastActiveAt }];
       }
-      if (content(t) === content(n)) return [n];
+      // Position and size are the page's only while it has moved the node since it last synced; otherwise another tab's win.
+      const base = known.get(n.id);
+      const moved = base && (n.x !== base.x || n.y !== base.y || n.w !== base.w || n.h !== base.h);
+      const merged = { ...t, ...(moved ? { x: n.x, y: n.y, w: n.w, h: n.h } : {}) };
+      if (JSON.stringify(merged) === JSON.stringify(n)) return [n];
       touched = true;
-      return [{ ...t, x: n.x, y: n.y, w: n.w, h: n.h }];
+      return [merged];
     });
     if (!touched) return ws;
     changed = true;
     return { ...ws, nodes };
   });
   for (const t of theirs.values()) {
-    if (t.type === "console" ? closed.has(t.id) : synced.has(t.id)) continue;
+    if (t.type === "console" ? closed.has(t.id) : known.has(t.id)) continue;
     const home = daemon.workspaces.find((w) => w.nodes.some((n) => n.id === t.id))?.id;
     const target = workspaces.find((w) => w.id === home) ?? workspaces.find((w) => w.id === board.activeWorkspaceId) ?? workspaces[0];
     if (!target) continue;
