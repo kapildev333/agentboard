@@ -11,6 +11,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useEffect, useMemo, useState } from "react";
+import type { Workspace } from "@agentboard/shared";
 import type { BoardNode } from "@agentboard/shared";
 import { useBoard } from "./store";
 
@@ -51,23 +52,34 @@ const toFlow = (nodes: BoardNode[], selected: Set<string>): Node<Data>[] =>
 
 export function Board({ nodeTypes }: { nodeTypes: NodeTypes }) {
   const ws = useBoard((s) => s.board.workspaces.find((w) => w.id === s.board.activeWorkspaceId));
-  const { moveNode, setViewport } = useBoard.getState();
   const types = useMemo(() => Object.fromEntries(Object.entries(nodeTypes).map(([k, v]) => [k, withFrame(v)])), [nodeTypes]);
+  // Keyed so a workspace switch remounts the canvas and its node state together.
+  return ws && <Canvas key={ws.id} ws={ws} nodeTypes={types} />;
+}
+
+function Canvas({ ws, nodeTypes }: { ws: Workspace; nodeTypes: NodeTypes }) {
+  const { moveNode, removeNode, setViewport } = useBoard.getState();
   // React Flow owns selection and in-flight drag state; the store is the source of truth at rest.
-  const [nodes, setNodes] = useState(() => toFlow(ws?.nodes ?? [], new Set()));
+  const [nodes, setNodes] = useState(() => toFlow(ws.nodes, new Set()));
   useEffect(
-    () => setNodes((prev) => toFlow(ws?.nodes ?? [], new Set(prev.filter((n) => n.selected).map((n) => n.id)))),
-    [ws?.nodes],
+    () => setNodes((prev) => toFlow(ws.nodes, new Set(prev.filter((n) => n.selected).map((n) => n.id)))),
+    [ws.nodes],
   );
   return (
     <ReactFlow
-      key={ws?.id}
       minZoom={0.25}
       maxZoom={2}
       nodes={nodes}
-      nodeTypes={types}
-      onNodesChange={(changes) => setNodes((ns) => applyNodeChanges(changes, ns))}
-      defaultViewport={ws?.viewport}
+      nodeTypes={nodeTypes}
+      onNodesChange={(changes) => {
+        setNodes((ns) => applyNodeChanges(changes, ns));
+        // Keyboard moves and deletes never pass through drag stop; in-flight drags are saved there.
+        for (const c of changes) {
+          if (c.type === "position" && c.position && !c.dragging) moveNode(c.id, c.position.x, c.position.y);
+          else if (c.type === "remove") removeNode(c.id);
+        }
+      }}
+      defaultViewport={ws.viewport}
       zoomActivationKeyCode={["Meta", "Control"]}
       zoomOnScroll={false}
       panOnScroll
