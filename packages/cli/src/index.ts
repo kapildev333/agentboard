@@ -1,3 +1,4 @@
+import { noteCommand } from "./commands/note.js";
 import { openCommand } from "./commands/open.js";
 import { spawnCommand } from "./commands/spawn.js";
 import { startCommand } from "./commands/start.js";
@@ -15,10 +16,12 @@ export async function main(argv: string[]): Promise<number> {
     case "open":
       await openCommand(rest);
       return 0;
+    case "note":
+      return noteCommand(rest);
     case "spawn":
       return spawnCommand(rest);
     case "status":
-      return statusCommand();
+      return statusCommand(rest);
     default:
       console.error(USAGE);
       return 2;
