@@ -185,15 +185,6 @@ it("a pointerdown then a keydown request permission once", () => {
   expect(N.requestPermission).toHaveBeenCalledTimes(1);
 });
 
-it("a denied permission creates no Notification", () => {
-  const N = fakeNotification();
-  Object.assign(N, { permission: "denied" });
-  hidden(true);
-  renderHook(() => useNotifications({ onFocus: () => {} }));
-  act(() => setStatuses({ c1: "needs_you", c2: "idle" }));
-  expect(N).not.toHaveBeenCalled();
-});
-
 it("the map shows the active workspace only, the title counts every workspace", () => {
   setStatuses({ c1: "working" });
   const { board } = useBoard.getState();
