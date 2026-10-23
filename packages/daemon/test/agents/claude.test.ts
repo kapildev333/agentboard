@@ -26,6 +26,7 @@ test("claudeLaunch passes a session id and five hook events pointing at the daem
     expect(hook.type).toBe("http");
     expect(hook.url.startsWith(base.daemonUrl)).toBe(true);
     expect(hook.url).toContain(base.consoleId);
+    expect(hook.headers["X-AgentBoard-Token"]).toBe(base.token);
   }
 });
 

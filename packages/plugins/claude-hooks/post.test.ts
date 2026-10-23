@@ -1,7 +1,9 @@
 import { spawnSync, spawn } from "node:child_process";
 import http from "node:http";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 import { expect, test } from "vitest";
+import { CLAUDE_HOOK_EVENTS } from "../../daemon/src/agents/claude/index.js";
 
 const script = fileURLToPath(new URL("hooks/post.mjs", import.meta.url));
 const run = (env: Record<string, string>) =>
@@ -37,4 +39,10 @@ test("post.mjs exits 0 silently without the variables", () => {
   const r = spawnSync(process.execPath, [script], { input: "{}", env: { PATH: process.env.PATH ?? "" } });
   expect(r.status).toBe(0);
   expect(r.stdout.length + r.stderr.length).toBe(0);
+});
+
+test("hooks.json registers exactly the CLAUDE_HOOK_EVENTS, each running post.mjs", () => {
+  const { hooks } = JSON.parse(readFileSync(new URL("hooks/hooks.json", import.meta.url), "utf8"));
+  expect(Object.keys(hooks).sort()).toEqual([...CLAUDE_HOOK_EVENTS].sort());
+  for (const e of CLAUDE_HOOK_EVENTS) expect(hooks[e][0].hooks[0].command).toContain("hooks/post.mjs");
 });
