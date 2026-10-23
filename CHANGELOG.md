@@ -22,6 +22,8 @@ Phases 0 to 2 of the [build plan](docs/superpowers/plans/2026-10-23-multi-agent-
 - **L18** Shell (#50): the repo picker with recent repositories, the spawn dialog from the agent catalog with worktree and first prompt, and the settings panel with font size and custom agents.
 - **L19** CLI start, open, status (#41): the `agentboard` bin; `open` starts a detached daemon when none answers and logs the browser in with a one-time code, never the token.
 - **L1A** Integration (#74): `startDaemon`, the `agentboard-daemon` bin and the React app wire every lane together; the agent catalog lists agents by PATH presence only and never runs one to scan (D38); Playwright tests cover six consoles, echo under load, memory, foreign-origin refusal, reload and restart.
+- **L1B** Board updates reach open pages (#80): every board save carries a `rev` the daemon raises; the daemon sends the saved board to every other open page, which merges it (notes and removals from the daemon, its own positions and viewport); a stale save is refused with 409 and the page re-reads.
+- **L1C** `spawn custom --id` and ahead counts against the base branch: in review as PR #83 when this was written.
 - **L20** Git service (#43): worktrees under `.worktrees/<branch>` with an exclude entry; removal refusing dirty or unpushed work; status, diff, commit, push and `gh pr create`.
 - **L21** Git card and diff view (#49): branch, ahead, behind, dirty count and last commit, refreshed every 10 s, with Diff, Commit, Push and Open PR.
 - **L22** Open in VS Code, Zed or Finder (#65): `code`, `zed` and `open -R` (D23) on absolute, resolved directories only, with the buttons on the console.
