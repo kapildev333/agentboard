@@ -5,12 +5,29 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { boardPath, DaemonFile, daemonFilePath, StateStore } from "../../src/state/index.js";
 
 let failRename = false;
+let failNextRename = false;
+let calls: string[] = [];
 let beforeRename: (() => Promise<void>) | null = null;
 vi.mock("node:fs/promises", async (orig) => {
   const m = await orig<typeof import("node:fs/promises")>();
-  return { ...m, rename: async (...a: Parameters<typeof m.rename>) => {
+  return {
+    ...m,
+    open: async (...a: Parameters<typeof m.open>) => {
+      const fh = await m.open(...a);
+      const sync = fh.sync.bind(fh);
+      fh.sync = async () => {
+        calls.push(`sync ${String(a[0])}`);
+        return sync();
+      };
+      return fh;
+    },
+    rename: async (...a: Parameters<typeof m.rename>) => {
+      calls.push(`rename ${String(a[0])}`);
       await beforeRename?.();
-      if (failRename) throw new Error("boom");
+      if (failRename || failNextRename) {
+        failNextRename = false;
+        throw new Error("boom");
+      }
       return m.rename(...a);
     },
   };
@@ -18,11 +35,13 @@ vi.mock("node:fs/promises", async (orig) => {
 
 let home: string;
 beforeEach(async () => {
+  calls = [];
   home = await mkdtemp(join(tmpdir(), "agentboard-"));
   process.env.AGENTBOARD_HOME = home;
 });
 afterEach(async () => {
   failRename = false;
+  failNextRename = false;
   beforeRename = null;
   vi.restoreAllMocks();
   vi.useRealTimers();
@@ -93,4 +112,29 @@ test("an in-place edit made while the write is in flight is written by the next 
   await first;
   await store.flush();
   expect((await new StateStore().load("/repo/a")).workspaces[0]!.nodes).toHaveLength(1);
+});
+
+test("the tmp file is synced before the rename", async () => {
+  const store = new StateStore();
+  await store.save(await store.load("/repo/a"));
+  await store.flush();
+  await new DaemonFile().write({ port: 1, token: "t", pid: 2 });
+  const b = `${boardPath("/repo/a")}.tmp`;
+  const d = `${daemonFilePath()}.tmp`;
+  expect(calls).toEqual([`sync ${b}`, `rename ${b}`, `sync ${d}`, `rename ${d}`]);
+});
+
+test("a failed board write does not stop the boards queued after it", async () => {
+  const store = new StateStore();
+  const a = await store.load("/repo/a");
+  const b = await store.load("/repo/b");
+  a.workspaces[0]!.nodes.push({ ...note });
+  b.workspaces[0]!.nodes.push({ ...note });
+  await store.save(a);
+  await store.save(b);
+  failNextRename = true;
+  await expect(store.flush()).rejects.toThrow("boom");
+  expect(await new StateStore().load("/repo/b")).toEqual(b);
+  await store.flush();
+  expect(await new StateStore().load("/repo/a")).toEqual(a);
 });
