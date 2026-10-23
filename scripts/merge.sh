@@ -4,9 +4,10 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 pr="$1"
 head="$(gh pr view "$pr" --json headRefOid -q .headRefOid)"
-git fetch -q origin "refs/pull/$pr/head"
+git fetch -q origin "refs/pull/$pr/head"   # makes the head object available; FETCH_HEAD is shared, so never check it out
 dir="$(mktemp -d "${TMPDIR:-/tmp}/agentboard-gate-XXXXXX")"
-git worktree add -q --detach "$dir" FETCH_HEAD
+git worktree add -q --detach "$dir" "$head"
+[ "$(git -C "$dir" rev-parse HEAD)" = "$head" ] || { echo "== merge.sh: checked out the wrong commit"; git worktree remove --force "$dir"; exit 1; }
 set +e
 ( cd "$dir" && GATE_BASE=origin/main scripts/gate.sh ) > "$dir.log" 2>&1
 status=$?
