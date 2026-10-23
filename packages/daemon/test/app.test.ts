@@ -133,6 +133,14 @@ test("a late attach replays the ring buffer", async () => {
   await until(() => sock.output(node.id).includes("fake>"));
 });
 
+test("spawning a custom agent without a customId answers 400 naming the missing id", async () => {
+  const s = setup();
+  const d = await start(s);
+  const res = await d.call("POST", "/api/consoles", { agent: "custom", cwd: s.repo });
+  expect(res.status).toBe(400);
+  expect(res.body).toEqual({ error: "custom agents need a customId" });
+});
+
 test("spawning an unknown custom agent answers 400", async () => {
   const s = setup();
   const d = await start(s);
