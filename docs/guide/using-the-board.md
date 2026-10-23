@@ -132,7 +132,9 @@ A note is a yellow card holding text. You add one from a terminal or an agent; t
 - `agentboard note "<text>"` puts it under the lowest node of the active workspace.
 - The MCP `add_note` tool puts it at the top-left of the active workspace.
 
-**Reload after adding a note.** An open board never shows a note added from the CLI or MCP: the daemon saves it but tells no page. Worse, that page's next save writes its own copy of the board and deletes the note. So reload the board right after adding a note, before you pan, zoom or drag anything. Lane L1B is fixing this.
+**Notes added from the CLI or MCP can be lost.** An open board never shows them. The daemon saves the note, and its status broadcasts carry it, but the page takes only consoles from those broadcasts. Worse, the page's next save writes its own copy of the board and deletes the note.
+
+Once you have panned, zoomed, dragged or changed workspaces on a page, it also saves whenever a console changes status, so reloading afterwards can be too late. Close the board, or reload it and leave it untouched, before adding a note; reload again after. An agent that adds a note through MCP while you work on the board loses it when its turn ends. Lane L1B (#80) is fixing this.
 
 Select a note and press Backspace to remove it.
 
