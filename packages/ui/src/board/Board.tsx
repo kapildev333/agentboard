@@ -73,17 +73,14 @@ function Canvas({ ws, nodeTypes }: { ws: Workspace; nodeTypes: NodeTypes }) {
       nodeTypes={nodeTypes}
       onNodesChange={(changes) => {
         setNodes((ns) => applyNodeChanges(changes, ns));
-        // Keyboard moves carry dragging: false; drags (true) save on drag stop, resizer ticks (absent) on resize end.
+        // Every drag ends, and keyboard moves arrive, as a change with dragging: false; resizer ticks (absent) save on resize end.
         for (const c of changes) {
           if (c.type === "position" && c.position && c.dragging === false) moveNode(c.id, c.position.x, c.position.y);
           else if (c.type === "remove") removeNode(c.id);
         }
       }}
       defaultViewport={ws.viewport}
-      zoomActivationKeyCode={["Meta", "Control"]}
-      zoomOnScroll={false}
       panOnScroll
-      onNodeDragStop={(_, __, dragged) => dragged.forEach((n) => moveNode(n.id, n.position.x, n.position.y))}
       onMoveEnd={(_, v) => setViewport(v)}
     >
       <MiniMap pannable zoomable />
