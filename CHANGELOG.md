@@ -26,6 +26,12 @@ Phases 0 to 2 of the [build plan](docs/superpowers/plans/2026-10-23-multi-agent-
   - The React app loads the board, merges the daemon's updates, and wires consoles, status, the shell, the git card and open-in.
   - The rule for nested sessions (D34).
   - Playwright end-to-end tests: six consoles, p95 echo under load, daemon memory, foreign-origin refusal, reload and restart.
+  - Reviewers' follow-ups across lanes:
+    - A custom agent's needs-you holds until you type.
+    - The CLI and MCP share one daemon.json reader and fail fast when the daemon exits.
+    - The CLI checks names and folders before starting a daemon.
+    - The git card links the new PR and refreshes after commit and push.
+    - OpenCode consoles load the plugin bundle from the checkout.
 - **L20** Git service (#43): worktrees under `.worktrees/<branch>` with an exclude entry; removal refusing dirty or unpushed work; status, diff, commit, push and `gh pr create`.
 - **L21** Git card and diff view (#49): branch, ahead, behind, dirty count and last commit, refreshed every 10 s, with Diff, Commit, Push and Open PR.
 - **L22** Open in VS Code, Zed or Finder (#65): `code`, `zed` and `open -R` (D23) on absolute, resolved directories only, with the buttons on the console.
