@@ -43,10 +43,6 @@ async function cue(page: Page, title: string, name: string) {
 }
 
 test("a console spawns two worktree consoles through the CLI and the MCP server and both branches show on their git cards", async ({ page }) => {
-  // Red on main from two daemon defects (Requests on L27): step 3, `agentboard spawn custom` sends no customId and
-  // the daemon answers "unknown custom agent: undefined"; step 6, a worktree branch has no upstream so its card says
-  // ahead 0. Delete this line with the fix; until then a pass reports as unexpected.
-  test.fail(true, "daemon: spawn custom without customId, and ahead of a worktree branch (Requests on L27)");
   const mainHead = git(h.repo, "rev-parse", "HEAD");
   const titles = ["Fake", "Fake: feature-b", "Fake: feature-c"];
 
@@ -59,6 +55,11 @@ test("a console spawns two worktree consoles through the CLI and the MCP server 
     await spawnFake(page);
     await expect(consoleNode(page, "Fake").locator(".xterm-rows")).toContainText("fake>");
   });
+
+  // Steps 1 and 2 above must pass; from here the run is red on main until L1C lands (Requests on L27): step 3,
+  // `agentboard spawn custom` sends no customId and the daemon answers "unknown custom agent: undefined"; step 6, a
+  // worktree branch has no upstream so its card says ahead 0. Delete these lines with the fix.
+  test.fail(true, "daemon: spawn custom without customId, and ahead of a worktree branch (L1C)");
 
   await test.step("(3) A runs agentboard spawn: console B in worktree feature-b", async () => {
     const [b] = (await cue(page, "Fake", "spawn-b")) as [{ stdout: string }];
