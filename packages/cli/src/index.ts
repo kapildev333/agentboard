@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { openCommand } from "./commands/open.js";
 import { startCommand } from "./commands/start.js";
 import { statusCommand } from "./commands/status.js";
@@ -21,12 +20,4 @@ export async function main(argv: string[]): Promise<number> {
       console.error(USAGE);
       return 2;
   }
-}
-
-// Run only as the entry point, so tests can import main.
-if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
-  main(process.argv.slice(2)).then(
-    (code) => { if (code) process.exit(code); },
-    (e: Error) => { console.error(`agentboard: ${e.message}`); process.exit(1); },
-  );
 }
