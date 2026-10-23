@@ -251,3 +251,15 @@ test("an agent missing from agentPath is not spawned (D38)", async () => {
   const res = await d.call("POST", "/api/consoles", { agent: "codex", cwd: s.repo });
   expect(res).toEqual({ status: 400, body: { error: "codex is not on the agent PATH" } });
 });
+
+test("startDaemon itself honours AGENTBOARD_AGENT_PATH, so `agentboard start` scans it too (D38)", async () => {
+  const s = setup();
+  process.env.AGENTBOARD_AGENT_PATH = s.path;
+  cleanup.push(() => void delete process.env.AGENTBOARD_AGENT_PATH);
+  const d = await startDaemon({ repoPath: s.repo, home: s.home });
+  cleanup.push(() => d.close());
+  const res = await fetch(`${d.origin}/api/agents`, { headers: { "x-agentboard-token": d.token } });
+  const list = (await res.json()) as { id: string; available: boolean }[];
+  // only the stub claude is on that PATH; the login PATH's CLIs must not show
+  expect(list.filter((a) => a.id !== "custom" && a.available).map((a) => a.id)).toEqual(["claude"]);
+});
