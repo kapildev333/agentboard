@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run",
-    "build": "npm run build -w packages/shared && npm run build --workspaces --if-present"
+    "build": "npm run build -w packages/shared && npm run build --workspaces --if-present",
+    "test:e2e": "npm run build && npm run -w @agentboard/e2e test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
