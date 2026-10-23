@@ -87,11 +87,8 @@ Never run `npx agentboard`. That npm name belongs to an unrelated package. Agent
   - **Open PR** runs `gh pr create` with the last commit's subject as the title and shows a link to the new pull request.
 - **Open in VS Code, Zed or Finder.** These buttons sit under the git card. They run `code <path>`, `zed <path>`, or on macOS `open -R <path>`, which reveals the folder in Finder.
 - **Notes.** `agentboard note "text"` or the MCP `add_note` tool adds a yellow note card to the active workspace. This version cannot create or edit notes from the page.
-  - An open board does not show the new note. The daemon's status broadcasts do carry it, but the page takes only consoles from them.
-  - The page's next save writes its own copy of the board and deletes the note.
-  - Once you have panned, zoomed, dragged or changed workspaces on a page, it also saves whenever a console changes status, so reloading afterwards can be too late. Close the board, or reload it and leave it untouched, before adding a note; reload again after.
-
-  Lane L1B (#80) is fixing this.
+  - Every open page shows the new note at once, without a reload, and keeps your own layout.
+  - Two tabs on the same board are not supported in this version: the spec's plan, still unbuilt, is for a second open to focus the existing tab.
 - **Settings.**
   - **Font size** sets the terminal font size, 10 to 24.
   - **Custom agents** each have a name, a command, space-separated arguments and an optional "needs you" regular expression. Output that matches the expression marks the console as needing you.
