@@ -1,6 +1,7 @@
 import { spawn as nodeSpawn, type SpawnOptions } from "node:child_process";
 import type { EventEmitter } from "node:events";
-import { stat } from "node:fs/promises";
+import { realpath, stat } from "node:fs/promises";
+import { isAbsolute } from "node:path";
 
 export type Editor = "code" | "zed" | "finder";
 export type Spawn = (command: string, args: readonly string[], options: SpawnOptions) => EventEmitter & { unref(): void };
@@ -14,8 +15,11 @@ const commands: Record<Editor, (platform: string, path: string) => [string, stri
 };
 
 export async function openIn(editor: Editor, path: string, spawn: Spawn = nodeSpawn, platform = process.platform): Promise<void> {
-  if (!(await stat(path).catch(() => null))?.isDirectory()) throw new Error(`not a directory: ${path}`);
-  const [command, args] = commands[editor](platform, path);
+  // Absolute only, so a path can never be read as an option; spawned as its resolved target, never as a link.
+  if (!isAbsolute(path)) throw new Error(`path must be absolute: ${JSON.stringify(path)}`);
+  const target = await realpath(path).catch(() => null);
+  if (!target || !(await stat(target)).isDirectory()) throw new Error(`not a directory: ${JSON.stringify(path)}`);
+  const [command, args] = commands[editor](platform, target);
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: "ignore", detached: true });
     child.once("error", (err) => reject(new Error(`could not start ${command}: ${err.message}`)));
