@@ -20,7 +20,8 @@ describe("AgentBoard plugin", () => {
     const { AgentBoard } = await import("../opencode/agentboard.js");
     vi.stubEnv("AGENTBOARD_URL", "");
     vi.stubEnv("AGENTBOARD_CONSOLE_ID", "");
-    expect(await AgentBoard()).toEqual({});
+    const bare = await AgentBoard();
+    expect(Object.keys(bare)).toEqual(["tool"]);
 
     vi.stubEnv("AGENTBOARD_URL", "http://127.0.0.1:1");
     vi.stubEnv("AGENTBOARD_CONSOLE_ID", "c1");
@@ -33,6 +34,21 @@ describe("AgentBoard plugin", () => {
     await hooks["tool.execute.before"]({ tool: "bash" });
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("event posts carry the token header", async () => {
+    vi.stubEnv("AGENTBOARD_URL", spawnEnv.AGENTBOARD_URL);
+    vi.stubEnv("AGENTBOARD_CONSOLE_ID", spawnEnv.AGENTBOARD_CONSOLE_ID);
+    vi.stubEnv("AGENTBOARD_TOKEN", spawnEnv.AGENTBOARD_TOKEN);
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}"));
+    vi.stubGlobal("fetch", fetchMock);
+    const { AgentBoard } = await import("../opencode/agentboard.js");
+    const hooks = (await AgentBoard()) as unknown as { event(a: unknown): Promise<void> };
+    await hooks.event({ event: { type: "session.idle", properties: {} } });
+    expect(fetchMock.mock.calls[0][1].headers["X-AgentBoard-Token"]).toBe("tok");
+    expect(buildHookPost(spawnEnv, { type: "x" })?.headers["X-AgentBoard-Token"]).toBe("tok");
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
@@ -61,6 +77,7 @@ describe("agentboard_spawn", () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("http://127.0.0.1:4321/api/consoles");
     expect(init.method).toBe("POST");
+    expect(init.signal).toBeInstanceOf(AbortSignal);
     expect(init.headers["X-AgentBoard-Token"]).toBe("tok");
     expect(JSON.parse(init.body)).toEqual({ agent: "claude", cwd: "/tmp/x", callerConsoleId: "c1" });
     expect(out).toContain("n7");
@@ -71,9 +88,7 @@ describe("agentboard_spawn", () => {
     stub({ AGENTBOARD_URL: "", AGENTBOARD_CONSOLE_ID: "c1" });
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const { AgentBoard } = await import("../opencode/agentboard.js");
-    const hooks = (await AgentBoard()) as { tool?: unknown };
-    expect(hooks.tool).toBeUndefined();
+    expect(await (await spawnTool()).execute({ agent: "claude", cwd: "/x" }, {})).toBe("AgentBoard is not running");
     expect(buildSpawnPost({}, { agent: "claude", cwd: "/x" })).toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -83,18 +98,7 @@ describe("agentboard_spawn", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("refused")));
     const tool = await spawnTool();
     expect(await tool.execute({ agent: "claude", cwd: "/x" }, {})).toBe("AgentBoard is not running");
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("no", { status: 401 })));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(node), { status: 401 })));
     expect(await tool.execute({ agent: "claude", cwd: "/x" }, {})).toBe("AgentBoard is not running");
-  });
-
-  it("event posts carry the token header", async () => {
-    stub(spawnEnv);
-    const fetchMock = vi.fn().mockResolvedValue(new Response("{}"));
-    vi.stubGlobal("fetch", fetchMock);
-    const { AgentBoard } = await import("../opencode/agentboard.js");
-    const hooks = (await AgentBoard()) as { event(a: unknown): Promise<void> };
-    await hooks.event({ event: { type: "session.idle", properties: {} } });
-    expect(fetchMock.mock.calls[0][1].headers["X-AgentBoard-Token"]).toBe("tok");
-    expect(buildHookPost(spawnEnv, { type: "x" })?.headers["X-AgentBoard-Token"]).toBe("tok");
   });
 });
