@@ -44,8 +44,8 @@ async function start(s: ReturnType<typeof setup>) {
   return { ...d, call };
 }
 
-function socket(d: { origin: string; token: string }) {
-  const ws = new WebSocket(d.origin.replace("http", "ws") + "/ws", { headers: { "x-agentboard-token": d.token, origin: d.origin } });
+function socket(d: { origin: string; token: string }, client?: string) {
+  const ws = new WebSocket(d.origin.replace("http", "ws") + "/ws" + (client ? `?client=${client}` : ""), { headers: { "x-agentboard-token": d.token, origin: d.origin } });
   const messages: DaemonMessage[] = [];
   ws.on("message", (data) => messages.push(JSON.parse(data.toString())));
   cleanup.push(() => ws.close());
@@ -176,6 +176,47 @@ test("after a restart every console is stopped, and resume starts it again in pl
   expect(resumed.body).toMatchObject({ id: node.id, status: "starting" });
   await until(() => sock.output(node.id).includes("fake>"));
   expect((await d2.call("POST", `/api/consoles/${node.id}/resume`)).status).toBe(409);
+});
+
+const noteNode = (id: string, text: string) => ({ id, type: "note" as const, x: 0, y: 0, w: 100, h: 100, createdAt: "t", lastActiveAt: "t", text });
+const boardOf = async (d: Awaited<ReturnType<typeof start>>, repo: string) => (await d.call("GET", `/api/board?repo=${encodeURIComponent(repo)}`)).body as Board;
+
+test("a note added through PUT /api/board reaches an open page", async () => {
+  const s = setup();
+  const d = await start(s);
+  const page = socket(d);
+  await page.opened;
+  const board = await boardOf(d, s.repo);
+  board.workspaces[0]!.nodes.push(noteNode("n1", "cli note"));
+  expect((await d.call("PUT", "/api/board", board)).status).toBe(200);
+  await until(() => page.messages.find((x) => x.t === "board" && x.board.workspaces[0]!.nodes.some((n) => n.id === "n1")));
+});
+
+test("a PUT with a client id skips that client's socket and reaches the others", async () => {
+  const s = setup();
+  const d = await start(s);
+  const mine = socket(d, "me");
+  const other = socket(d, "you");
+  await Promise.all([mine.opened, other.opened]);
+  const board = await boardOf(d, s.repo);
+  const res = await fetch(`${d.origin}/api/board`, {
+    method: "PUT",
+    headers: { "x-agentboard-token": d.token, "content-type": "application/json", "x-agentboard-client": "me" },
+    body: JSON.stringify(board),
+  });
+  expect(res.status).toBe(200);
+  await until(() => other.messages.some((x) => x.t === "board" && x.board.rev === board.rev + 1));
+  expect(mine.messages.some((x) => x.t === "board" && x.board.rev === board.rev + 1)).toBe(false);
+});
+
+test("a PUT older than the saved board answers 409 and changes nothing; each PUT answers the new rev", async () => {
+  const s = setup();
+  const d = await start(s);
+  const board = await boardOf(d, s.repo);
+  expect((await d.call("PUT", "/api/board", board)).body).toEqual({ ok: true, rev: board.rev + 1 });
+  board.workspaces[0]!.nodes.push(noteNode("n2", "stale"));
+  expect((await d.call("PUT", "/api/board", board)).status).toBe(409);
+  expect((await boardOf(d, s.repo)).workspaces[0]!.nodes).toEqual([]);
 });
 
 test("PUT /api/board keeps the daemon's status and running consoles the page did not know about", async () => {
