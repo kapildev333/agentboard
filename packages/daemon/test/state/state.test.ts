@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -118,4 +118,24 @@ test("load names the file when the JSON is corrupt", async () => {
   await mkdir(dirname(file), { recursive: true });
   await writeFile(file, '{"version":1,"repo');
   await expect(new StateStore().load("/repo/a")).rejects.toThrow(/invalid board file .*\.json/);
+});
+
+test("load rejects on a read error other than a missing file", async () => {
+  await mkdir(boardPath("/repo/a"), { recursive: true });
+  await expect(new StateStore().load("/repo/a")).rejects.toMatchObject({ code: "EISDIR" });
+});
+
+test("saves arriving under 300 ms apart do not postpone the write", async () => {
+  vi.useFakeTimers();
+  const store = new StateStore();
+  const board = await store.load("/repo/a");
+  await store.save(board);
+  await vi.advanceTimersByTimeAsync(200);
+  const changed = structuredClone(board);
+  changed.workspaces[0]!.nodes.push({ ...note });
+  await store.save(changed);
+  await vi.advanceTimersByTimeAsync(100);
+  vi.useRealTimers();
+  await vi.waitFor(() => expect(existsSync(boardPath("/repo/a"))).toBe(true));
+  expect(JSON.parse(await readFile(boardPath("/repo/a"), "utf8"))).toEqual(changed);
 });

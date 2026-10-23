@@ -31,7 +31,7 @@ afterEach(async () => {
 
 const note = { id: "n1", type: "note", title: "t", x: 1, y: 2, w: 3, h: 4, text: "hi" } as const;
 
-test("a failed rename leaves the previous board intact and the new one pending", async () => {
+test("an interrupted write leaves the previous file intact", async () => {
   const store = new StateStore();
   const board = await store.load("/repo/a");
   await store.save(board);
@@ -52,12 +52,14 @@ test("a timer-driven write error is not an unhandled rejection and keeps the boa
   const store = new StateStore();
   const log = vi.spyOn(console, "error").mockImplementation(() => {});
   failRename = true;
-  await store.save(await store.load("/repo/a"));
+  const board = await store.load("/repo/a");
+  board.workspaces[0]!.nodes.push({ ...note });
+  await store.save(board);
   await vi.advanceTimersByTimeAsync(300);
   await vi.waitFor(() => expect(log).toHaveBeenCalled());
   failRename = false;
   await store.flush();
-  expect((await new StateStore().load("/repo/a")).repoPath).toBe("/repo/a");
+  expect(await new StateStore().load("/repo/a")).toEqual(board);
 });
 
 test("a failed daemon file write leaves the previous file intact", async () => {

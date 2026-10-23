@@ -1,5 +1,5 @@
-import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdtemp, rm, stat, writeFile } from "node:fs/promises";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { DaemonFile, daemonFilePath } from "../../src/state/index.js";
@@ -35,5 +35,14 @@ test("the daemon directory is created with mode 700", async () => {
   process.env.AGENTBOARD_HOME = join(home, "nested");
   await new DaemonFile().write({ port: 1, token: "t", pid: 2 });
   expect((await stat(join(home, "nested"))).mode & 0o777).toBe(0o700);
-  await mkdir(home, { recursive: true });
+});
+
+test("read rejects a daemon file that fails the schema", async () => {
+  await writeFile(daemonFilePath(), '{"port":"x"}');
+  await expect(new DaemonFile().read()).rejects.toThrow();
+});
+
+test("an empty AGENTBOARD_HOME falls back to ~/.agentboard", () => {
+  process.env.AGENTBOARD_HOME = "";
+  expect(daemonFilePath()).toBe(join(homedir(), ".agentboard", "daemon.json"));
 });
