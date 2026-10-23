@@ -22,3 +22,13 @@ test("a request without the token is refused with 401", async () => {
   expect(res.status).toBe(401);
   expect(await res.text()).toBe("");
 });
+
+test("a foreign Origin on a POST is refused with 403", async () => {
+  const s = await start();
+  const res = await fetch(`${s.origin}/hook/c1`, {
+    method: "POST",
+    headers: { "x-agentboard-token": token, origin: "https://evil.example", "content-type": "application/json" },
+    body: JSON.stringify({ agent: "claude", event: "Stop" }),
+  });
+  expect(res.status).toBe(403);
+});
