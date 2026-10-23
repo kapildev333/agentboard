@@ -74,7 +74,7 @@ export const DaemonMessageSchema = z.discriminatedUnion("t", [
 
 // HTTP bodies, queries and responses
 export const OkSchema = z.object({ ok: z.literal(true) });
-export const PutBoardResponseSchema = z.object({ ok: z.literal(true), rev: z.number().int().nonnegative() });
+export const PutBoardResponseSchema = z.object({ ok: z.literal(true), rev: z.number().int().nonnegative().optional() });
 export const BoardQuerySchema = z.object({ repo: z.string() });
 export const SpawnConsoleRequestSchema = z.object({
   agent: AgentIdSchema,
