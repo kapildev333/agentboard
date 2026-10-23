@@ -54,8 +54,8 @@ No agent is ever started with an auto-approve flag. Claude's session id is picke
 | Pan | Scroll or two-finger swipe on the canvas, or drag the empty canvas |
 | Zoom (25% to 200%) | Pinch, scroll while holding Cmd (Ctrl on Linux and Windows), or the `+` and `−` controls |
 | Fit everything | The fit-view control (square icon) |
-| Lock the canvas | The lock control |
-| Jump around | Drag or click in the minimap |
+| Lock the nodes | The lock control stops dragging and selecting nodes; panning and zooming still work |
+| Jump around | Drag in the minimap to pan, or scroll over it to zoom; clicking it does nothing |
 | Move a console | Drag its title bar; the terminal body never starts a drag |
 | Resize | Click a node to select it, then drag its edges or corners (minimum 120 by 80) |
 | Remove a node | Select it and press Backspace; removing a console ends it |
@@ -80,7 +80,7 @@ The tabs in the top bar are workspaces. Each one has its own nodes and view.
 - Click a tab to switch to it.
 - Double-click a tab to rename it; Enter saves and Escape cancels.
 - `+` creates `Workspace N` and switches to it.
-- `×` deletes the active workspace and every node on it. It appears only while more than one workspace exists.
+- `×` deletes the active workspace and every node on it, at once and with no confirmation. Every console on it is ended. The button appears only while more than one workspace exists.
 
 The board remembers the active workspace.
 
@@ -131,6 +131,8 @@ A note is a yellow card holding text. You add one from a terminal or an agent; t
 
 - `agentboard note "<text>"` puts it under the lowest node of the active workspace.
 - The MCP `add_note` tool puts it at the top-left of the active workspace.
+
+**Reload after adding a note.** An open board never shows a note added from the CLI or MCP: the daemon saves it but tells no page. Worse, that page's next save writes its own copy of the board and deletes the note. So reload the board right after adding a note, before you pan, zoom or drag anything. Lane L1B is fixing this.
 
 Select a note and press Backspace to remove it.
 
