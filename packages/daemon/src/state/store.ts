@@ -1,11 +1,23 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import { BoardSchema, type Board } from "@agentboard/shared";
+import { BoardSchema, type Board, type BoardNode } from "@agentboard/shared";
 import { boardPath } from "./paths.js";
 
 const DEBOUNCE_MS = 300;
 
+const emptyBoard = (repoPath: string, nodes: BoardNode[] = []): Board => ({
+  version: 1,
+  repoPath,
+  activeWorkspaceId: "main",
+  workspaces: [{ id: "main", name: "main", viewport: { x: 0, y: 0, zoom: 1 }, nodes }],
+});
+
+// Version 0 had no version field and kept nodes directly on the root.
 export function migrate(raw: unknown): Board {
+  const doc = raw as { version?: number; repoPath?: string; nodes?: BoardNode[] };
+  if (doc && typeof doc === "object" && doc.version === undefined && Array.isArray(doc.nodes)) {
+    return emptyBoard(doc.repoPath ?? "", doc.nodes);
+  }
   return raw as Board;
 }
 
@@ -19,14 +31,12 @@ export class StateStore {
       text = await readFile(boardPath(repoPath), "utf8");
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
-      return {
-        version: 1,
-        repoPath,
-        activeWorkspaceId: "main",
-        workspaces: [{ id: "main", name: "main", viewport: { x: 0, y: 0, zoom: 1 }, nodes: [] }],
-      };
+      return emptyBoard(repoPath);
     }
-    return BoardSchema.parse(migrate(JSON.parse(text)));
+    const file = boardPath(repoPath);
+    const parsed = BoardSchema.safeParse(migrate(JSON.parse(text)));
+    if (!parsed.success) throw new Error(`invalid board file ${file}: ${parsed.error.message}`);
+    return parsed.data;
   }
 
   async save(board: Board): Promise<void> {
