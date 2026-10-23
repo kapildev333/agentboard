@@ -12,6 +12,7 @@
   "dependencies": {
     "@agentboard/shared": "0.0.0",
     "node-pty": "1.1.0",
-    "simple-git": "4.0.2"
+    "simple-git": "4.0.2",
+    "ws": "8.22.0"
   }
 }
