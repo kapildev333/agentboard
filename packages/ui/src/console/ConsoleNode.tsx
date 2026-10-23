@@ -3,7 +3,7 @@ import { useStore } from "@xyflow/react";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useConsoleSocket, type SocketFactory } from "./useConsoleSocket";
 
 export interface ConsoleNodeProps {
@@ -20,6 +20,7 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
   const io = useRef({ sendInput, sendResize });
   io.current = { sendInput, sendResize };
   const zoom = useStore((s) => s.transform[2]);
+  const [focused, setFocused] = useState(false);
   const fit = useRef<FitAddon | null>(null);
   const gl = useRef<WebglAddon | null>(null);
 
@@ -68,7 +69,12 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
   }, [zoom, fontSize]);
 
   return (
-    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div
+      className={focused ? "nodrag nowheel" : undefined}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}
+    >
       <header>
         {data.title} {statusBadge}
       </header>
