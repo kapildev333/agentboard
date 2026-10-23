@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentId, ConsoleStatus } from "@agentboard/shared";
 import { StatusTracker } from "../../src/status/index.js";
 
@@ -23,6 +23,9 @@ const rows: [AgentId, string, unknown, ConsoleStatus][] = [
 ];
 
 describe("StatusTracker", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
   it("every row of the status table maps through the tracker", () => {
     for (const [agent, event, payload, want] of rows) {
       const t = new StatusTracker();
@@ -31,5 +34,80 @@ describe("StatusTracker", () => {
       t.handleHook("c1", { event, payload });
       expect(t.get("c1"), `${agent} ${event}`).toBe(want);
     }
+  });
+
+  it("the quiet timer turns a heuristic console idle after 20 seconds", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "custom");
+    t.markOutput("c1", "thinking");
+    expect(t.get("c1")).toBe("working");
+    vi.advanceTimersByTime(19_999);
+    t.markOutput("c1", "more");
+    vi.advanceTimersByTime(19_999);
+    expect(t.get("c1")).toBe("working");
+    vi.advanceTimersByTime(1);
+    expect(t.get("c1")).toBe("idle");
+  });
+
+  it("hook, plugin and notify consoles ignore the quiet timer", () => {
+    const t = new StatusTracker();
+    for (const a of ["claude", "gemini", "opencode", "codex"] as const) {
+      t.markStarting(a, a);
+      t.markOutput(a, "output");
+      vi.advanceTimersByTime(60_000);
+      expect(t.get(a), a).not.toBe("idle");
+    }
+    expect(t.get("claude")).toBe("starting");
+  });
+
+  it("a custom needs_you rule fires on matching output", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "custom", { needsYou: [/\[y\/n\]/], idle: [/\$ $/] });
+    t.markOutput("c1", "Proceed? [y/n] $ ");
+    expect(t.get("c1")).toBe("needs_you");
+    t.markOutput("c1", "ready $ ");
+    expect(t.get("c1")).toBe("idle");
+  });
+
+  it("codex uses regex for needs_you and hooks for idle", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "codex", { needsYou: [/Allow command\?/], idle: [/./] });
+    t.markOutput("c1", "Allow command?");
+    expect(t.get("c1")).toBe("needs_you");
+    t.handleHook("c1", { event: "agent-turn-complete" });
+    expect(t.get("c1")).toBe("idle");
+    t.markOutput("c1", "anything");
+    expect(t.get("c1")).toBe("working");
+  });
+
+  it("onChange fires once per transition and not on repeats", () => {
+    const t = new StatusTracker();
+    const seen: unknown[] = [];
+    const off = t.onChange((...a) => seen.push(a));
+    t.markStarting("c1", "claude");
+    t.handleHook("c1", { event: "PreToolUse" });
+    t.handleHook("c1", { event: "UserPromptSubmit" });
+    t.handleHook("c1", { event: "Stop" });
+    expect(seen).toEqual([
+      ["c1", "starting", "stopped"],
+      ["c1", "working", "starting"],
+      ["c1", "idle", "working"],
+    ]);
+    off();
+    t.handleHook("c1", { event: "PreToolUse" });
+    expect(seen).toHaveLength(3);
+  });
+
+  it("exit clears the timer", () => {
+    const t = new StatusTracker();
+    t.markStarting("c1", "custom");
+    t.markOutput("c1", "x");
+    t.markExit("c1", 0);
+    expect(t.get("c1")).toBe("exited");
+    expect(vi.getTimerCount()).toBe(0);
+    vi.advanceTimersByTime(60_000);
+    expect(t.get("c1")).toBe("exited");
+    t.markOutput("c1", "late");
+    expect(t.get("c1")).toBe("exited");
   });
 });
