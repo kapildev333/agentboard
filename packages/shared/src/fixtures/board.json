@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "repoPath": "/tmp/demo-repo",
+  "activeWorkspaceId": "ws-main",
+  "workspaces": [
+    {
+      "id": "ws-main",
+      "name": "Main",
+      "viewport": { "x": 0, "y": 0, "zoom": 1 },
+      "nodes": [
+        {
+          "id": "c-claude",
+          "type": "console",
+          "title": "Claude: auth refactor",
+          "x": 0, "y": 0, "w": 640, "h": 400,
+          "agent": "claude",
+          "cwd": "/tmp/demo-repo/.worktrees/auth",
+          "worktree": { "path": "/tmp/demo-repo/.worktrees/auth", "branch": "auth", "base": "main" },
+          "session": { "provider": "claude", "id": "00000000-0000-4000-8000-000000000001" },
+          "status": "working",
+          "createdAt": "2026-10-23T09:00:00.000Z",
+          "lastActiveAt": "2026-10-23T09:30:00.000Z"
+        },
+        {
+          "id": "c-opencode",
+          "type": "console",
+          "title": "OpenCode: tests",
+          "x": 680, "y": 0, "w": 640, "h": 400,
+          "agent": "opencode",
+          "cwd": "/tmp/demo-repo",
+          "session": { "provider": "opencode", "id": "ses_demo" },
+          "status": "needs_you",
+          "createdAt": "2026-10-23T09:05:00.000Z",
+          "lastActiveAt": "2026-10-23T09:31:00.000Z"
+        },
+        {
+          "id": "n-plan",
+          "type": "note",
+          "title": "Plan",
+          "x": 0, "y": 440, "w": 300, "h": 200,
+          "text": "Refactor auth, then run the suite."
+        },
+        {
+          "id": "w-app",
+          "type": "webtile",
+          "title": "Dev server",
+          "x": 340, "y": 440, "w": 480, "h": 320,
+          "url": "http://localhost:5173/"
+        }
+      ]
+    },
+    {
+      "id": "ws-review",
+      "name": "Review",
+      "viewport": { "x": -120, "y": 40, "zoom": 0.5 },
+      "nodes": [
+        {
+          "id": "c-codex",
+          "type": "console",
+          "title": "Codex: review",
+          "x": 0, "y": 0, "w": 640, "h": 400,
+          "agent": "codex",
+          "cwd": "/tmp/demo-repo",
+          "status": "stopped",
+          "createdAt": "2026-10-23T08:00:00.000Z",
+          "lastActiveAt": "2026-10-23T08:40:00.000Z"
+        },
+        {
+          "id": "k-ship",
+          "type": "checklist",
+          "title": "Ship list",
+          "x": 0, "y": 440, "w": 300, "h": 200,
+          "items": [
+            { "text": "Gate passes", "done": true },
+            { "text": "PR opened", "done": false }
+          ]
+        }
+      ]
+    }
+  ]
+}
