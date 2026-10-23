@@ -6,7 +6,7 @@ import { expect, test } from "vitest";
 import { GitStatusSchema, GitDiffSchema, WorktreeSchema } from "@agentboard/shared";
 import { GitService, createGitHandlers } from "../../src/git/index.js";
 
-const git = (cwd: string, ...a: string[]) => execFileSync("git", a, { cwd, encoding: "utf8" });
+const git = (cwd: string, ...a: string[]) => execFileSync("git", a, { cwd, encoding: "utf8", stdio: "pipe" });
 
 test("handlers validate input and return the shared response shapes", async () => {
   const repo = mkdtempSync(join(tmpdir(), "ab-h-"));
