@@ -6,11 +6,12 @@ import type { Board as BoardData, BoardNode } from "@agentboard/shared";
 import { Board, useBoard } from "../../src/board";
 
 type Fn = (...a: never[]) => void;
-type Props = Record<string, unknown> & Record<"onNodeDragStop" | "onMoveEnd" | "onNodesChange", Fn>;
+type Props = Record<string, unknown> & { nodes: unknown[] } & Record<"onNodeDragStop" | "onMoveEnd" | "onNodesChange", Fn>;
 const seen = vi.hoisted(() => ({
   props: undefined as unknown as Props,
   resizer: undefined as unknown as { onResizeEnd: (e: unknown, p: unknown) => void },
   mounts: 0,
+  renders: [] as string[][],
 }));
 vi.mock("@xyflow/react", async (orig) => {
   const mod = await orig<typeof import("@xyflow/react")>();
@@ -22,6 +23,7 @@ vi.mock("@xyflow/react", async (orig) => {
     },
     ReactFlow: (p: Props) => {
       seen.props = p;
+      seen.renders.push((p.nodes as { id: string }[]).map((n) => n.id));
       useEffect(() => void seen.mounts++, []);
       return <mod.ReactFlow {...(p as object)} />;
     },
@@ -47,7 +49,7 @@ const board = (): BoardData => ({
   activeWorkspaceId: "a",
   workspaces: [
     { id: "a", name: "A", viewport: { x: 0, y: 0, zoom: 1 }, nodes: [] },
-    { id: "b", name: "B", viewport: { x: 0, y: 0, zoom: 1 }, nodes: [note("nb")] },
+    { id: "b", name: "B", viewport: { x: 5, y: 6, zoom: 1.5 }, nodes: [note("nb")] },
   ],
 });
 
@@ -56,6 +58,7 @@ const nodeTypes = { note: NoteView };
 
 beforeEach(() => {
   seen.mounts = 0;
+  seen.renders = [];
   useBoard.getState().setBoard(board());
 });
 afterEach(cleanup);
@@ -107,6 +110,27 @@ describe("Board wiring", () => {
     act(() => (seen.props.onNodeDragStop as (...a: unknown[]) => void)({}, dragged[0], dragged));
     const nodes = useBoard.getState().board.workspaces[0]!.nodes;
     expect(nodes.map((n) => [n.x, n.y])).toEqual([[10, 20], [30, 40]]);
+  });
+
+  it("the canvas gets the active workspace's viewport and never renders the old nodes after a switch", () => {
+    useBoard.getState().addNode(note("na"));
+    render(<Board nodeTypes={nodeTypes} />);
+    expect(seen.props.defaultViewport).toEqual({ x: 0, y: 0, zoom: 1 });
+    seen.renders = [];
+    act(() => useBoard.getState().switchWorkspace("b"));
+    expect(seen.props.defaultViewport).toEqual({ x: 5, y: 6, zoom: 1.5 });
+    expect(seen.renders.flat()).not.toContain("na");
+  });
+
+  it("keyboard moves and deletes reach the store", () => {
+    useBoard.getState().addNode(note("n1"));
+    useBoard.getState().addNode(note("n2"));
+    render(<Board nodeTypes={nodeTypes} />);
+    const change = seen.props.onNodesChange as (c: unknown) => void;
+    act(() => change([{ type: "position", id: "n1", position: { x: 7, y: 8 }, dragging: false }]));
+    act(() => change([{ type: "position", id: "n2", position: { x: 99, y: 99 }, dragging: true }]));
+    act(() => change([{ type: "remove", id: "n2" }]));
+    expect(useBoard.getState().board.workspaces[0]!.nodes).toMatchObject([{ id: "n1", x: 7, y: 8 }]);
   });
 
   it("move end writes the viewport", () => {
