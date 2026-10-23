@@ -1,6 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
+import type { Duplex } from "node:stream";
+import { WebSocketServer } from "ws";
 
 export type ServerOptions = {
   port: number;
@@ -16,12 +18,27 @@ export async function createServer(opts: ServerOptions) {
     if (!hasToken(req, opts.token)) return end(res, 401);
     end(res, 404);
   });
+  const wss = new WebSocketServer({ noServer: true });
+  server.on("upgrade", (req: http.IncomingMessage, socket: Duplex, head: Buffer) => {
+    const status = new URL(req.url ?? "/", "http://x").pathname !== "/ws" ? 404
+      : !ownOrigin(req, port) ? 403
+      : !hasToken(req, opts.token) ? 401
+      : 0;
+    if (status) {
+      socket.end(`HTTP/1.1 ${status} ${http.STATUS_CODES[status]}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
+      return;
+    }
+    wss.handleUpgrade(req, socket, head, () => {});
+  });
   await new Promise<void>((resolve) => server.listen(opts.port, "127.0.0.1", resolve));
   port = (server.address() as AddressInfo).port;
   return {
     port,
     origin: `http://127.0.0.1:${port}`,
-    close: () => new Promise<void>((resolve) => { server.closeAllConnections(); server.close(() => resolve()); }),
+    close: () => new Promise<void>((resolve) => {
+      for (const ws of wss.clients) ws.terminate();
+      wss.close();
+      server.closeAllConnections(); server.close(() => resolve()); }),
   };
 }
 
