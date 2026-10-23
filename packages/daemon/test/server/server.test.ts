@@ -154,3 +154,39 @@ test("static files never leave staticDir", async () => {
     expect((await get(s.port, path, headers)).statusCode).toBe(404);
   }
 });
+
+test("WebSocket messages dispatch to handlers and broadcast reaches attached sockets", async () => {
+  const calls: unknown[] = [];
+  const s = await start({
+    onAttach: async (m, reply) => { calls.push(m); reply({ t: "output", consoleId: m.consoleId, data: "replay" }); },
+    onInput: async (m) => { calls.push(m); },
+    onResize: async (m) => { calls.push(m); },
+  });
+  const ws = new WebSocket(`${s.origin.replace("http", "ws")}/ws`, { headers: { "x-agentboard-token": token, origin: s.origin } });
+  const got: unknown[] = [];
+  ws.on("message", (d) => got.push(JSON.parse(d.toString())));
+  await new Promise<void>((r) => ws.on("open", r));
+  const until = async (ok: () => boolean) => { while (!ok()) await new Promise((r) => setTimeout(r, 5)); };
+
+  ws.send(JSON.stringify({ t: "attach", consoleId: "a" }));
+  ws.send("{not json");
+  ws.send(JSON.stringify({ t: "bogus" }));
+  ws.send(JSON.stringify({ t: "input", consoleId: "a", data: "ls\r" }));
+  ws.send(JSON.stringify({ t: "resize", consoleId: "a", cols: 80, rows: 24 }));
+  await until(() => calls.length === 3 && got.length === 1);
+  expect(calls).toEqual([
+    { t: "attach", consoleId: "a" },
+    { t: "input", consoleId: "a", data: "ls\r" },
+    { t: "resize", consoleId: "a", cols: 80, rows: 24 },
+  ]);
+
+  s.broadcast({ t: "output", consoleId: "b", data: "not attached" });
+  s.broadcast({ t: "status", consoleId: "a", status: "idle" });
+  expect(() => s.broadcast({ t: "status", consoleId: "a", status: "bogus" } as never)).toThrow();
+  await until(() => got.length === 2);
+  expect(got).toEqual([
+    { t: "output", consoleId: "a", data: "replay" },
+    { t: "status", consoleId: "a", status: "idle" },
+  ]);
+  ws.close();
+});
