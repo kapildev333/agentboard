@@ -46,3 +46,28 @@ test("spawn_console returns the console id from the daemon", async () => {
   expect(seen[0]!.url).toBe("http://127.0.0.1:4777/api/consoles");
   expect(seen[0]!.headers.get("x-agentboard-token")).toBe("tok");
 });
+
+test("a tool input that fails its schema is rejected before any request", async () => {
+  const { seen, client } = setup(() => node);
+  const mcp = await connect(client);
+  const res = await mcp.callTool({ name: "spawn_console", arguments: { agent: "emacs", cwd: "/tmp/x" } });
+  expect(res.isError).toBe(true);
+  expect(seen).toHaveLength(0);
+});
+
+test("get_status forwards the daemon's status", async () => {
+  const { seen, client } = setup(() => ({ consoles: [node] }));
+  const mcp = await connect(client);
+  const res = await mcp.callTool({ name: "get_status", arguments: {} });
+  expect(JSON.parse((res.content as { text: string }[])[0]!.text)).toEqual({ consoles: [node] });
+  expect(seen[0]!.url).toBe("http://127.0.0.1:4777/api/status");
+});
+
+test("add_note appends a note to the board and puts it back", async () => {
+  const { seen, client } = setup((r) => (r.method === "GET" ? board : { ok: true }));
+  const mcp = await connect(client);
+  await mcp.callTool({ name: "add_note", arguments: { text: "remember" } });
+  const put = seen.find((r) => r.method === "PUT")!;
+  const nodes = (put.body as typeof board).workspaces[0]!.nodes;
+  expect(nodes.at(-1)).toMatchObject({ type: "note", text: "remember" });
+});
