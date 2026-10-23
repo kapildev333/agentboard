@@ -5,8 +5,9 @@ import type { AddressInfo } from "node:net";
 import { extname, resolve, sep } from "node:path";
 import type { Duplex } from "node:stream";
 import * as shared from "@agentboard/shared";
-import { routes as table, type SchemaName } from "@agentboard/shared";
-import { WebSocketServer } from "ws";
+import { parseClientMessage, parseDaemonMessage, routes as table, type SchemaName } from "@agentboard/shared";
+import type { ClientMessage, DaemonMessage } from "@agentboard/shared";
+import WebSocket, { WebSocketServer } from "ws";
 
 type Route = (typeof table)[number];
 type Parsed<N> = N extends SchemaName ? ReturnType<(typeof shared)[N]["parse"]> : undefined;
@@ -31,7 +32,13 @@ export type ServerOptions = {
   token: string;
   staticDir: string;
   routes: RouteHandlers;
+  onAttach?: SocketHandler<"attach">;
+  onInput?: SocketHandler<"input">;
+  onResize?: SocketHandler<"resize">;
 };
+/** reply sends to the socket the message came from, e.g. the ring buffer on attach. */
+export type SocketHandler<T extends ClientMessage["t"]> =
+  (message: Extract<ClientMessage, { t: T }>, reply: (message: DaemonMessage) => void) => Promise<void>;
 
 export async function createServer(opts: ServerOptions) {
   let port = 0;
@@ -60,20 +67,41 @@ export async function createServer(opts: ServerOptions) {
       : checkOrigin && !ownOrigin(req, port) ? 403
       : !hasToken(req, opts.token) ? 401
       : 0;
-  const wss = new WebSocketServer({ noServer: true });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_BODY });
+  const attached = new Map<WebSocket, Set<string>>();
+  const send = (ws: WebSocket, text: string) => { if (ws.readyState === WebSocket.OPEN) ws.send(text); };
+  const onMessage = (ws: WebSocket, data: Buffer) => {
+    let m: ClientMessage;
+    try { m = parseClientMessage(JSON.parse(data.toString("utf8"))); } catch { return; }
+    if (m.t === "attach") attached.get(ws)?.add(m.consoleId);
+    const reply = (out: DaemonMessage) => send(ws, JSON.stringify(parseDaemonMessage(out)));
+    Promise.resolve()
+      .then(() => m.t === "attach" ? opts.onAttach?.(m, reply) : m.t === "input" ? opts.onInput?.(m, reply) : opts.onResize?.(m, reply))
+      .catch(() => {});
+  };
   server.on("upgrade", (req: http.IncomingMessage, socket: Duplex, head: Buffer) => {
     const status = new URL(req.url ?? "/", "http://x").pathname !== "/ws" ? 404 : refuse(req, true);
     if (status) {
       socket.end(`HTTP/1.1 ${status} ${http.STATUS_CODES[status]}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
       return;
     }
-    wss.handleUpgrade(req, socket, head, () => {});
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      attached.set(ws, new Set());
+      ws.on("message", (data) => onMessage(ws, data));
+      ws.on("close", () => attached.delete(ws));
+      ws.on("error", () => ws.terminate());
+    });
   });
   await new Promise<void>((resolve) => server.listen(opts.port, "127.0.0.1", resolve));
   port = (server.address() as AddressInfo).port;
   return {
     port,
     origin: `http://127.0.0.1:${port}`,
+    /** Validates, then sends a console's messages to sockets attached to it and board messages to all. */
+    broadcast(message: DaemonMessage): void {
+      const text = JSON.stringify(parseDaemonMessage(message));
+      for (const [ws, ids] of attached) if (!("consoleId" in message) || ids.has(message.consoleId)) send(ws, text);
+    },
     close: () => new Promise<void>((resolve) => {
       for (const ws of wss.clients) ws.terminate();
       wss.close();
