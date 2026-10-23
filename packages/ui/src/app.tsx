@@ -153,7 +153,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
       if (!res?.ok) return;
       const { rev } = PutBoardResponseSchema.parse(await res.json());
       const { board: now } = useBoard.getState();
-      const next = { ...now, rev };
+      const next = { ...now, rev: rev ?? now.rev };
       // Edits made while the save was in flight stay unsaved.
       useBoard.setState(now === sent ? { board: next, loaded: next } : { board: next });
     };
