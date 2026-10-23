@@ -12,7 +12,7 @@ test("every message type parses and a bad field is rejected", () => {
   for (const m of [{ t: "attach", consoleId: "c1" }, { t: "resize", consoleId: "c1", cols: 80, rows: 24 }]) {
     expect(parseClientMessage(m)).toEqual(m);
   }
-  const board = { version: 1, repoPath: "/r", activeWorkspaceId: "w", workspaces: [] };
+  const board = { version: 1, rev: 3, repoPath: "/r", activeWorkspaceId: "w", workspaces: [] };
   for (const m of [
     { t: "output", consoleId: "c1", data: "hi" },
     { t: "status", consoleId: "c1", status: "needs_you" },
@@ -24,4 +24,10 @@ test("every message type parses and a bad field is rejected", () => {
   }
   expect(() => parseClientMessage({ t: "resize", consoleId: "c1", cols: 0, rows: 24 })).toThrow(ZodError);
   expect(() => parseDaemonMessage({ t: "status", consoleId: "c1", status: "busy" })).toThrow(ZodError);
+});
+
+test("a board's rev defaults to 0 for files saved before it existed and rejects a negative one", () => {
+  const old = { version: 1, repoPath: "/r", activeWorkspaceId: "w", workspaces: [] };
+  expect(parseDaemonMessage({ t: "board", board: old })).toEqual({ t: "board", board: { ...old, rev: 0 } });
+  expect(() => parseDaemonMessage({ t: "board", board: { ...old, rev: -1 } })).toThrow(ZodError);
 });

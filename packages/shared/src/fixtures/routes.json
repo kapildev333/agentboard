@@ -5,6 +5,7 @@
     },
     "response": {
       "version": 1,
+      "rev": 0,
       "repoPath": "/tmp/demo-repo",
       "activeWorkspaceId": "ws-main",
       "workspaces": [
@@ -24,6 +25,7 @@
   "PUT /api/board": {
     "request": {
       "version": 1,
+      "rev": 0,
       "repoPath": "/tmp/demo-repo",
       "activeWorkspaceId": "ws-main",
       "workspaces": [
@@ -50,9 +52,7 @@
         }
       ]
     },
-    "response": {
-      "ok": true
-    }
+    "response": { "ok": true, "rev": 1 }
   },
   "POST /api/consoles": {
     "request": {
