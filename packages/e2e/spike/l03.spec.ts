@@ -4,6 +4,9 @@ import { expect, test } from "@playwright/test";
 // @ts-expect-error plain .mjs spike module without types
 import { startEcho } from "../../ui/spike/echo-server.mjs";
 
+// swiftshader gives headless Chromium a WebGL context without a GPU
+test.use({ launchOptions: { args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] } });
+
 let vite: ViteDevServer;
 let echo: { port: number; close: () => void };
 let url: string;
