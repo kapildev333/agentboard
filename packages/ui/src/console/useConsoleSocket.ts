@@ -1,5 +1,5 @@
 import { parseDaemonMessage } from "@agentboard/shared";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface SocketLike {
   readyState: number;
@@ -19,6 +19,7 @@ export function useConsoleSocket(consoleId: string, factory: SocketFactory = def
   const socket = useRef<SocketLike | null>(null);
   const out = useRef(onOutput);
   out.current = onOutput;
+  const [exited, setExited] = useState(false);
   const size = useRef<{ cols: number; rows: number } | null>(null);
   const send = useCallback((m: object) => {
     if (socket.current?.readyState === OPEN) socket.current.send(JSON.stringify(m));
@@ -37,6 +38,7 @@ export function useConsoleSocket(consoleId: string, factory: SocketFactory = def
         try {
           const m = parseDaemonMessage(JSON.parse(String(e.data)));
           if (m.t === "output" && m.consoleId === consoleId) out.current?.(m.data);
+          if (m.t === "exit" && m.consoleId === consoleId) setExited(true);
         } catch {
           // not for us
         }
@@ -53,6 +55,7 @@ export function useConsoleSocket(consoleId: string, factory: SocketFactory = def
   }, [consoleId, factory, send]);
 
   return {
+    exited,
     sendResize: (cols: number, rows: number) => {
       size.current = { cols, rows };
       send({ t: "resize", consoleId, cols, rows });
