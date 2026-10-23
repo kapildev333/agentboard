@@ -54,3 +54,12 @@ test("spawn exits 1 with an error object when the daemon answers 400", async () 
   expect(await spawnCommand(["opencode"], { log: (s) => lines.push(s) })).toBe(1);
   expect(JSON.parse(lines[0]!)).toEqual({ error: "bad agent" });
 });
+
+test("spawn requires exactly one agent", async () => {
+  for (const args of [[], ["claude", "extra"]]) {
+    const lines: string[] = [];
+    expect(await spawnCommand(args, { log: (s) => lines.push(s) })).toBe(1);
+    expect(JSON.parse(lines[0]!).error).toMatch(/usage: agentboard spawn <agent>/);
+  }
+  expect(seen).toHaveLength(0);
+});
