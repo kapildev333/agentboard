@@ -53,3 +53,23 @@ it("commit posts the message", async () => {
   const post = calls.find(([k]) => k === "POST /api/git/commit")!;
   expect(JSON.parse(post[1]!.body as string)).toEqual({ path: "/r", message: "fix it" });
 });
+
+it("a failed push shows the error", async () => {
+  const fetch = router({
+    "GET /api/git/status": () => json(status),
+    "POST /api/git/push": () => json({ error: "remote rejected" }, 500),
+  });
+  render(<GitCard fetch={fetch} path="/r" />);
+  fireEvent.click(await screen.findByText("Push"));
+  expect((await screen.findByRole("alert")).textContent).toBe("remote rejected");
+});
+
+it("open PR posts and opens the url", async () => {
+  const calls: [string, RequestInit | undefined][] = [];
+  const open = vi.fn();
+  const fetch = router({ "GET /api/git/status": () => json(status), "POST /api/git/pr": () => json({ url: "https://x/pr/1" }) }, calls);
+  render(<GitCard fetch={fetch} path="/r" open={open} />);
+  fireEvent.click(await screen.findByText("Open PR"));
+  await vi.waitFor(() => expect(open).toHaveBeenCalledWith("https://x/pr/1"));
+  expect(JSON.parse(calls.find(([k]) => k === "POST /api/git/pr")![1]!.body as string)).toEqual({ path: "/r", title: "wire the thing" });
+});
