@@ -24,6 +24,7 @@ beforeEach(async () => {
 afterEach(async () => {
   failRename = false;
   beforeRename = null;
+  vi.restoreAllMocks();
   vi.useRealTimers();
   delete process.env.AGENTBOARD_HOME;
   await rm(home, { recursive: true, force: true });

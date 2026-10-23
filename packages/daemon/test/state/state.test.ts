@@ -26,8 +26,7 @@ test("save then load returns an equal board", async () => {
 });
 
 test("a version-0 document migrates to version 1", () => {
-  // other tests leave real timers pending; they write into the current home, so timer tests use their own repo paths
-const note = { id: "n1", type: "note", title: "t", x: 1, y: 2, w: 3, h: 4, text: "hi" };
+  const note = { id: "n1", type: "note", title: "t", x: 1, y: 2, w: 3, h: 4, text: "hi" };
   const board = migrate({ repoPath: "/repo/a", nodes: [note] });
   expect(board).toEqual({
     version: 1,
@@ -44,6 +43,7 @@ test("load rejects a file that fails BoardSchema with a clear error", async () =
   await expect(new StateStore().load("/repo/a")).rejects.toThrow(/invalid board file .*\.json/);
 });
 
+// timer tests use their own repo paths: a save left unflushed by another test would write into the current home
 const note = { id: "n1", type: "note", title: "t", x: 1, y: 2, w: 3, h: 4, text: "hi" } as const;
 
 test("save writes after the 300 ms debounce, not before", async () => {
@@ -95,6 +95,7 @@ test("load returns the pending board before it is flushed", async () => {
   board.workspaces[0]!.nodes.push({ ...note });
   await store.save(board);
   expect(await store.load("/repo/a")).toEqual(board);
+  await store.flush();
 });
 
 test("directories are created with mode 700", async () => {
@@ -139,4 +140,8 @@ test("saves arriving under 300 ms apart do not postpone the write", async () => 
   vi.useRealTimers();
   await vi.waitFor(() => expect(existsSync(boardPath("/repo/starve"))).toBe(true));
   expect(JSON.parse(await readFile(boardPath("/repo/starve"), "utf8"))).toEqual(changed);
+});
+
+test("a board lives at <home>/boards/<sha1 hex of repoPath>.json", () => {
+  expect(boardPath("/repo/a")).toBe(join(home, "boards", "2e93f24292a0cf128fec302dda4afc22677cc53c.json"));
 });
