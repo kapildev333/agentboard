@@ -1,0 +1,5 @@
+{
+  "name": "agentboard-hooks",
+  "version": "0.0.0",
+  "description": "Posts Stop, Notification, UserPromptSubmit, PermissionRequest and SessionEnd to the AgentBoard daemon named in AGENTBOARD_URL and AGENTBOARD_CONSOLE_ID"
+}
