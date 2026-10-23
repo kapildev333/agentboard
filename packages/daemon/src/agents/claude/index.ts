@@ -27,7 +27,7 @@ export function claudeLaunch(o: ClaudeLaunchOptions): { command: string; args: s
   return {
     command: "claude",
     args: [
-      "--session-id",
+      o.resume ? "--resume" : "--session-id",
       o.sessionId,
       "--name",
       o.name,
