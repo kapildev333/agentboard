@@ -73,9 +73,9 @@ function Canvas({ ws, nodeTypes }: { ws: Workspace; nodeTypes: NodeTypes }) {
       nodeTypes={nodeTypes}
       onNodesChange={(changes) => {
         setNodes((ns) => applyNodeChanges(changes, ns));
-        // Keyboard moves and deletes never pass through drag stop; in-flight drags are saved there.
+        // Keyboard moves carry dragging: false; drags (true) save on drag stop, resizer ticks (absent) on resize end.
         for (const c of changes) {
-          if (c.type === "position" && c.position && !c.dragging) moveNode(c.id, c.position.x, c.position.y);
+          if (c.type === "position" && c.position && c.dragging === false) moveNode(c.id, c.position.x, c.position.y);
           else if (c.type === "remove") removeNode(c.id);
         }
       }}
