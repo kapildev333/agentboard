@@ -69,3 +69,16 @@ test("spawn sends the prompt and the repo as cwd", async () => {
   const post = seen.find((r) => r.method === "POST")!;
   expect(JSON.parse(post.body)).toMatchObject({ agent: "claude", prompt: "fix the bug", cwd: "/r" });
 });
+
+test("spawn rejects an unknown agent without calling the daemon", async () => {
+  const lines: string[] = [];
+  expect(await spawnCommand(["bogus"], { log: (s) => lines.push(s) })).toBe(1);
+  expect(JSON.parse(lines[0]!)).toHaveProperty("error");
+  expect(seen.filter((r) => r.method === "POST")).toHaveLength(0);
+});
+
+test("spawn --repo . sends the current directory as cwd", async () => {
+  expect(await spawnCommand(["claude", "--repo", "."], { log: () => {} })).toBe(0);
+  const post = seen.find((r) => r.method === "POST")!;
+  expect(JSON.parse(post.body).cwd).toBe(process.cwd());
+});

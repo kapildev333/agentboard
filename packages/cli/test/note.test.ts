@@ -26,11 +26,15 @@ const board = {
       id: "w2",
       name: "second",
       viewport: { x: 0, y: 0, zoom: 1 },
-      nodes: [{ ...box, id: "n1", type: "note", title: "note", text: "old", y: 500, h: 100 }],
+      nodes: [
+        { ...box, id: "n1", type: "note", title: "note", text: "old", y: 500, h: 100 },
+        { ...box, id: "n2", type: "note", title: "note", text: "high", x: -20, y: 0, h: 100 },
+      ],
     },
   ],
 };
 
+let current: typeof board;
 let server: Server;
 let put: unknown;
 let getUrl: string | undefined;
@@ -38,6 +42,7 @@ beforeEach(async () => {
   const home = mkdtempSync(join(tmpdir(), "ab-cli-"));
   process.env.AGENTBOARD_HOME = home;
   put = undefined;
+  current = structuredClone(board);
   server = createServer((req, res) => {
     let body = "";
     req.on("data", (c) => (body += c));
@@ -47,7 +52,7 @@ beforeEach(async () => {
         return res.end(JSON.stringify({ ok: true }));
       }
       if (req.url?.startsWith("/api/board")) getUrl = req.url;
-      res.end(JSON.stringify(req.url === "/api/status" ? { consoles: board.workspaces[0]!.nodes } : board));
+      res.end(JSON.stringify(req.url === "/api/status" ? { consoles: board.workspaces[0]!.nodes } : current));
     });
   });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
@@ -66,10 +71,11 @@ test("note appends a node through GET and PUT", async () => {
   const saved = (put as typeof board).workspaces;
   expect(saved[0]!.nodes).toHaveLength(1); // the inactive workspace is untouched
   const nodes = saved[1]!.nodes;
-  expect(nodes).toHaveLength(2);
-  const added = nodes[1] as unknown as { id: string; type: string; text: string; y: number };
+  expect(nodes).toHaveLength(3);
+  const added = nodes[2] as unknown as { id: string; type: string; text: string; y: number };
   expect(added).toMatchObject({ type: "note", text: "remember this" });
-  expect(added.y).toBeGreaterThanOrEqual(640);
+  // leftmost x (-20, not 0) and lowest bottom (600, not 100) plus the 40 gap
+  expect(added).toMatchObject({ x: -20, y: 640 });
   expect(JSON.parse(lines[0]!)).toEqual({ id: added.id });
 });
 
@@ -114,4 +120,30 @@ test("note outside a git repo defaults to the current directory", async () => {
   const dir = mkdtempSync(join(tmpdir(), "ab-plain-"));
   expect(await noteCommand(["hi"], { cwd: dir, log: () => {} })).toBe(0);
   expect(getUrl).toBe(`/api/board?repo=${encodeURIComponent(dir)}`);
+});
+
+test("note on an empty active workspace is placed at the origin", async () => {
+  current.workspaces[1]!.nodes = [];
+  expect(await noteCommand(["first", "--repo", "/r"], { log: () => {} })).toBe(0);
+  expect((put as typeof board).workspaces[1]!.nodes[0]).toMatchObject({ x: 0, y: 0, text: "first" });
+});
+
+test("note --repo . resolves to the current directory", async () => {
+  expect(await noteCommand(["hi", "--repo", "."], { log: () => {} })).toBe(0);
+  expect(getUrl).toBe(`/api/board?repo=${encodeURIComponent(process.cwd())}`);
+});
+
+test("note inside a git submodule defaults to the submodule root", async () => {
+  const git = (cwd: string, ...a: string[]) =>
+    execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", "-c", "protocol.file.allow=always", ...a], { cwd, stdio: "ignore" });
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "ab-sub-")));
+  const lib = join(dir, "lib");
+  const parent = join(dir, "parent");
+  for (const d of [lib, parent]) {
+    execFileSync("git", ["init", "-q", d]);
+    git(d, "commit", "-q", "--allow-empty", "-m", "init");
+  }
+  git(parent, "submodule", "add", "-q", lib, "sub");
+  expect(await noteCommand(["hi"], { cwd: join(parent, "sub"), log: () => {} })).toBe(0);
+  expect(getUrl).toBe(`/api/board?repo=${encodeURIComponent(join(parent, "sub"))}`);
 });
