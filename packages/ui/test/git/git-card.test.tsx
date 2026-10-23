@@ -73,3 +73,42 @@ it("open PR posts and opens the url", async () => {
   await vi.waitFor(() => expect(open).toHaveBeenCalledWith("https://x/pr/1"));
   expect(JSON.parse(calls.find(([k]) => k === "POST /api/git/pr")![1]!.body as string)).toEqual({ path: "/r", title: "wire the thing" });
 });
+
+it("a non-http PR url is not opened and shows an error", async () => {
+  const open = vi.fn();
+  const fetch = router({ "GET /api/git/status": () => json(status), "POST /api/git/pr": () => json({ url: "javascript:alert(1)" }) });
+  render(<GitCard fetch={fetch} path="/r" open={open} />);
+  fireEvent.click(await screen.findByText("Open PR"));
+  expect(await screen.findByRole("alert")).toBeTruthy();
+  expect(open).not.toHaveBeenCalled();
+});
+
+it("a failing status shows the error", async () => {
+  const fetch = router({ "GET /api/git/status": () => json({ error: "not a repo" }, 500) });
+  render(<GitCard fetch={fetch} path="/r" />);
+  expect((await screen.findByRole("alert")).textContent).toBe("not a repo");
+});
+
+it("a failing diff shows the error and diff headers are not marked", async () => {
+  let fail = true;
+  const fetch = router({
+    "GET /api/git/status": () => json(status),
+    "GET /api/git/diff": () =>
+      fail ? json({ error: "diff broke" }, 500) : json({ files: [], patch: "--- a/x\n+++ b/x\n+new" }),
+  });
+  const { unmount } = render(<GitCard fetch={fetch} path="/r" />);
+  fireEvent.click(await screen.findByText("Diff"));
+  expect(await screen.findByText("diff broke")).toBeTruthy();
+  unmount();
+  fail = false;
+  render(<GitCard fetch={fetch} path="/r" />);
+  fireEvent.click(await screen.findByText("Diff"));
+  expect((await screen.findByText("+new")).className).toBe("added");
+  expect(screen.getByText("--- a/x").className).toBe("");
+});
+
+it("the commit message is required", async () => {
+  render(<GitCard fetch={router({ "GET /api/git/status": () => json(status) })} path="/r" />);
+  fireEvent.click(await screen.findByText("Commit"));
+  expect((screen.getByLabelText("Commit message") as HTMLInputElement).required).toBe(true);
+});
