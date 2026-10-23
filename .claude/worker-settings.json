@@ -1,0 +1,11 @@
+{
+  "crossSessionInbound": "accept",
+  "env": { "AGENTBOARD_ROLE": "worker" },
+  "permissions": {
+    "deny": [
+      "WebFetch", "WebSearch",
+      "Bash(gh pr merge *)", "Bash(gh repo *)", "Bash(gh api *)", "Bash(claude *)",
+      "Bash(git merge *)", "Bash(git checkout main*)", "Bash(git switch main*)"
+    ]
+  }
+}
