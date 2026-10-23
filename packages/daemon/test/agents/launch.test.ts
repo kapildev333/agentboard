@@ -1,6 +1,4 @@
-import { homedir } from "node:os";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { expect, test } from "vitest";
 import { launchArgs, resumeArgs, type LaunchContext } from "../../src/agents/index.js";
 
@@ -32,7 +30,8 @@ test("launchArgs for opencode sets the plugin environment", () => {
     AGENTBOARD_CONSOLE_ID: "c1",
     AGENTBOARD_AGENT: "opencode",
   });
-  const plugin = pathToFileURL(join(homedir(), ".agentboard/plugins/opencode/agentboard.ts")).href;
+  // the bundle L26 builds, loaded from the checkout so its zod resolves from the workspace (L14)
+  const plugin = pathToFileURL(fileURLToPath(new URL("../../../plugins/opencode/dist/agentboard.js", import.meta.url))).href;
   expect(JSON.parse(env.OPENCODE_CONFIG_CONTENT)).toEqual({ plugin: [plugin] });
 });
 
