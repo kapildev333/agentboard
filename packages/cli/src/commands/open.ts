@@ -15,7 +15,7 @@ function systemOpener(spawn: typeof nodeSpawn) {
       process.platform === "darwin" ? ["open", [url]]
       : process.platform === "win32" ? ["cmd", ["/c", "start", "", url.replace(/&/g, "^&")]]
       : ["xdg-open", [url]];
-    const child = spawn(cmd, args, { stdio: "ignore", detached: true });
+    const child = spawn(cmd, args, { stdio: "ignore", detached: true, windowsHide: true });
     child.on("error", () => {}); // no opener installed: the URL is printed anyway
     child.unref();
   };
@@ -30,7 +30,7 @@ export async function openCommand(args: string[], deps: OpenDeps = {}): Promise<
 
   let info = await readDaemonInfo();
   if (!info || !(await isAlive(info))) {
-    const daemon = spawn(process.execPath, [process.argv[1] ?? "", "start"], { cwd: repo, stdio: "ignore", detached: true });
+    const daemon = spawn(process.execPath, [process.argv[1] ?? "", "start"], { cwd: repo, stdio: "ignore", detached: true, windowsHide: true });
     daemon.on("error", () => {}); // surfaces as the timeout below
     daemon.unref();
     const deadline = Date.now() + 10_000;
@@ -45,7 +45,15 @@ export async function openCommand(args: string[], deps: OpenDeps = {}): Promise<
     }
     if (!info) throw new Error("daemon did not start within 10 seconds");
   }
-  const url = `http://127.0.0.1:${info.port}/?token=${encodeURIComponent(info.token)}&repo=${encodeURIComponent(repo)}`;
+  // The token never goes in a URL: trade it for a one-time code.
+  const res = await fetch(`http://127.0.0.1:${info.port}/auth/code`, {
+    method: "POST",
+    headers: { "x-agentboard-token": info.token },
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!res.ok) throw new Error(`daemon refused the login code request (${res.status})`);
+  const { code } = (await res.json()) as { code: string };
+  const url = `http://127.0.0.1:${info.port}/?code=${encodeURIComponent(code)}&repo=${encodeURIComponent(repo)}`;
   openBrowser(url);
   log(url);
 }
