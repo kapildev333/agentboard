@@ -4,7 +4,7 @@ export type StatusRules = { needsYou?: RegExp[]; idle?: RegExp[] };
 
 const QUIET_MS = 20_000;
 
-type Entry = { agent: AgentId; rules: StatusRules; status: ConsoleStatus; timer?: ReturnType<typeof setTimeout>; armed?: boolean; ended?: boolean; hooked?: boolean };
+type Entry = { agent: AgentId; rules: StatusRules; status: ConsoleStatus; timer?: ReturnType<typeof setTimeout>; armed?: boolean; ended?: boolean; hooked?: boolean; asked?: boolean };
 
 export class StatusTracker {
   private entries = new Map<string, Entry>();
@@ -23,6 +23,7 @@ export class StatusTracker {
     const next = mapSignal(e.agent, body.event, body.payload);
     if (!next) return;
     if (next === "idle") e.armed = false;
+    e.asked = false;
     // from the first hook on, hooks own the status of a hook agent and the output heuristics stop
     e.hooked = true;
     this.clearTimer(consoleId);
@@ -32,7 +33,9 @@ export class StatusTracker {
   // codex: a carriage return means a prompt was sent, so output until agent-turn-complete is work
   markInput(consoleId: string, data: string): void {
     const e = this.entries.get(consoleId);
-    if (e && data.includes("\r")) e.armed = true;
+    if (!e) return;
+    e.asked = false; // the user answered whatever was asked
+    if (data.includes("\r")) e.armed = true;
   }
 
   markOutput(consoleId: string, chunk: string): void {
@@ -44,10 +47,13 @@ export class StatusTracker {
     const match = (res?: RegExp[]) => res?.some((r) => chunk.search(r) !== -1);
     let next: ConsoleStatus | null = null;
     // needs_you wins over idle
+    // A matched question holds through the prompt the CLI redraws after it, until the user types.
     if (match(e.rules.needsYou)) next = "needs_you";
     else if (heuristic && match(e.rules.idle)) next = "idle";
+    else if (e.asked) return;
     else if (heuristic || e.armed) next = "working";
     else if (e.status === "starting") next = "idle";
+    e.asked = next === "needs_you";
     if (next) this.set(consoleId, next);
     this.clearTimer(consoleId);
     // codex goes idle from its notify hook, never from silence
