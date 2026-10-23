@@ -23,8 +23,16 @@ const files=["package.json",...fs.readdirSync("packages").map(p=>`packages/${p}/
 for(const f of files){const j=JSON.parse(fs.readFileSync(f,"utf8"));j.version=v;fs.writeFileSync(f,JSON.stringify(j,null,2)+"\n");}
 console.log("bumped "+files.length+" manifests");' "$v"
   npm install --ignore-scripts >/dev/null 2>&1
-  { echo "## $tag ($(date -u +%Y-%m-%d))"; echo; cat "$full"; echo; [ -f CHANGELOG.md ] && cat CHANGELOG.md; } > CHANGELOG.new
-  mv CHANGELOG.new CHANGELOG.md
+  # keep the "# Changelog" header on top; the "## Unreleased" heading becomes this version, its lines stay under it
+  section="$(printf '## %s (%s)\n\n' "$tag" "$(date -u +%Y-%m-%d)"; cat "$full")"
+  if [ -f CHANGELOG.md ] && grep -q '^# ' CHANGELOG.md; then
+    CL_SECTION="$section" node -e '
+const fs=require("fs");const s=fs.readFileSync("CHANGELOG.md","utf8").split("\n");const sec=process.env.CL_SECTION;
+const h=s.findIndex(l=>/^# /.test(l));const rest=s.slice(h+1).filter(l=>!/^## Unreleased/i.test(l)).join("\n").replace(/^\n+/,"");
+fs.writeFileSync("CHANGELOG.md",s.slice(0,h+1).join("\n")+"\n\n"+sec+"\n\n"+rest+"\n");'
+  else
+    { echo "# Changelog"; echo; echo "$section"; echo; [ -f CHANGELOG.md ] && cat CHANGELOG.md; } > CHANGELOG.new && mv CHANGELOG.new CHANGELOG.md
+  fi
   git add -A && git commit -q -m "chore: release $tag"
   git push -q -u origin HEAD
 )
