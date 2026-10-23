@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildHookPost } from "../opencode/agentboard";
+import { buildHookPost } from "../opencode/hook";
 
 const env = { AGENTBOARD_URL: "http://127.0.0.1:4321", AGENTBOARD_CONSOLE_ID: "c1" };
 
