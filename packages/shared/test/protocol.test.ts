@@ -26,8 +26,8 @@ test("every message type parses and a bad field is rejected", () => {
   expect(() => parseDaemonMessage({ t: "status", consoleId: "c1", status: "busy" })).toThrow(ZodError);
 });
 
-test("a board's rev defaults to 0 for files saved before it existed and rejects a negative one", () => {
+test("a board may omit its rev (files saved before it existed) but not carry a negative one", () => {
   const old = { version: 1, repoPath: "/r", activeWorkspaceId: "w", workspaces: [] };
-  expect(parseDaemonMessage({ t: "board", board: old })).toEqual({ t: "board", board: { ...old, rev: 0 } });
+  expect(parseDaemonMessage({ t: "board", board: old })).toEqual({ t: "board", board: old });
   expect(() => parseDaemonMessage({ t: "board", board: { ...old, rev: -1 } })).toThrow(ZodError);
 });

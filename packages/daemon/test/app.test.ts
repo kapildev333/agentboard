@@ -178,7 +178,7 @@ test("after a restart every console is stopped, and resume starts it again in pl
   expect((await d2.call("POST", `/api/consoles/${node.id}/resume`)).status).toBe(409);
 });
 
-const noteNode = (id: string, text: string) => ({ id, type: "note" as const, x: 0, y: 0, w: 100, h: 100, createdAt: "t", lastActiveAt: "t", text });
+const noteNode = (id: string, text: string) => ({ id, type: "note" as const, title: "Note", x: 0, y: 0, w: 100, h: 100, text });
 const boardOf = async (d: Awaited<ReturnType<typeof start>>, repo: string) => (await d.call("GET", `/api/board?repo=${encodeURIComponent(repo)}`)).body as Board;
 
 test("a note added through PUT /api/board reaches an open page", async () => {
@@ -205,15 +205,15 @@ test("a PUT with a client id skips that client's socket and reaches the others",
     body: JSON.stringify(board),
   });
   expect(res.status).toBe(200);
-  await until(() => other.messages.some((x) => x.t === "board" && x.board.rev === board.rev + 1));
-  expect(mine.messages.some((x) => x.t === "board" && x.board.rev === board.rev + 1)).toBe(false);
+  await until(() => other.messages.some((x) => x.t === "board" && x.board.rev === (board.rev ?? 0) + 1));
+  expect(mine.messages.some((x) => x.t === "board" && x.board.rev === (board.rev ?? 0) + 1)).toBe(false);
 });
 
 test("a PUT older than the saved board answers 409 and changes nothing; each PUT answers the new rev", async () => {
   const s = setup();
   const d = await start(s);
   const board = await boardOf(d, s.repo);
-  expect((await d.call("PUT", "/api/board", board)).body).toEqual({ ok: true, rev: board.rev + 1 });
+  expect((await d.call("PUT", "/api/board", board)).body).toEqual({ ok: true, rev: (board.rev ?? 0) + 1 });
   board.workspaces[0]!.nodes.push(noteNode("n2", "stale"));
   expect((await d.call("PUT", "/api/board", board)).status).toBe(409);
   expect((await boardOf(d, s.repo)).workspaces[0]!.nodes).toEqual([]);
@@ -228,7 +228,7 @@ test("PUT /api/board keeps the daemon's status and running consoles the page did
   const c = consolesOf(moved)[0]!;
   c.x = 999;
   c.status = "needs_you";
-  expect((await d.call("PUT", "/api/board", moved)).body).toEqual({ ok: true });
+  expect((await d.call("PUT", "/api/board", moved)).body).toEqual({ ok: true, rev: 1 });
   let after = (await d.call("GET", `/api/board?repo=${encodeURIComponent(s.repo)}`)).body as Board;
   expect(consolesOf(after)[0]).toMatchObject({ id: node.id, x: 999 });
   expect(consolesOf(after)[0]!.status).not.toBe("needs_you");
