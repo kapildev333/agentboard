@@ -1,4 +1,4 @@
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test, vi } from "vitest";
@@ -26,12 +26,25 @@ function stubDir(versions: Record<string, string>): string {
 }
 
 const neverRun = ((file: string) => {
-  throw new Error(`scan must not run ${file}`);
+  throw new Error(`must not run ${file}`);
 }) as never;
 
+// Stubs that leave a marker file when anything runs them, so a scan that executes a binary is caught
+// whatever exec it uses (scan takes no exec at all).
+function markerDir(names: string[]) {
+  const dir = tmp();
+  const marker = join(dir, "ran");
+  for (const name of names) {
+    writeFileSync(join(dir, name), `#!/bin/sh\ntouch "${marker}"\necho 1\n`);
+    chmodSync(join(dir, name), 0o755);
+  }
+  return { dir, ran: () => existsSync(marker) };
+}
+
 test("scan finds the CLIs on a fake PATH by presence and X_OK only, never running them (D38)", async () => {
-  const path = stubDir({ claude: "2.1.309", codex: "0.53.0", opencode: "1.19.4" });
-  const list = await AgentCatalog.scan({ path, exec: neverRun });
+  const { dir: path, ran } = markerDir(["claude", "codex", "opencode"]);
+  const list = await AgentCatalog.scan({ path });
+  expect(ran()).toBe(false);
   expect(AgentInfoListSchema.parse(list)).toEqual([
     { id: "claude", command: "claude", version: null, available: true },
     { id: "codex", command: "codex", version: null, available: true },
@@ -53,7 +66,7 @@ test("readVersion runs --version once with a 3 second timeout, caches it, and sc
   expect(calls[0]![0]).toBe(join(path, "claude"));
   expect(calls[0]![1]).toEqual(["--version"]);
   expect(calls[0]![2]).toMatchObject({ timeout: 3000, killSignal: "SIGKILL" });
-  const [claude] = await AgentCatalog.scan({ path, exec: neverRun });
+  const [claude] = await AgentCatalog.scan({ path });
   expect(claude).toEqual({ id: "claude", command: "claude", version: "9.9.9", available: true });
 });
 
