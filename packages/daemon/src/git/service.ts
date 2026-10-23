@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { simpleGit, type SimpleGit } from "simple-git";
 
@@ -24,10 +24,14 @@ export class GitService {
     const path = join(repoPath, ".worktrees", name);
     const g = simpleGit(repoPath);
     await g.raw(["worktree", "add", "-b", name, path, base]);
-    // The base lives in the branch config: no upstream is set (it would break hasUnpushed), and status reads it back by path.
-    // Only a real ref is recorded: HEAD, HEAD~n and shas would resolve inside the worktree to its own commits.
+    // The base lives in the worktree's own git dir, not .git/config: that file's lock is shared repo-wide, so a parallel git write would fail the spawn.
+    // No upstream is set (it would break hasUnpushed). Only a real ref is recorded: HEAD and HEAD~n would resolve inside the worktree to its own commits,
+    // and a sha has no branch to compare against, so those keep the remote check.
     const ref = (await g.raw(["rev-parse", "--symbolic-full-name", base]).catch(() => "")).trim();
-    if (ref.startsWith("refs/")) await g.raw(["config", `branch.${name}.agentboardBase`, ref]);
+    if (ref.startsWith("refs/")) {
+      const file = (await simpleGit(path).raw(["rev-parse", "--path-format=absolute", "--git-path", "agentboard-base"])).trim();
+      writeFileSync(file, `${ref}\n`);
+    }
     const exclude = (await g.raw(["rev-parse", "--path-format=absolute", "--git-path", "info/exclude"])).trim();
     const current = existsSync(exclude) ? readFileSync(exclude, "utf8") : "";
     if (!current.split("\n").includes(".worktrees/")) appendFileSync(exclude, `${current && !current.endsWith("\n") ? "\n" : ""}.worktrees/\n`);
@@ -98,9 +102,8 @@ export class GitService {
 
   // The base branch recorded by worktreeAdd, or "" for a branch that has none (or whose base was deleted).
   private async baseOf(g: SimpleGit): Promise<string> {
-    const branch = (await g.raw(["branch", "--show-current"])).trim();
-    if (!branch) return "";
-    const base = await g.raw(["config", "--get", `branch.${branch}.agentboardBase`]).then((o) => o.trim(), () => "");
+    const file = (await g.raw(["rev-parse", "--path-format=absolute", "--git-path", "agentboard-base"])).trim();
+    const base = existsSync(file) ? readFileSync(file, "utf8").trim() : "";
     return base && (await g.raw(["rev-parse", "--verify", "-q", base]).then((o) => o.trim() !== "", () => false)) ? base : "";
   }
 
@@ -109,13 +112,12 @@ export class GitService {
   }
 
   private async hasUnpushed(g: SimpleGit): Promise<boolean> {
-    const count = (...a: string[]) => this.count(g, ...a);
     try {
-      return (await count("@{u}..HEAD")) > 0;
+      return (await this.count(g, "@{u}..HEAD")) > 0;
     } catch {
       // No upstream: unpushed means commits no remote and not the base have, but only if a remote exists to push to.
       const base = await this.baseOf(g);
-      return (await g.getRemotes()).length > 0 && (await count("HEAD", "--not", "--remotes", ...(base ? [base] : []))) > 0;
+      return (await g.getRemotes()).length > 0 && (await this.count(g, "HEAD", "--not", "--remotes", ...(base ? [base] : []))) > 0;
     }
   }
 }
