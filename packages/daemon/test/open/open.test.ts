@@ -3,7 +3,7 @@ import { mkdtempSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { expect, test } from "vitest";
-import { handleOpen, openIn } from "../../src/open/index.js";
+import { OpenError, handleOpen, openIn } from "../../src/open/index.js";
 
 type Call = { command: string; args: readonly string[] };
 
@@ -83,6 +83,30 @@ test("a symlink is spawned as the directory it points to", async () => {
   const { spawn, calls } = fakeSpawn();
   await openIn("code", link, spawn);
   expect(calls).toEqual([{ command: "code", args: [dir] }]);
+});
+
+test("errors stay on one line even for a path with a newline in it", async () => {
+  const bad = join(tempDir(), "a\nb");
+  const err = (await openIn("code", bad, fakeSpawn().spawn).catch((e: Error) => e)) as Error;
+  expect(err.message).toMatch(/not a directory/);
+  expect(err.message).not.toContain("\n");
+});
+
+test("client errors are OpenError, so L12 maps them to 400 without reading the message", async () => {
+  const dir = tempDir();
+  const { spawn } = fakeSpawn();
+  const failures = [
+    await handleOpen({ editor: "vim", path: dir }, spawn).catch((e: unknown) => e),
+    await openIn("code", "relative", spawn).catch((e: unknown) => e),
+    await openIn("code", join(dir, "missing"), spawn).catch((e: unknown) => e),
+  ];
+  for (const f of failures) expect(f).toBeInstanceOf(OpenError);
+  const spawnFailure = await openIn("code", dir, () => {
+    const child = Object.assign(new EventEmitter(), { unref() {} });
+    process.nextTick(() => child.emit("error", new Error("spawn code ENOENT")));
+    return child;
+  }).catch((e: unknown) => e);
+  expect(spawnFailure).not.toBeInstanceOf(OpenError);
 });
 
 test("a missing binary rejects with a one-line message", async () => {
