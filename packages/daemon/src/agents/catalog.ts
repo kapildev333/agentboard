@@ -1,14 +1,9 @@
 import { execFile } from "node:child_process";
 import { accessSync, constants, statSync } from "node:fs";
 import { delimiter, join } from "node:path";
-import type { AgentInfo } from "@agentboard/shared";
+import type { AgentInfo, CustomAgent } from "@agentboard/shared";
 
-export interface CustomAgent {
-  id: string;
-  name: string;
-  command: string;
-  args: string[];
-}
+export type { CustomAgent };
 
 export interface ScanOptions {
   path?: string;
