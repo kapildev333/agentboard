@@ -6,7 +6,7 @@ import { afterEach, expect, test } from "vitest";
 import WebSocket from "ws";
 import { createServer, type ServerOptions } from "../../src/server/index.js";
 
-const token = "test-token";
+const token = "test-token-0123456789abcdef0123456789abcdef";
 const open: { close(): Promise<void> }[] = [];
 afterEach(async () => { await Promise.all(open.splice(0).map((s) => s.close())); });
 
@@ -189,4 +189,10 @@ test("WebSocket messages dispatch to handlers and broadcast reaches attached soc
     { t: "status", consoleId: "a", status: "idle" },
   ]);
   ws.close();
+});
+
+test("an empty or weak token is refused at start", async () => {
+  for (const bad of ["", "short", "x".repeat(31), `${"x".repeat(32)} `, `${"x".repeat(32)};`]) {
+    await expect(createServer({ port: 0, token: bad, staticDir: tmpdir(), routes: {} })).rejects.toThrow(/token/);
+  }
 });
