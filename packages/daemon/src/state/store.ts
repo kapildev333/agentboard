@@ -68,19 +68,29 @@ export class StateStore {
   }
 
   private async writePending(): Promise<void> {
+    const errors: unknown[] = [];
     for (const [repoPath, entry] of [...this.pending]) {
-      const file = boardPath(repoPath);
-      await mkdir(dirname(file), { recursive: true, mode: 0o700 });
-      // sync before the rename so a power loss cannot leave an empty board in place of the old one
-      const fh = await open(`${file}.tmp`, "w");
       try {
-        await fh.writeFile(JSON.stringify(entry.board, null, 2));
-        await fh.sync();
-      } finally {
-        await fh.close();
+        await this.writeBoard(repoPath, entry);
+      } catch (e) {
+        errors.push(e); // keep going so one failing board does not hold back the others
       }
-      await rename(`${file}.tmp`, file);
-      if (this.pending.get(repoPath) === entry) this.pending.delete(repoPath);
     }
+    if (errors.length) throw errors[0];
+  }
+
+  private async writeBoard(repoPath: string, entry: { board: Board }): Promise<void> {
+    const file = boardPath(repoPath);
+    await mkdir(dirname(file), { recursive: true, mode: 0o700 });
+    // sync before the rename so a power loss cannot leave an empty board in place of the old one
+    const fh = await open(`${file}.tmp`, "w");
+    try {
+      await fh.writeFile(JSON.stringify(entry.board, null, 2));
+      await fh.sync();
+    } finally {
+      await fh.close();
+    }
+    await rename(`${file}.tmp`, file);
+    if (this.pending.get(repoPath) === entry) this.pending.delete(repoPath);
   }
 }
