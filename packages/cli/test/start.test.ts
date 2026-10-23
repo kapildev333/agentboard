@@ -6,8 +6,8 @@ afterEach(() => {
   vi.doUnmock("@agentboard/daemon");
 });
 
-test("start exits 1 with one line when the daemon cannot be loaded", async () => {
-  vi.doMock("@agentboard/daemon", () => ({}));
+test.each([{}, { startDaemon: undefined }])("start exits 1 with one line when the daemon cannot be loaded (%o)", async (mod) => {
+  vi.doMock("@agentboard/daemon", () => mod);
   vi.spyOn(process, "exit").mockImplementation(((c: number) => {
     throw new Error(`exit ${c}`);
   }) as never);
@@ -15,7 +15,7 @@ test("start exits 1 with one line when the daemon cannot be loaded", async () =>
   const { startCommand } = await import("../src/commands/start.js");
   await expect(startCommand()).rejects.toThrow("exit 1");
   expect(err).toHaveBeenCalledTimes(1);
-  expect(err.mock.calls[0]![0]).toMatch(/^agentboard: cannot load the daemon:/);
+  expect(err.mock.calls[0]![0]).toMatch(/^agentboard: cannot load the daemon: [^\n]+$/);
 });
 
 test("start calls startDaemon with the cwd and prints the URL", async () => {

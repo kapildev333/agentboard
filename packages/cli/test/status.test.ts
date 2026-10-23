@@ -35,3 +35,13 @@ test("readDaemonInfo rejects a malformed file", async () => {
   writeFileSync(join(home, "daemon.json"), JSON.stringify({ port: "x" }));
   expect(await readDaemonInfo()).toBeNull();
 });
+
+test("status prints alive false when daemon.json is stale", async () => {
+  const server = createServer((_, res) => { res.statusCode = 401; res.end(); });
+  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+  writeFileSync(join(home, "daemon.json"), JSON.stringify({ port: (server.address() as AddressInfo).port, token: "t", pid: 1 }));
+  const lines: string[] = [];
+  expect(await statusCommand((s) => lines.push(s))).toBe(1);
+  server.close();
+  expect(JSON.parse(lines[0]!)).toEqual({ alive: false });
+});
