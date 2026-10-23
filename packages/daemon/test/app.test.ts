@@ -263,3 +263,20 @@ test("startDaemon itself honours AGENTBOARD_AGENT_PATH, so `agentboard start` sc
   // only the stub claude is on that PATH; the login PATH's CLIs must not show
   expect(list.filter((a) => a.id !== "custom" && a.available).map((a) => a.id)).toEqual(["claude"]);
 });
+
+test("after /clear the console adopts the next session id once, then D34 guards the new one (D39)", async () => {
+  const s = setup();
+  const d = await start(s);
+  // the stub claude from the agent PATH: it prints a version and exits, the node stays
+  const node = (await d.call("POST", "/api/consoles", { agent: "claude", cwd: s.repo })).body as ConsoleNode;
+  const first = node.session!.id;
+  const session = async () => ((await d.call("GET", "/api/status")).body as { consoles: ConsoleNode[] }).consoles.find((c) => c.id === node.id)!.session!.id;
+  const hook = (event: string, payload: object) => d.call("POST", `/hook/${node.id}`, { agent: "claude", event, payload });
+  await hook("Stop", { session_id: "nested" });
+  expect(await session()).toBe(first);
+  await hook("SessionEnd", { session_id: first, reason: "clear" });
+  await hook("UserPromptSubmit", { session_id: "after-clear" });
+  expect(await session()).toBe("after-clear");
+  await hook("Stop", { session_id: "nested-again" });
+  expect(await session()).toBe("after-clear");
+});
