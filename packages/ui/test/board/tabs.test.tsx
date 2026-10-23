@@ -43,8 +43,15 @@ it("double click renames", () => {
   expect(useBoard.getState().board.workspaces[1]!.name).toBe("Docs");
 });
 
-it("the delete button removes a workspace", () => {
+it("the delete button removes the active workspace", () => {
   render(<WorkspaceTabs />);
+  fireEvent.click(screen.getByRole("tab", { name: "B" }));
   fireEvent.click(screen.getByLabelText("Delete B"));
   expect(useBoard.getState().board.workspaces.map((w) => w.id)).toEqual(["a"]);
+});
+
+it("the tablist holds only tabs", () => {
+  render(<WorkspaceTabs />);
+  const kids = [...screen.getByRole("tablist").querySelectorAll("button")];
+  expect(kids.map((b) => b.getAttribute("role"))).toEqual(["tab", "tab"]);
 });
