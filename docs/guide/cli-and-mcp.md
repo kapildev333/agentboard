@@ -80,6 +80,7 @@ $ agentboard note "check the login flow before merging"
 - The note goes on the active workspace of the board for `--repo`. Without `--repo`, it goes to the main repository root of the current directory: from a subfolder or a linked worktree, that is the main checkout.
 - The words after `note` are joined with spaces. An empty note prints the usage line and exits 1.
 - The note is placed under the lowest node, at the left edge of the existing nodes.
+- An open board does not show the note, and that page's next save deletes it: the daemon tells no page about the change. Reload the board right after adding a note, before you pan, zoom or drag. Lane L1B is fixing this.
 
 ### `agentboard start`
 
@@ -117,7 +118,7 @@ The server does not start the daemon. It reads `daemon.json` on every call, so i
 | `open_board` | `repo` (string, absolute path) | The board as JSON: workspaces and nodes. It does not open a browser |
 | `spawn_console` | `agent` (`claude`, `codex`, `gemini`, `opencode`, `custom`), `cwd` (string), optional `worktree`, `prompt`, `callerConsoleId`, `customId` | The new console |
 | `list_consoles` | none | Every console the daemon has loaded, with id, agent, cwd, status and more |
-| `add_note` | `text` (string) | The note. It goes on the board last opened through `open_board` in this server, or the server's working directory, at the top-left of the active workspace |
+| `add_note` | `text` (string) | The note. It goes on the board last opened through `open_board` in this server, or the server's working directory, at the top-left of the active workspace. As with `agentboard note`, an open board does not show it and its next save deletes it; reload the board first (lane L1B is fixing this) |
 | `get_status` | none | `{"consoles":[…]}` |
 
 - `spawn_console` takes `callerConsoleId` from `AGENTBOARD_CONSOLE_ID` when you leave it out.
@@ -192,8 +193,8 @@ The CLI, the MCP server and the plugins all use the same routes, defined in `pac
 
 Errors are `{"error":"…"}`. The status codes:
 
-- 400 for an invalid request or a client mistake, such as a bad path or a missing binary.
+- 400 for an invalid request or a client mistake, such as a bad path or an agent missing from the agent PATH.
 - 404 for an unknown console.
 - 409 for resuming a console that is still running.
 - 413 for a body over 1 MB.
-- 500 for anything else.
+- 500 for anything else, including a missing `code`, `zed` or `gh` and every git failure.
