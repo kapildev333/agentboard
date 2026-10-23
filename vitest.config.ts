@@ -11,7 +11,8 @@ export default defineConfig({
   test: {
     projects: names.map((n) => ({
       resolve: { alias },
-      test: { name: n, root: `packages/${n}`, environment: n === "ui" ? "jsdom" : "node" },
+      // e2e specs are Playwright files, run with `npx playwright test` from packages/e2e
+      test: { name: n, root: `packages/${n}`, environment: n === "ui" ? "jsdom" : "node", ...(n === "e2e" && { exclude: ["**/node_modules/**", "spike/**"] }) },
     })),
   },
 });
