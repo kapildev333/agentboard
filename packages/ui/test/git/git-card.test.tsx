@@ -77,23 +77,24 @@ it("a failed push shows the error", async () => {
   expect(JSON.parse(calls.find(([k]) => k === "POST /api/git/push")![1]!.body as string)).toEqual({ path: "/r" });
 });
 
-it("open PR posts and opens the url", async () => {
+it("open PR posts and shows the url as a link, since a popup after the reply would be blocked (L21)", async () => {
   const calls: Call[] = [];
-  const open = vi.fn();
   const fetch = router({ "GET /api/git/status": () => json(status), "POST /api/git/pr": () => json({ url: "https://x/pr/1" }) }, calls);
-  render(<GitCard fetch={fetch} path="/r" open={open} />);
+  render(<GitCard fetch={fetch} path="/r" />);
   fireEvent.click(await screen.findByText("Open PR"));
-  await vi.waitFor(() => expect(open).toHaveBeenCalledWith("https://x/pr/1"));
+  const link = (await screen.findByRole("link", { name: "https://x/pr/1" })) as HTMLAnchorElement;
+  expect(link.href).toBe("https://x/pr/1");
+  expect(link.target).toBe("_blank");
+  expect(link.rel).toBe("noopener noreferrer");
   expect(JSON.parse(calls.find(([k]) => k === "POST /api/git/pr")![1]!.body as string)).toEqual({ path: "/r", title: "wire the thing" });
 });
 
-it("a non-http PR url is not opened and shows an error", async () => {
-  const open = vi.fn();
+it("a non-http PR url is not linked and shows an error", async () => {
   const fetch = router({ "GET /api/git/status": () => json(status), "POST /api/git/pr": () => json({ url: "javascript:alert('https://x')" }) });
-  render(<GitCard fetch={fetch} path="/r" open={open} />);
+  render(<GitCard fetch={fetch} path="/r" />);
   fireEvent.click(await screen.findByText("Open PR"));
   expect(await screen.findByRole("alert")).toBeTruthy();
-  expect(open).not.toHaveBeenCalled();
+  expect(screen.queryByRole("link")).toBeNull();
 });
 
 it("a failing status shows the error", async () => {
@@ -242,4 +243,36 @@ it("a failed commit shows the error and keeps the message", async () => {
   fireEvent.click(screen.getByText("Submit"));
   expect((await screen.findByRole("alert")).textContent).toBe("nothing to commit");
   expect((screen.getByLabelText("Commit message") as HTMLInputElement).value).toBe("fix it");
+});
+
+it("a double click on Push sends one request while the first is in flight (L21)", async () => {
+  const calls: Call[] = [];
+  let release!: () => void;
+  const fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    calls.push([`${init?.method ?? "GET"} ${String(url).split("?")[0]}`, init, String(url)]);
+    if (init?.method === "POST") await new Promise<void>((r) => (release = r));
+    return json(init?.method === "POST" ? { ok: true } : status);
+  }) as typeof globalThis.fetch;
+  render(<GitCard fetch={fetch} path="/r" />);
+  const push = await screen.findByText("Push");
+  fireEvent.click(push);
+  fireEvent.click(push);
+  fireEvent.click(screen.getByText("Open PR"));
+  expect(calls.filter(([k]) => k.startsWith("POST"))).toHaveLength(1);
+  release();
+});
+
+it("a successful commit or push reloads the status so the counts refresh (L21)", async () => {
+  const calls: Call[] = [];
+  const fetch = router(
+    { "GET /api/git/status": () => json(status), "POST /api/git/commit": () => json({ sha: "def" }), "POST /api/git/push": () => json({ ok: true }) },
+    calls,
+  );
+  render(<GitCard fetch={fetch} path="/r" />);
+  fireEvent.click(await screen.findByText("Push"));
+  await vi.waitFor(() => expect(calls.filter(([k]) => k === "GET /api/git/status")).toHaveLength(2));
+  fireEvent.click(screen.getByText("Commit"));
+  fireEvent.change(screen.getByLabelText("Commit message"), { target: { value: "fix it" } });
+  fireEvent.click(screen.getByText("Submit"));
+  await vi.waitFor(() => expect(calls.filter(([k]) => k === "GET /api/git/status")).toHaveLength(3));
 });
