@@ -1,11 +1,11 @@
-import { homedir } from "node:os";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import type { Launch, LaunchInput } from "../codex/index.js";
 
-// docs/spikes/L05.md: the plugin lives at a stable path and is loaded per launch through the config-content
-// env var, so neither the user's repo nor their global config is touched. Documented, not verified live.
-export const opencodePluginPath = join(homedir(), ".agentboard", "plugins", "opencode", "agentboard.ts");
+// docs/spikes/L05.md: the plugin is loaded per launch through the config-content env var, so neither the
+// user's repo nor their global config is touched. It is the one-file bundle L26 builds, loaded from the
+// checkout (src/agents/opencode and dist/agents/opencode sit at the same depth), so its zod import resolves
+// from the workspace's node_modules. Documented, not verified live.
+export const opencodePluginPath = fileURLToPath(new URL("../../../../plugins/opencode/dist/agentboard.js", import.meta.url));
 
 export function opencodeLaunch({ consoleId, daemonUrl, token, sessionId, resume }: LaunchInput): Launch {
   return {
