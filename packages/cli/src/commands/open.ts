@@ -21,12 +21,17 @@ function systemOpener(spawn: typeof nodeSpawn) {
   };
 }
 
+/** Throws before any daemon is started, so a typo never spawns one. */
+export function requireDir(path: string): void {
+  if (!statSync(path, { throwIfNoEntry: false })?.isDirectory()) throw new Error(`not a directory: ${path}`);
+}
+
 export async function openCommand(args: string[], deps: OpenDeps = {}): Promise<void> {
   const spawn = deps.spawn ?? nodeSpawn;
   const log = deps.log ?? console.log;
   const openBrowser = deps.openBrowser ?? systemOpener(spawn);
   const repo = resolve(args[0] ?? ".");
-  if (!statSync(repo, { throwIfNoEntry: false })?.isDirectory()) throw new Error(`not a directory: ${repo}`);
+  requireDir(repo);
 
   const info = await ensureDaemon(repo, spawn);
   // The token never goes in a URL: trade it for a one-time code.
