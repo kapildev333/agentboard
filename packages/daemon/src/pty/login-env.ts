@@ -3,14 +3,12 @@ import { promisify } from "node:util";
 
 const run = promisify(execFile);
 
-// Lines of `KEY=value`; a line that does not start a new key continues the previous value.
+// `env -0` output: NUL-separated NAME=value entries. Entries without a usable name (shell noise) are skipped.
 export function parseEnv(text: string): Record<string, string> {
   const out: Record<string, string> = {};
-  let key: string | undefined;
-  for (const line of text.split("\n")) {
-    const m = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(line);
-    if (m) out[(key = m[1]!)] = m[2]!;
-    else if (key) out[key] += `\n${line}`;
+  for (const entry of text.split("\0")) {
+    const i = entry.indexOf("=");
+    if (i > 0 && !entry.slice(0, i).includes("\n")) out[entry.slice(0, i)] = entry.slice(i + 1);
   }
   return out;
 }
@@ -25,7 +23,7 @@ export function loginEnv(): Promise<Record<string, string>> {
 
 async function read(): Promise<Record<string, string>> {
   try {
-    const { stdout } = await run(process.env.SHELL || "/bin/sh", ["-ilc", "env"], { timeout: 10_000, maxBuffer: 4 << 20 });
+    const { stdout } = await run(process.env.SHELL || "/bin/sh", ["-ilc", "env -0"], { timeout: 10_000, maxBuffer: 4 << 20 });
     const parsed = parseEnv(stdout);
     if (parsed.PATH) return parsed;
   } catch {

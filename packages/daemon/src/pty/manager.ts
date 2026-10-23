@@ -11,7 +11,7 @@ export type SpawnOptions = {
 };
 export type PtyHandle = { id: string; pid: number };
 
-type Entry = { pty: IPty; exited: boolean; buffer: string };
+type Entry = { pty: IPty; exitCode?: number; buffer: string };
 
 const REPLAY_CHARS = 200 * 1024; // ponytail: counts UTF-16 chars, not bytes; fine for terminal output
 
@@ -25,10 +25,14 @@ export class PtyManager {
   constructor(private timers: Timers = { set: setTimeout, clear: (h) => clearTimeout(h as NodeJS.Timeout) }) {}
 
   spawn(o: SpawnOptions): PtyHandle {
+    if (this.entries.has(o.id)) throw new Error(`console ${o.id} already exists`);
     const pty = ptySpawn(o.command, o.args, { name: "xterm-256color", cwd: o.cwd, env: o.env, cols: o.cols, rows: o.rows });
-    const entry: Entry = { pty, exited: false, buffer: "" };
-    pty.onData((d) => (entry.buffer = (entry.buffer + d).slice(-REPLAY_CHARS)));
-    pty.onExit(() => (entry.exited = true));
+    const entry: Entry = { pty, buffer: "" };
+    pty.onData((d) => {
+      entry.buffer += d;
+      if (entry.buffer.length > 2 * REPLAY_CHARS) entry.buffer = entry.buffer.slice(-REPLAY_CHARS);
+    });
+    pty.onExit(({ exitCode }) => (entry.exitCode = exitCode));
     this.entries.set(o.id, entry);
     return { id: o.id, pid: pty.pid };
   }
@@ -38,7 +42,8 @@ export class PtyManager {
   }
 
   resize(id: string, cols: number, rows: number): void {
-    this.get(id).pty.resize(cols, rows);
+    const e = this.get(id);
+    if (e.exitCode === undefined) e.pty.resize(cols, rows);
   }
 
   onData(id: string, cb: (data: string) => void): () => void {
@@ -47,16 +52,21 @@ export class PtyManager {
   }
 
   onExit(id: string, cb: (code: number) => void): () => void {
-    const d = this.get(id).pty.onExit(({ exitCode }) => cb(exitCode));
+    const e = this.get(id);
+    if (e.exitCode !== undefined) {
+      cb(e.exitCode);
+      return () => {};
+    }
+    const d = e.pty.onExit(({ exitCode }) => cb(exitCode));
     return () => d.dispose();
   }
 
   async kill(id: string): Promise<void> {
     const e = this.get(id);
-    if (!e.exited) {
+    if (e.exitCode === undefined) {
       const exit = new Promise<void>((resolve) => e.pty.onExit(() => resolve()));
-      e.pty.kill("SIGHUP");
-      const timer = this.timers.set(() => e.pty.kill("SIGKILL"), KILL_GRACE_MS);
+      this.signal(e, "SIGHUP");
+      const timer = this.timers.set(() => this.signal(e, "SIGKILL"), KILL_GRACE_MS);
       await exit;
       this.timers.clear(timer);
     }
@@ -64,11 +74,20 @@ export class PtyManager {
   }
 
   replay(id: string): string {
-    return this.get(id).buffer;
+    return this.get(id).buffer.slice(-REPLAY_CHARS);
   }
 
   list(): string[] {
     return [...this.entries.keys()];
+  }
+
+  // The child leads its own session, so -pid reaches everything it started.
+  private signal(e: Entry, sig: "SIGHUP" | "SIGKILL"): void {
+    try {
+      process.kill(-e.pty.pid, sig);
+    } catch {
+      // group already gone
+    }
   }
 
   private get(id: string): Entry {
