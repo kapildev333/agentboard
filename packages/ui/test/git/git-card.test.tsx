@@ -138,3 +138,21 @@ it("removed and added lines that start with -- or ++ are marked after the first 
   expect(screen.getByText("+++ y").className).toBe("added");
   expect(screen.getByText("--- a/x").className).toBe("");
 });
+
+it("a second file's --- and +++ headers stay unmarked after the first file's hunk", async () => {
+  const patch = "diff --git a/x b/x\n--- a/x\n+++ b/x\n@@ -1 +1 @@\n-old\n+new\ndiff --git a/y b/y\n--- a/y\n+++ b/y\n@@ -1 +1 @@\n-a\n+b";
+  const fetch = router({ "GET /api/git/status": () => json(status), "GET /api/git/diff": () => json({ files: [], patch }) });
+  render(<GitCard fetch={fetch} path="/r" />);
+  fireEvent.click(await screen.findByText("Diff"));
+  expect((await screen.findByText("--- a/y")).className).toBe("");
+  expect(screen.getByText("+++ b/y").className).toBe("");
+  expect(screen.getByText("+b").className).toBe("added");
+});
+
+it("a failing poll after a good status shows the alert and keeps the card", async () => {
+  let calls = 0;
+  const fetch = router({ "GET /api/git/status": () => (calls++ === 0 ? json(status) : json({ error: "gone" }, 500)) });
+  render(<GitCard fetch={fetch} path="/r" intervalMs={20} />);
+  expect((await screen.findByRole("alert")).textContent).toBe("gone");
+  expect(screen.getByText(/feat-x/)).toBeTruthy();
+});
