@@ -75,6 +75,13 @@ test("renderMarkdown escapes HTML in the source", () => {
   expect(html).toContain("&lt;script&gt;");
 });
 
+test("renderMarkdown sends script-scheme links and inline-data images nowhere", () => {
+  const html = renderMarkdown("[x](javascript:alert(1)) [y]( VBScript:msgbox ) ![z](data:image/svg+xml;base64,PHN2Zz4=)");
+  expect(html).not.toMatch(/javascript:|vbscript:|data:/i);
+  expect(html).toContain('href="#"');
+  expect(html).toContain('src="#"');
+});
+
 test("headings lists levels, text and 1-based lines, skipping fenced code", () => {
   expect(headings("# A\n\n## B\n```\n# not\n```\n### C")).toEqual([
     { level: 1, text: "A", line: 1 },
