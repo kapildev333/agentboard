@@ -420,3 +420,11 @@ test("a busy port rejects createServer instead of crashing the process (L12)", a
   const s = await start();
   await expect(createServer({ port: s.port, token, staticDir: tmpdir(), routes: {} })).rejects.toThrow(/EADDRINUSE/);
 });
+
+test("a TextSchema route answers text/csv with the raw string", async () => {
+  const s = await start({ routes: { "GET /api/usage.csv": async () => 'key,label\nclaude,"a ""b"""\n' } });
+  const res = await fetch(`${s.origin}/api/usage.csv?range=today`, { headers: { "x-agentboard-token": token } });
+  expect(res.status).toBe(200);
+  expect(res.headers.get("content-type")).toBe("text/csv; charset=utf-8");
+  expect(await res.text()).toBe('key,label\nclaude,"a ""b"""\n');
+});
