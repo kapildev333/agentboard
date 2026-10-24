@@ -23,11 +23,13 @@ async function postOpen(editor: Editor, path: string, doFetch: typeof fetch): Pr
 export function OpenInButtons({ path, doFetch = fetch }: { path: string; doFetch?: typeof fetch }) {
   const [error, setError] = useState<string | null>(null);
   return (
-    <div>
+    <div className="open-in">
+      <span className="field-label">Open in</span>
       {EDITORS.map(({ editor, label }) => (
         <button
           key={editor}
           type="button"
+          className="btn-sm"
           onClick={() => {
             postOpen(editor, path, doFetch).catch(() => "could not reach the daemon").then(setError);
           }}

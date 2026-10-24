@@ -71,14 +71,20 @@ export function GitCard({
   }, [load, intervalMs]);
   if (!status) return statusError ? <p role="alert">{statusError}</p> : null;
   return (
-    <div>
-      <b>{status.branch}</b> <span>ahead {status.ahead}</span> <span>behind {status.behind}</span>{" "}
-      <span>dirty {status.dirty}</span> <span>{status.lastCommit?.subject}</span>
-      <div>
-        <button onClick={() => setShowDiff(!showDiff)}>Diff</button>
-        <button onClick={() => setCommitting(!committing)}>Commit</button>
-        <button disabled={busyShown} onClick={() => post("push", PushRequestSchema, OkSchema, { path })}>Push</button>
+    <div className="git-card">
+      <div className="git-head">
+        <b className="chip git-branch">{status.branch}</b> <span className="git-subject">{status.lastCommit?.subject}</span>
+      </div>
+      <div className="git-stats">
+        <span className="git-stat">ahead {status.ahead}</span> <span className="git-stat">behind {status.behind}</span>{" "}
+        <span className={status.dirty ? "git-stat dirty" : "git-stat"}>dirty {status.dirty}</span>
+      </div>
+      <div className="git-actions">
+        <button className="btn-sm" aria-pressed={showDiff} onClick={() => setShowDiff(!showDiff)}>Diff</button>
+        <button className="btn-sm" aria-pressed={committing} onClick={() => setCommitting(!committing)}>Commit</button>
+        <button className="btn-sm" disabled={busyShown} onClick={() => post("push", PushRequestSchema, OkSchema, { path })}>Push</button>
         <button
+          className="btn-sm"
           disabled={busyShown}
           onClick={async () => {
             const pr = await post("pr", PrRequestSchema, PrResponseSchema, {
@@ -95,6 +101,7 @@ export function GitCard({
       </div>
       {committing && (
         <form
+          className="git-commit"
           onSubmit={async (e) => {
             e.preventDefault();
             if (await post("commit", CommitRequestSchema, CommitResponseSchema, { path, message })) {
@@ -103,12 +110,12 @@ export function GitCard({
             }
           }}
         >
-          <input required aria-label="Commit message" value={message} onChange={(e) => setMessage(e.target.value)} />
-          <button type="submit" disabled={busyShown}>Submit</button>
+          <input required aria-label="Commit message" placeholder="Commit message" value={message} onChange={(e) => setMessage(e.target.value)} />
+          <button type="submit" className="btn-primary" disabled={busyShown}>Submit</button>
         </form>
       )}
       {prUrl && (
-        <p>
+        <p className="git-pr">
           <a href={prUrl} target="_blank" rel="noopener noreferrer">{prUrl}</a>
         </p>
       )}
