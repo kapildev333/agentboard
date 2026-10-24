@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
+import type { NodeProps } from "@xyflow/react";
 import type { Board, WebTileNode } from "@agentboard/shared";
 import { useBoard } from "../src/board";
 import { WebTileView, webtileAdds } from "../src/webtile";
@@ -16,7 +17,7 @@ const setup = (n = node, fetch = notFound) => {
   // Like the board, hand the view whatever node the store holds now.
   const Harness = () => {
     const live = useBoard((s) => s.board.workspaces[0]!.nodes[0]) as WebTileNode;
-    return <WebTileView {...({ data: { node: live } } as never)} fetch={fetch} />;
+    return <WebTileView {...({ data: { node: live } } as unknown as NodeProps)} fetch={fetch} />;
   };
   return render(<Harness />);
 };
