@@ -52,7 +52,7 @@ Icons are inline 14 px stroke SVGs with `aria-hidden` (`packages/ui/src/board/ic
 
 ## Agent marks
 
-One 20 x 20 rounded square with an 11 px JetBrains Mono bold letter, `aria-hidden` (the agent's name always sits beside it). `<AgentMark agent="claude" />` for a built-in agent; any other string is a custom agent's name and shows its first letter.
+One 20 x 20 rounded square with an 11 px JetBrains Mono bold letter, `aria-hidden` (the agent's name always sits beside it). `<AgentMark agent="claude" />` for a built-in agent; any other string is a custom agent's name and shows its first letter. Marks are ANSI hues, never a vendor logo. They sit in the launch page's agent list, the mission map rows and at the left of the console header (which draws its own for now, with `?` for a custom agent).
 
 | Agent | Letter | Dark fg / bg | Light fg / bg |
 |---|---|---|---|
