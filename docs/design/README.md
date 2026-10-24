@@ -7,8 +7,6 @@ Where the app departs from an artboard, on purpose:
 - The launch page's primary button reads "Open", not "Open board", and there is no Browse button: the tests find the button by the name Open, and a browser's directory picker never reveals a folder's path.
 - The zoom toolbar's third button is "Fit view", not "Fit to view" (the board tests match `/fit view/`), and has no Lock layout button.
 - The rail's daemon card shows the address and the PTY count; GET /api/status reports neither the pid nor memory or CPU yet.
-- No "Command…" box in the top bar until phase 5.
-
 The board's look lives in three sheets under `packages/ui/src/styles`, imported once by `main.tsx` after the app so they follow React Flow's and xterm's own sheets:
 
 - `tokens.css`: every colour, space, radius, font and control size as a CSS variable. Dark is the default; `prefers-color-scheme: light` swaps the colours.
