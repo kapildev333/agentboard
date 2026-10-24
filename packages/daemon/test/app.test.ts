@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync, existsSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
@@ -366,4 +366,25 @@ test("a SessionEnd clear from a foreign session arms nothing (D39)", async () =>
   await hook("SessionEnd", { session_id: "nested", reason: "clear" });
   await hook("Stop", { session_id: "other-nested" });
   expect((await status()).session!.id).toBe(first);
+});
+
+test("a handoff drafted from a live fake console is saved as markdown with no home path", async () => {
+  const s = setup();
+  const d = await start(s);
+  const sock = socket(d);
+  await sock.opened;
+  const node = (await d.call("POST", "/api/consoles", { agent: "custom", customId: "fake", cwd: s.repo })).body as ConsoleNode;
+  sock.send({ t: "attach", consoleId: node.id });
+  await until(() => sock.output(node.id).includes("fake>"));
+  sock.send({ t: "input", consoleId: node.id, data: `I decided to use ${homedir()}/scratch for notes.\r` });
+  await until(() => sock.output(node.id).includes("you said: I decided"));
+  const { status, body } = await d.call("POST", "/api/handoffs", { fromConsoleId: node.id });
+  expect(status).toBe(200);
+  const h = body as { id: string; promptText: string };
+  const md = readFileSync(join(s.home, "handoffs", `${h.id}.md`), "utf8");
+  expect(md).toBe(h.promptText);
+  expect(md.split("\n")[0]).toBe("Brief from Fake follows.");
+  expect(md).toContain("~/scratch for notes.");
+  expect(md).not.toContain(homedir());
+  expect(((await d.call("GET", `/api/handoffs?console=${node.id}`)).body as { id: string }[]).map((x) => x.id)).toEqual([h.id]);
 });
