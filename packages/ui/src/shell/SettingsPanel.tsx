@@ -50,7 +50,7 @@ export function SettingsPanel({ settings, onChange }: { settings: Settings; onCh
               />
             </label>
             <label className="field">
-              <span className="field-label">Arguments</span>
+              <span className="field-label">Args</span>
               {/* uncontrolled, so a trailing space survives while typing the next argument */}
               <input
                 aria-label={`args ${i + 1}`}
@@ -63,7 +63,7 @@ export function SettingsPanel({ settings, onChange }: { settings: Settings; onCh
               />
             </label>
             <label className="field">
-              <span className="field-label">Needs-you pattern</span>
+              <span className="field-label">Needs-you regex</span>
               <input
                 aria-label={`needs-you regex ${i + 1}`}
                 className="mono"
