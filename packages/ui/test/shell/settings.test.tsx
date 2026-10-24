@@ -62,6 +62,32 @@ describe("SettingsPanel", () => {
     expect(onChange).toHaveBeenCalledWith({ ...settings, customAgents: [] });
   });
 
+  it("the Voice and Command planner settings save and clear", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<SettingsPanel settings={settings} onChange={onChange} />);
+    expect(screen.getByText("whisper-cli -nt -f", { exact: false })).toBeTruthy();
+    expect(screen.getByText("alt+space")).toBeTruthy();
+    const command = screen.getByLabelText("Transcribe command");
+    fireEvent.change(command, { target: { value: "whisper-cli -nt -f" } });
+    fireEvent.blur(command);
+    expect(onChange).toHaveBeenLastCalledWith({ ...settings, voice: { transcribeCommand: "whisper-cli -nt -f", holdKey: "alt+space" } });
+
+    const url = screen.getByLabelText("Planner URL");
+    fireEvent.change(url, { target: { value: "http://localhost:11434" } });
+    fireEvent.change(screen.getByLabelText("Model"), { target: { value: "llama3" } });
+    fireEvent.blur(url);
+    expect(onChange).toHaveBeenLastCalledWith({ ...settings, planner: { url: "http://localhost:11434", model: "llama3" } });
+
+    const full: Settings = { ...settings, voice: { transcribeCommand: "w", holdKey: "alt+space" }, planner: { url: "http://localhost:11434", model: "llama3" } };
+    rerender(<SettingsPanel settings={full} onChange={onChange} />);
+    fireEvent.change(screen.getByLabelText("Transcribe command"), { target: { value: "" } });
+    fireEvent.blur(screen.getByLabelText("Transcribe command"));
+    expect("voice" in onChange.mock.lastCall![0]).toBe(false);
+    fireEvent.change(screen.getByLabelText("Planner URL"), { target: { value: "" } });
+    fireEvent.blur(screen.getByLabelText("Planner URL"));
+    expect("planner" in onChange.mock.lastCall![0]).toBe(false);
+  });
+
   it("a new fontSize prop shows in the input", () => {
     const { rerender } = render(<SettingsPanel settings={settings} onChange={vi.fn()} />);
     rerender(<SettingsPanel settings={{ ...settings, fontSize: 16 }} onChange={vi.fn()} />);
