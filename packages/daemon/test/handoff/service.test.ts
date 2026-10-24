@@ -82,7 +82,7 @@ it("a spawned custom agent that settles needs_you gets nothing", async () => {
 });
 
 it("after a restart, update still counts the diff's files", async () => {
-  const first = setup();
+  const first = setup({}, { includeDiff: true });
   first.deps.diff.mockResolvedValue({ files: [{}, {}], patch: "+a\n-b\n" });
   const h = await first.service.draft({ fromConsoleId: "a" });
   expect(h.promptText).toContain("diff (2 files)");
