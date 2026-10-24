@@ -255,7 +255,7 @@ async function handle(
   } catch (err) {
     // A client error (OpenError, unknown console) carries its 4xx status and a message meant for the caller.
     const status = (err as { status?: unknown }).status;
-    if (err instanceof Error && typeof status === "number" && (status === 502 || (status >= 400 && status < 500))) return json(res, status, { error: err.message });
+    if (err instanceof Error && typeof status === "number" && (status === 501 || status === 502 || (status >= 400 && status < 500))) return json(res, status, { error: err.message });
     return json(res, 500, { error: "internal error" });
   }
   const out = schema(route.response).safeParse(result);
