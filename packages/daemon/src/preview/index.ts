@@ -8,7 +8,7 @@
 //   fetch/XHR summaries to the board; every other body streams through byte for byte.
 // - Every response carries a CSP (connect-src the target only, framed only by the board, sandboxed so the
 //   page never runs as the board's origin), no-store and nosniff; the target's Set-Cookie is dropped.
-import { createHash } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import http from "node:http";
 
 export const previewKey = (secret: string) => createHash("sha256").update(secret).digest("hex").slice(0, 32);
@@ -29,6 +29,8 @@ function loopback(raw: string, base?: URL): URL | null {
 export function previewHandler(key: string) {
   return (req: http.IncomingMessage, res: http.ServerResponse): void => {
     const m = /^\/preview\/([^/]*)\/(.*)$/s.exec(req.url ?? "");
+    const given = Buffer.from(m?.[1] ?? ""), want = Buffer.from(key);
+    if (given.length !== want.length || !timingSafeEqual(given, want)) return void res.writeHead(404).end();
     const target = loopback(decode(m?.[2] ?? ""));
     if (!target) return void res.writeHead(403).end();
     const board = `http://${req.headers.host}`;
