@@ -1,4 +1,5 @@
-/* Element defaults sit in :where() so any component class, React Flow's included, wins without a fight. */
+/* Element defaults sit in :where() so any component class, React Flow's included, wins without a fight.
+   The shared primitives below (.btn, .input, .card, .chip, .kbd, .pill, .label) are the Foundations sheet's. */
 *,
 *::before,
 *::after {
@@ -34,13 +35,15 @@ body {
   color: var(--color-accent);
 }
 
-/* Buttons: secondary by default, .btn-primary for the one main action, .btn-sm inside cards. */
-:where(button) {
+/* Buttons: every button is a .btn by default; .btn-primary for the one main action, .btn-quiet without a border,
+   .btn-danger for a destructive one, .btn-sm inside cards, .btn-icon square (it needs an aria-label). */
+:where(button),
+.btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-half);
-  height: 32px;
+  height: var(--control-height);
   padding: 0 var(--space-2);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
@@ -50,10 +53,12 @@ body {
   font-size: var(--text-sm);
   font-weight: 500;
   white-space: nowrap;
+  text-decoration: none;
   cursor: pointer;
 }
 
-:where(button:hover:not(:disabled)) {
+:where(button:hover:not(:disabled)),
+.btn:hover:not(:disabled) {
   background: var(--color-surface-hover);
 }
 
@@ -62,10 +67,15 @@ body {
   cursor: not-allowed;
 }
 
+:where(button, .btn) svg {
+  flex: none;
+}
+
 .btn-primary {
   border-color: var(--color-accent);
   background: var(--color-accent);
   color: var(--color-on-accent);
+  font-weight: 600;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -73,21 +83,38 @@ body {
   background: var(--color-accent-hover);
 }
 
+.btn-quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.btn-quiet:hover:not(:disabled) {
+  color: var(--color-text);
+}
+
+.btn-danger {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
 .btn-sm {
-  height: 24px;
+  height: var(--control-height-sm);
   padding: 0 var(--space-1);
   font-size: var(--text-xs);
 }
 
 .btn-icon {
-  width: 32px;
+  width: var(--control-height);
+  height: var(--control-height);
   padding: 0;
   font-size: var(--text-lg);
 }
 
-:where(input:not([type="checkbox"], [type="radio"]), textarea, select) {
+:where(input:not([type="checkbox"], [type="radio"]), textarea, select),
+.input {
   width: 100%;
-  min-height: 32px;
+  min-height: var(--input-height);
   padding: var(--space-half) var(--space-1);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
@@ -131,8 +158,49 @@ body {
   font-size: var(--text-sm);
 }
 
+/* ---- Type scale: label 11/600 caps, caption 12 muted, UI 13, body 14, section 16/600, panel title 20/700 ---- */
 .muted {
   color: var(--color-text-muted);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.label,
+.section-title {
+  color: var(--color-text-muted);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.caption {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.section-heading {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* A path reads from its end: monospace, scrolled to its end at rest (showPathEnd), so the overflow is cut on the left.
@@ -142,23 +210,108 @@ body {
   font-size: var(--text-xs);
 }
 
+/* The surface every panel, console and popover sits on. */
+.card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
 /* inline-block, not flex: text-overflow only cuts a block's own line box */
 .chip {
   display: inline-block;
   vertical-align: middle;
   max-width: 160px;
-  height: 20px;
-  line-height: 18px;
+  height: var(--chip-height);
+  line-height: calc(var(--chip-height) - 2px);
   padding: 0 var(--space-1);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   color: var(--color-text-muted);
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-2xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* A key cap: mono 10 px, a 2 px bottom border. */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  height: var(--kbd-height);
+  padding: 0 var(--space-half);
+  border: 1px solid var(--color-border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Status pill: a tint and a dot per status; needs you is solid and ringed, without a dot. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--pill-height);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: currentColor;
+}
+
+.st-starting { color: var(--status-starting-fg); background: var(--status-starting-bg); }
+.st-working { color: var(--status-working-fg); background: var(--status-working-bg); }
+.st-idle { color: var(--status-idle-fg); background: var(--status-idle-bg); }
+.st-stopped { color: var(--status-stopped-fg); background: var(--status-stopped-bg); }
+.st-exited { color: var(--status-exited-fg); background: var(--status-exited-bg); }
+
+.st-needs_you {
+  color: var(--status-needs-you-fg);
+  background: var(--status-needs-you-bg);
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3px var(--status-needs-you-bg);
+}
+
+.pill.st-needs_you::before {
+  display: none;
+}
+
+/* Agent mark: one letter on a 20 px tile, coloured per agent (--mark-*). */
+.mark {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--mark-size);
+  height: var(--mark-size);
+  border-radius: var(--radius-sm);
+  color: var(--mark-custom-fg);
+  background: var(--mark-custom-bg);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mark-claude { color: var(--mark-claude-fg); background: var(--mark-claude-bg); }
+.mark-codex { color: var(--mark-codex-fg); background: var(--mark-codex-bg); }
+.mark-gemini { color: var(--mark-gemini-fg); background: var(--mark-gemini-bg); }
+.mark-opencode { color: var(--mark-opencode-fg); background: var(--mark-opencode-bg); }
+.mark-custom { color: var(--mark-custom-fg); background: var(--mark-custom-bg); }
 
 .field {
   display: grid;
@@ -170,34 +323,6 @@ body {
   font-size: var(--text-xs);
   font-weight: 600;
 }
-
-.section-title {
-  color: var(--color-text-muted);
-  font-size: var(--text-2xs);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-/* The agent's monogram: .mark-claude, .mark-codex, .mark-gemini, .mark-opencode, .mark-custom. */
-.mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  flex: none;
-  border-radius: 5px;
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  font-weight: 700;
-}
-
-.mark-claude { color: var(--mark-claude-fg); background: var(--mark-claude-bg); }
-.mark-codex { color: var(--mark-codex-fg); background: var(--mark-codex-bg); }
-.mark-gemini { color: var(--mark-gemini-fg); background: var(--mark-gemini-bg); }
-.mark-opencode { color: var(--mark-opencode-fg); background: var(--mark-opencode-bg); }
-.mark-custom { color: var(--mark-custom-fg); background: var(--mark-custom-bg); }
 
 .app-message {
   padding: var(--space-2);

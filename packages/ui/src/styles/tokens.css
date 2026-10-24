@@ -25,9 +25,18 @@
   --text-lg: 16px;
   --text-xl: 20px;
 
+  /* control heights (Foundations) */
+  --control-height: 28px;
+  --control-height-sm: 24px;
+  --input-height: 32px;
+  --chip-height: 20px;
+  --pill-height: 22px;
+  --kbd-height: 18px;
+  --mark-size: 20px;
+
   --topbar-height: 44px;
   --rail-width: 264px;
-  --drawer-width: 400px;
+  --drawer-width: 640px;
 
   --color-bg: #0e1014;
   --color-canvas-dot: #2c313c;
