@@ -13,10 +13,13 @@ export const FolderIcon = () => (
   </Icon>
 );
 
+/** Three sliders. The knobs are filled with the button's own background so the track stops at them. */
 export const SettingsIcon = () => (
   <Icon>
-    <circle cx="8" cy="8" r="2" />
-    <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4" />
+    <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" />
+    <circle cx="6" cy="4.5" r="1.4" fill="var(--color-surface-raised)" />
+    <circle cx="10" cy="8" r="1.4" fill="var(--color-surface-raised)" />
+    <circle cx="7.3" cy="11.5" r="1.4" fill="var(--color-surface-raised)" />
   </Icon>
 );
 
@@ -29,24 +32,25 @@ export const CopyIcon = () => (
 
 export const TerminalIcon = () => (
   <Icon>
-    <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
-    <path d="m4.5 6 2 2-2 2M8.5 10.5h3" />
+    <path d="m3.5 4.5 3.5 3.5-3.5 3.5M8.5 11.5h4.5" />
   </Icon>
 );
 
 export const NoteIcon = () => (
   <Icon>
-    <path d="M3.5 2.5h9v7l-4 4h-5z" />
-    <path d="M8.5 13.5v-4h4" />
+    <path d="M3.5 2.5h7l2 2v9h-9zM10.5 2.5v2h2M5.5 8h5M5.5 10.5h3.5" />
   </Icon>
 );
 
-/** The AgentBoard mark: four squares, one of them the accent. */
+/** The AgentBoard mark: four squares on an accent tile, the last one dimmed. */
 export const Logo = () => (
-  <svg className="logo" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-    <rect x="1" y="1" width="7" height="7" rx="1.5" fill="var(--color-accent)" />
-    <rect x="10" y="1" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.55" />
-    <rect x="1" y="10" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.55" />
-    <rect x="10" y="10" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.55" />
+  <svg className="logo" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+    <rect width="20" height="20" rx="5" fill="var(--color-accent)" />
+    <g fill="var(--color-on-accent)">
+      <rect x="4" y="4" width="5" height="5" rx="1" />
+      <rect x="11" y="4" width="5" height="5" rx="1" />
+      <rect x="4" y="11" width="5" height="5" rx="1" />
+      <rect x="11" y="11" width="5" height="5" rx="1" opacity="0.45" />
+    </g>
   </svg>
 );

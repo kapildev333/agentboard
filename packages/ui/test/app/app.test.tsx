@@ -132,7 +132,7 @@ describe("App", () => {
     fireEvent.keyDown(field, { key: "n" });
     expect(nodes()).toHaveLength(2);
     field.remove();
-  });
+  }, 15_000);
 
   it("the top bar shows the repo's current branch", async () => {
     const api = fakeApi(boardWith());

@@ -95,7 +95,8 @@ describe("Board wiring", () => {
   it("the zoom toolbar holds zoom in, zoom out and fit view, without the lock", () => {
     const { container } = render(<Board nodeTypes={nodeTypes} />);
     const bar = container.querySelector(".react-flow__controls")!;
-    expect([...bar.querySelectorAll("button")].map((b) => b.getAttribute("aria-label"))).toEqual(["Zoom In", "Zoom Out", "Fit View"]);
+    expect(bar.getAttribute("aria-label")).toBe("Zoom");
+    expect([...bar.querySelectorAll("button")].map((b) => b.getAttribute("aria-label"))).toEqual(["Zoom in", "Zoom out", "Fit view"]);
   });
 
   it("the zoom level shows the active workspace's zoom as a percentage", () => {

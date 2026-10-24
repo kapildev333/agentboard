@@ -1,66 +1,76 @@
 import { useState } from "react";
 import { addNoteAtCentre } from "./Board";
-import { CopyIcon, NoteIcon, TerminalIcon } from "./icons";
+import { NoteIcon, TerminalIcon } from "./icons";
 
-const SPAWN = "agentboard spawn claude";
-const HINTS = [
-  ["⌘⇧N", "spawn a console"],
-  ["N", "add a note"],
-  ["⌘1–9", "switch workspace"],
-  ["Esc", "close a dialog"],
-] as const;
+const SPAWN = "agentboard spawn claude --worktree feat-x";
 
-/** What an empty workspace shows instead of a bare canvas: the two ways to start, the CLI way, and the keys. */
+/** What an empty workspace shows instead of a bare canvas (the Board-Empty artboard): two ways to start, the CLI way, and the keys. */
 export function EmptyBoard({ onSpawn }: { onSpawn: () => void }) {
   const [copied, setCopied] = useState("");
   return (
     <section className="card empty-board" aria-labelledby="empty-board-title">
-      <h2 id="empty-board-title" className="section-heading">Nothing on this workspace yet</h2>
-      <p className="muted">A workspace is a canvas of agent consoles and notes. Start a console here, or from a terminal you already have open.</p>
-      <ul className="empty-actions">
-        <li>
-          <button type="button" className="empty-action" aria-labelledby="empty-spawn" aria-describedby="empty-spawn-desc" aria-keyshortcuts="Meta+Shift+N" onClick={onSpawn}>
+      <div className="empty-head">
+        <h2 id="empty-board-title" className="title">Nothing on this workspace yet</h2>
+        <p className="muted">A console is a real terminal running one of your agent CLIs under your own login. Put as many as you like on the board.</p>
+      </div>
+      <div className="empty-actions">
+        <button type="button" className="empty-action empty-action-primary" aria-labelledby="empty-spawn" aria-describedby="empty-spawn-desc" aria-keyshortcuts="Meta+Shift+N" onClick={onSpawn}>
+          <span className="empty-tile">
             <TerminalIcon />
-            <span className="empty-action-text">
-              <strong id="empty-spawn">Spawn a console</strong>
-              <span id="empty-spawn-desc" className="caption">
-                Spawn a console or run <code>agentboard spawn</code> from any terminal
-              </span>
+          </span>
+          <span className="empty-action-text">
+            <strong id="empty-spawn">Spawn a console</strong>
+            <span id="empty-spawn-desc" className="caption">
+              Spawn a console or run <code>agentboard spawn</code> from any terminal
             </span>
-            <kbd className="kbd" aria-hidden="true">⌘⇧N</kbd>
-          </button>
-        </li>
-        <li>
-          <button type="button" className="empty-action" aria-labelledby="empty-note" aria-describedby="empty-note-desc" aria-keyshortcuts="N" onClick={addNoteAtCentre}>
-            <NoteIcon />
-            <span className="empty-action-text">
-              <strong id="empty-note">Add a note</strong>
-              <span id="empty-note-desc" className="caption">A sticky note in the middle of the view, for a plan or a brief</span>
-            </span>
-            <kbd className="kbd" aria-hidden="true">N</kbd>
-          </button>
-        </li>
-      </ul>
-      <div className="empty-cli">
-        <span className="label">Or from a terminal already open</span>
-        <code className="mono">{SPAWN}</code>
-        <button
-          type="button"
-          className="btn-sm"
-          aria-label={`Copy ${SPAWN}`}
-          onClick={() => void navigator.clipboard?.writeText(SPAWN).then(() => setCopied("Copied"), () => setCopied("Could not copy"))}
-        >
-          <CopyIcon />
-          Copy
+          </span>
+          <kbd className="kbd" aria-hidden="true">⌘⇧N</kbd>
         </button>
-        <span role="status" className="caption">{copied}</span>
+        <button type="button" className="empty-action" aria-labelledby="empty-note" aria-describedby="empty-note-desc" aria-keyshortcuts="N" onClick={addNoteAtCentre}>
+          <span className="empty-tile">
+            <NoteIcon />
+          </span>
+          <span className="empty-action-text">
+            <strong id="empty-note">Add a note</strong>
+            <span id="empty-note-desc" className="caption">A sticky note next to the work</span>
+          </span>
+          <kbd className="kbd" aria-hidden="true">N</kbd>
+        </button>
+        <div className="empty-action empty-cli">
+          <span className="empty-tile">
+            <TerminalIcon />
+          </span>
+          <span className="empty-action-text">
+            <strong>Or from a terminal already open</strong>
+            <code className="mono">
+              <span className="prompt" aria-hidden="true">$ </span>
+              {SPAWN}
+            </code>
+            <span role="status" className="caption">{copied}</span>
+          </span>
+          <button
+            type="button"
+            className="btn-sm btn-quiet"
+            aria-label={`Copy ${SPAWN}`}
+            onClick={() => void navigator.clipboard?.writeText(SPAWN).then(() => setCopied("Copied"), () => setCopied("Could not copy"))}
+          >
+            Copy
+          </button>
+        </div>
       </div>
       <ul className="empty-hints caption">
-        {HINTS.map(([key, what]) => (
-          <li key={key}>
-            <kbd className="kbd">{key}</kbd> {what}
-          </li>
-        ))}
+        <li>
+          <kbd className="kbd">Space</kbd> + drag pans
+        </li>
+        <li>
+          <kbd className="kbd">⌘</kbd> + scroll zooms
+        </li>
+        <li>
+          <kbd className="kbd">⌘1</kbd>–<kbd className="kbd">9</kbd> switch workspaces
+        </li>
+        <li>
+          <kbd className="kbd">Esc</kbd> closes a dialog
+        </li>
       </ul>
     </section>
   );

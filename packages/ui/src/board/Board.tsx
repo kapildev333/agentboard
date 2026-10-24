@@ -43,6 +43,8 @@ export function ZoomLevel() {
 }
 
 const NOTE = { w: 240, h: 140 };
+// The Main artboard's names, except "Fit view" rather than "Fit to view": the board tests find the button by /fit view/.
+const ZOOM_LABELS = { "controls.zoomIn.ariaLabel": "Zoom in", "controls.zoomOut.ariaLabel": "Zoom out", "controls.fitView.ariaLabel": "Fit view" };
 
 /** Adds a note at the middle of what the canvas shows. */
 export function addNoteAtCentre() {
@@ -123,9 +125,10 @@ function Canvas({ ws, nodeTypes, onInit }: { ws: Workspace; nodeTypes: NodeTypes
         onInit?.(i);
       }}
       onMoveEnd={(_, v) => setViewport(v)}
+      ariaLabelConfig={ZOOM_LABELS}
     >
-      <MiniMap pannable zoomable position="bottom-right" />
-      <Controls position="bottom-left" orientation="vertical" showInteractive={false} />
+      <MiniMap pannable zoomable position="bottom-right" ariaLabel="Minimap" />
+      <Controls position="bottom-left" orientation="vertical" showInteractive={false} aria-label="Zoom" />
       <Background />
     </ReactFlow>
   );

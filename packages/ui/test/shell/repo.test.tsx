@@ -36,8 +36,8 @@ describe("RepoPicker", () => {
     const writeText = vi.fn(async () => {});
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     render(<RepoPicker recent={[]} onOpen={() => {}} />);
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Copy agentboard open" })));
-    expect(writeText).toHaveBeenCalledWith("agentboard open");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Copy agentboard open ." })));
+    expect(writeText).toHaveBeenCalledWith("agentboard open .");
     expect(screen.getByRole("status").textContent).toBe("Copied");
   });
 

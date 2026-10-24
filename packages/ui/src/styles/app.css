@@ -1,4 +1,5 @@
-/* Component styles, one section per component. Only tokens from tokens.css. */
+/* Component styles, one section per component. Every colour is a token from tokens.css; sizes are tokens or the
+   Screens artboards' own pixel values where they sit off the 8 px grid. */
 
 /* ---- App shell ---- */
 .app {
@@ -13,87 +14,140 @@
   min-height: 0;
 }
 
-/* The empty workspace card, centred over the canvas. */
+/* The empty workspace card (Board-Empty), centred over the canvas. */
 .empty-board {
   position: absolute;
-  inset: 50% var(--space-4) auto;
+  inset: 50% var(--space-3) auto;
   z-index: 5;
   transform: translateY(-50%);
   display: grid;
-  gap: var(--space-2);
+  gap: 18px;
   max-width: 520px;
   margin: 0 auto;
-  padding: var(--space-3);
+  padding: 28px 28px var(--space-3);
 }
 
-.empty-board code {
-  color: var(--color-text);
+.empty-head {
+  display: grid;
+  gap: 6px;
 }
 
-.empty-actions,
-.empty-hints {
+.empty-actions {
   display: grid;
   gap: var(--space-1);
-  list-style: none;
-  margin: 0;
-  padding: 0;
 }
 
+/* A row: a 32 px tile, the text, then a key cap or a button. */
 .empty-action {
-  display: grid;
-  grid-template-columns: 14px 1fr auto;
-  gap: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
   height: auto;
-  padding: var(--space-1) var(--space-2);
-  border-color: var(--color-border);
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: transparent;
+  background: var(--color-surface-raised);
+  font-size: var(--text-sm);
+  font-weight: 400;
   white-space: normal;
   text-align: left;
 }
 
-.empty-action:hover:not(:disabled),
-.empty-action:focus-visible {
-  background: var(--color-surface-raised);
+button.empty-action:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-hover);
 }
 
 .empty-action:focus-visible {
   outline-offset: -2px;
 }
 
+.empty-action-primary {
+  border-color: var(--color-accent);
+}
+
+.empty-tile {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.empty-action-primary .empty-tile {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
 .empty-action-text {
   display: grid;
+  flex: 1;
   gap: 2px;
+  min-width: 0;
+}
+
+.empty-action-text strong {
+  font-weight: 600;
+}
+
+.empty-action-text code {
+  color: var(--color-text);
 }
 
 .empty-cli {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
+  background: var(--term-bg);
 }
 
-.empty-cli .label {
-  flex-basis: 100%;
+.empty-cli .empty-tile {
+  background: var(--term-ansi-black);
+  color: var(--color-text-muted);
+}
+
+/* the terminal stays dark in both themes, so its text uses the terminal colours */
+.empty-cli strong {
+  color: var(--term-fg);
 }
 
 .empty-cli code {
-  flex: 1;
+  overflow: hidden;
+  color: var(--term-fg);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.empty-cli [role="status"]:empty {
-  display: none;
+.empty-cli .caption {
+  color: var(--term-ansi-bright-black);
+}
+
+.empty-cli .btn-quiet {
+  color: var(--term-ansi-bright-black);
+}
+
+.empty-cli .btn-quiet:hover:not(:disabled) {
+  background: var(--term-ansi-black);
+  color: var(--term-fg);
+}
+
+.prompt {
+  color: var(--term-ansi-bright-black);
 }
 
 .empty-hints {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  padding: var(--space-half) 0 0;
+  border-top: 1px solid var(--color-border);
+  list-style: none;
 }
 
-.empty-hints .kbd {
-  margin-right: var(--space-half);
+.empty-hints li {
+  padding-top: var(--space-1);
 }
 
 .zoom-level {
@@ -111,57 +165,84 @@
   min-height: 100vh;
 }
 
+/* the dotted canvas behind the launch page too */
 .launch-body {
-  padding: var(--space-6) var(--space-3);
+  padding: 72px var(--space-3) 40px;
+  background-color: var(--color-bg);
+  background-image: radial-gradient(var(--color-canvas-dot) 1px, transparent 1.5px);
+  background-size: 20px 20px;
 }
 
-/* Two columns that stack under 900 px: 560 + 24 + 316 */
+/* Two columns that stack under 900 px. */
 .launch-main {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: var(--space-3);
-  max-width: 960px;
+  max-width: 1040px;
   margin: 0 auto;
 }
 
 .launch-open {
   display: grid;
-  gap: var(--space-2);
-  flex: 1 1 520px;
+  gap: 18px;
+  flex: 999 1 480px;
   min-width: 0;
   padding: var(--space-3);
 }
 
-.launch-open .label {
-  margin-top: var(--space-1);
+.launch-head,
+.launch-group {
+  display: grid;
+  gap: var(--space-half);
+}
+
+.launch-head .muted {
+  font-size: var(--text-sm);
+}
+
+.launch-group {
+  gap: var(--space-1);
 }
 
 .recent {
   display: grid;
-  gap: var(--space-half);
-  list-style: none;
-  padding: 0;
+  gap: 2px;
   margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .recent-item {
-  display: grid;
-  grid-template-columns: 14px auto minmax(0, 1fr) auto;
-  gap: var(--space-1);
-  justify-content: start;
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
   width: 100%;
-  height: 40px;
-  padding: 0 var(--space-1);
+  height: auto;
+  padding: 10px 12px;
   border-color: transparent;
+  border-radius: var(--radius-lg);
   background: transparent;
   color: var(--color-text-muted);
+  font-weight: 400;
   text-align: left;
 }
 
 .recent-item:hover:not(:disabled),
 .recent-item:focus-visible {
+  border-color: var(--color-border);
   background: var(--color-surface-raised);
+}
+
+.recent-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.recent-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
 }
 
 .recent-name {
@@ -171,12 +252,18 @@
 
 .recent-path {
   overflow: hidden;
+  font-size: var(--text-2xs);
   text-overflow: ellipsis;
 }
 
 .launch-path {
   display: flex;
   gap: var(--space-1);
+}
+
+.launch-path input {
+  flex: 1;
+  height: var(--input-height);
 }
 
 .launch-path .btn-primary {
@@ -186,14 +273,15 @@
 .launch-aside {
   display: grid;
   gap: var(--space-2);
-  flex: 1 1 300px;
+  flex: 1 1 320px;
+  max-width: 400px;
   min-width: 0;
 }
 
 .launch-card {
   display: grid;
-  gap: var(--space-1);
-  padding: var(--space-2);
+  gap: 12px;
+  padding: 18px 20px;
 }
 
 .launch-card-head {
@@ -202,51 +290,61 @@
   justify-content: space-between;
 }
 
-.launch-commands,
-.launch-agents {
-  display: grid;
-  gap: var(--space-1);
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.launch-commands li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: var(--space-1);
+/* A command line: terminal colours in both themes. */
+.cmd {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: var(--space-half) var(--space-half) var(--space-half) 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--term-bg);
+  color: var(--term-fg);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
 }
 
-.launch-commands code {
-  color: var(--color-text);
+.cmd code {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.launch-commands .caption {
-  grid-row: 2;
+.cmd .btn-quiet {
+  color: var(--term-ansi-bright-black);
 }
 
-.launch-commands button {
-  grid-row: 1 / 3;
-  grid-column: 2;
+.cmd .btn-quiet:hover:not(:disabled) {
+  background: var(--term-ansi-black);
+  color: var(--term-fg);
 }
 
-.launch-card [role="status"]:empty {
-  display: none;
+.launch-agents {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .launch-agents li {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto 8px;
-  gap: var(--space-1);
+  display: flex;
   align-items: center;
+  gap: 10px;
   font-size: var(--text-sm);
 }
 
+.launch-agent-name {
+  flex: 1;
+}
+
+.launch-agents .mono {
+  font-size: var(--text-2xs);
+}
+
 .agent-dot {
+  flex: none;
   width: 8px;
   height: 8px;
   border-radius: var(--radius-pill);
@@ -257,8 +355,32 @@
   background: var(--status-idle-fg);
 }
 
+.launch-add {
+  justify-content: flex-start;
+  gap: 10px;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.launch-add:hover:not(:disabled) {
+  background: transparent;
+  color: var(--color-text);
+}
+
 .launch-privacy {
-  padding: 0 var(--space-1);
+  padding: 0 var(--space-half);
+  line-height: 1.5;
+}
+
+.topbar-daemon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-2xs);
 }
 
 /* ---- Top bar ---- */
@@ -267,22 +389,27 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 0 var(--space-2);
+  padding: 0 12px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
+  font-size: var(--text-sm);
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: var(--text-md);
+  margin-right: var(--space-half);
   white-space: nowrap;
+}
+
+.brand strong {
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .logo {
   flex: none;
-  color: var(--color-text-muted);
 }
 
 .topbar-divider {
@@ -296,20 +423,19 @@
 .topbar-repo {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 6px;
   min-width: 0;
   max-width: 280px;
   margin-right: var(--space-1);
   color: var(--color-text-muted);
   white-space: nowrap;
-  font-size: var(--text-sm);
 }
 
 .topbar-repo strong {
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--color-text);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .topbar .btn-icon {
@@ -331,13 +457,14 @@
 .tabs {
   display: flex;
   align-self: stretch;
-  gap: var(--space-half);
   overflow-x: auto;
 }
 
 .tab {
+  gap: var(--space-1);
   height: 100%;
-  padding: 0 var(--space-2);
+  padding: 0 12px;
+  font-weight: 400;
   border: 0;
   border-bottom: 2px solid transparent;
   border-radius: 0;
@@ -361,8 +488,11 @@
 }
 
 .tab .kbd {
-  margin-left: var(--space-half);
   font-weight: 500;
+}
+
+.workspaces {
+  margin-left: var(--space-1);
 }
 
 .tab-input {
@@ -509,10 +639,17 @@
 
 /* The minimap (bottom right) and the zoom toolbar (bottom left) are cards on the canvas. */
 .react-flow__minimap {
+  --xy-minimap-background-color: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   overflow: hidden;
+}
+
+.react-flow__minimap svg {
+  display: block;
+  width: 180px;
+  height: 120px;
 }
 
 .react-flow__controls {
@@ -699,60 +836,81 @@
 .mission-map {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 2px;
   min-height: 100%;
-  padding: var(--space-2);
+  padding: 0 var(--space-1) 12px;
 }
 
 .mm-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  padding: 14px var(--space-1) var(--space-1);
+}
+
+.mm-header .mono,
+.mm-heading .mono,
+.mm-ago {
+  font-size: var(--text-2xs);
 }
 
 .mm-empty {
-  padding: var(--space-2);
+  margin: var(--space-half) var(--space-1);
+  padding: 14px;
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-lg);
-  font-size: var(--text-sm);
-  text-align: center;
+  font-size: var(--text-xs);
+  line-height: 1.5;
 }
 
 /* The daemon card sits at the bottom of the rail. */
 .mm-daemon {
   display: grid;
-  gap: var(--space-half);
-  margin-top: auto;
-  padding: var(--space-1) var(--space-2);
+  gap: 6px;
+  margin: auto var(--space-half) 0;
+  padding: 12px;
   box-shadow: none;
-  background: var(--color-surface-raised);
+  background: var(--color-bg);
+  font-size: var(--text-2xs);
+}
+
+.mm-daemon .mono {
+  font-size: var(--text-2xs);
+}
+
+.mm-daemon-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .mm-group {
   display: grid;
-  gap: var(--space-half);
+  gap: 2px;
 }
 
 .mm-heading {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  margin-bottom: var(--space-half);
-  font-size: var(--text-xs);
-  font-weight: 500;
+  padding: 10px var(--space-1) var(--space-half);
+}
+
+.mm-heading .pill {
+  height: var(--chip-height);
+  font-size: var(--text-2xs);
 }
 
 .mm-row {
-  display: grid;
-  grid-template-columns: 8px 1fr auto auto;
-  align-items: center;
+  display: flex;
+  justify-content: flex-start;
   gap: var(--space-1);
   width: 100%;
   height: 32px;
-  font-weight: 400;
   padding: 0 var(--space-1);
   border-color: transparent;
   background: transparent;
+  font-weight: 400;
   text-align: left;
 }
 
@@ -760,18 +918,34 @@
   background: var(--color-surface-hover);
 }
 
-.mm-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .mm-row:focus-visible {
   outline-offset: -2px;
 }
 
-.mm-ago {
-  min-width: 24px;
-  text-align: right;
+.mm-row .dot {
+  flex: none;
+}
+
+.mm-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mm-group[aria-label="Needs you"] .mm-title {
+  font-weight: 500;
+}
+
+.mm-group:is([aria-label="Stopped"], [aria-label="Exited"]) .mm-title {
+  color: var(--color-text-muted);
+}
+
+/* a smaller mark in the rail rows */
+.mm-row .mark {
+  width: 16px;
+  height: 16px;
+  font-size: 9px;
 }
 
 .dot {

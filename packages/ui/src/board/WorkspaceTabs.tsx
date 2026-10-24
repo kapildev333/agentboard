@@ -25,7 +25,7 @@ export function WorkspaceTabs() {
   };
   const active = workspaces.find((w) => w.id === activeWorkspaceId);
   return (
-    <div className="workspaces">
+    <nav aria-label="Workspaces" className="workspaces">
       <div role="tablist" className="tabs">
         {workspaces.map((w, i) =>
           editing === w.id ? (
@@ -65,6 +65,6 @@ export function WorkspaceTabs() {
       <button className="btn-icon btn-quiet" aria-label="New workspace" onClick={() => createWorkspace(`Workspace ${workspaces.length + 1}`)}>
         +
       </button>
-    </div>
+    </nav>
   );
 }

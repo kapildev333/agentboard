@@ -311,7 +311,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
     </span>
   );
   const settingsButton = (
-    <button type="button" className="btn-icon btn-quiet" aria-label="Settings" aria-expanded={panel === "settings"} onClick={() => setPanel(panel === "settings" ? null : "settings")}>
+    <button type="button" className="btn-icon" aria-label="Settings" aria-expanded={panel === "settings"} onClick={() => setPanel(panel === "settings" ? null : "settings")}>
       <SettingsIcon />
     </button>
   );
@@ -328,10 +328,14 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           {brand}
           <span className="chip">v{version}</span>
           <span className="topbar-spacer" />
+          <span className="mono muted topbar-daemon">
+            <span className="dot" data-dot="idle" aria-hidden="true" />
+            daemon {location.host}
+          </span>
           {settingsButton}
         </header>
         <main className="launch-body">
-          <RepoPicker recent={readRecent()} onOpen={go} fetch={fetch} />
+          <RepoPicker recent={readRecent()} onOpen={go} onAddAgent={() => setPanel("settings")} fetch={fetch} />
         </main>
         {settingsDrawer}
       </div>

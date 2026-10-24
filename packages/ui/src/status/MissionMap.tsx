@@ -48,7 +48,7 @@ export function MissionMap({ onFocus, fetch = globalThis.fetch }: { onFocus: (no
         <h2 className="label">Mission map</h2>
         <span className="mono muted">{plural(consoles.length, "console")}</span>
       </div>
-      {!consoles.length && <p className="muted mm-empty">No consoles on this workspace. Spawn one and it shows here, grouped by status.</p>}
+      {!consoles.length && <p className="muted mm-empty">No consoles on this workspace. Status shows here the moment one starts: working, idle or needs you.</p>}
       {ORDER.map((status) => {
         const rows = consoles.filter((n) => n.status === status);
         if (!rows.length) return null;
@@ -73,7 +73,10 @@ export function MissionMap({ onFocus, fetch = globalThis.fetch }: { onFocus: (no
       })}
       {ptys !== undefined && (
         <section aria-label="Daemon" className="card mm-daemon">
-          <h3 className="label">Daemon</h3>
+          <div className="mm-daemon-head">
+            <h3 className="label">Daemon</h3>
+            <span className="dot" data-dot="idle" aria-hidden="true" />
+          </div>
           <p className="mono">{location.host}</p>
           <p className="mono muted">{plural(ptys, "PTY")}</p>
           <p className="caption">Nothing leaves this machine.</p>
