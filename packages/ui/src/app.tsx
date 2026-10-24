@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import type { NodeProps } from "@xyflow/react";
+import { ReactFlowProvider, type NodeProps } from "@xyflow/react";
 import { BoardSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type Settings } from "@agentboard/shared";
 import { Board, WorkspaceTabs, autosaveBoard, useBoard } from "./board";
 import { CommandBar } from "./command";
 import { ConsoleNode, type SocketLike } from "./console";
 import { GitCard } from "./git";
+import { InkLayer, InkToolbar } from "./ink";
 import { LayoutMenu } from "./layout";
 import { OpenInButtons } from "./open/OpenInButtons";
 import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
@@ -261,6 +262,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           {ready && <WorkspaceTabs />}
           <span className="topbar-spacer" />
           {ready && <LayoutMenu />}
+          {ready && <InkToolbar />}
           <button type="button" className="btn-primary" aria-expanded={panel === "spawn"} onClick={() => setPanel(panel === "spawn" ? null : "spawn")}>
             Spawn console
           </button>
@@ -273,7 +275,14 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           </button>
         </header>
         <main className="board">
-          {ready ? <Board nodeTypes={nodeTypes} onInit={(rf) => (flow.current = rf)} /> : <p className="app-message muted">Loading the board…</p>}
+          {ready ? (
+            <ReactFlowProvider>
+              <Board nodeTypes={nodeTypes} onInit={(rf) => (flow.current = rf)} />
+              <InkLayer />
+            </ReactFlowProvider>
+          ) : (
+            <p className="app-message muted">Loading the board…</p>
+          )}
           {ready && empty && (
             <p className="empty-hint">
               Spawn a console or run <code>agentboard spawn</code> from any terminal
