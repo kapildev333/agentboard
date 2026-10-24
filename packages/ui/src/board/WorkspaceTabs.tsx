@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { mod, typing } from "./keys";
 import { useBoard } from "./store";
 
 export function WorkspaceTabs() {
@@ -6,6 +7,18 @@ export function WorkspaceTabs() {
   const { switchWorkspace, createWorkspace, renameWorkspace, deleteWorkspace } = useBoard.getState();
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  // ⌘1..⌘9 pick a workspace; a focused terminal or field keeps the key.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!mod(e) || e.shiftKey || e.altKey || !/^[1-9]$/.test(e.key) || typing(e.target)) return;
+      const ws = useBoard.getState().board.workspaces[Number(e.key) - 1];
+      if (!ws) return;
+      e.preventDefault();
+      switchWorkspace(ws.id);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [switchWorkspace]);
   const commit = (id: string) => {
     if (draft.trim()) renameWorkspace(id, draft.trim());
     setEditing(null);
@@ -14,7 +27,7 @@ export function WorkspaceTabs() {
   return (
     <div className="workspaces">
       <div role="tablist" className="tabs">
-        {workspaces.map((w) =>
+        {workspaces.map((w, i) =>
           editing === w.id ? (
             <input
               key={w.id}
@@ -31,6 +44,7 @@ export function WorkspaceTabs() {
               role="tab"
               aria-selected={w.id === activeWorkspaceId}
               className="tab"
+              aria-keyshortcuts={i < 9 ? `Meta+${i + 1}` : undefined}
               onClick={() => switchWorkspace(w.id)}
               onDoubleClick={() => {
                 setDraft(w.name);
@@ -38,6 +52,7 @@ export function WorkspaceTabs() {
               }}
             >
               {w.name}
+              {i < 9 && <kbd className="kbd" aria-hidden="true">⌘{i + 1}</kbd>}
             </button>
           ),
         )}

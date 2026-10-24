@@ -130,6 +130,11 @@
   outline-offset: -2px;
 }
 
+.tab .kbd {
+  margin-left: var(--space-half);
+  font-weight: 500;
+}
+
 .tab-input {
   width: 140px;
   align-self: center;
