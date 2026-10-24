@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "rev": 0,
+  "repoPath": "/tmp/demo-repo",
+  "activeWorkspaceId": "ws-main",
+  "workspaces": [
+    {
+      "id": "ws-main",
+      "name": "Main",
+      "viewport": { "x": 0, "y": 0, "zoom": 1 },
+      "nodes": [
+        { "id": "t1", "type": "text", "title": "Plan", "x": 0, "y": 0, "w": 320, "h": 200, "markdown": "# Plan\n\n- ship it" },
+        { "id": "i1", "type": "image", "title": "Mock", "x": 340, "y": 0, "w": 320, "h": 200, "assetId": "a1b2c3", "width": 640, "height": 400, "alt": "login screen" },
+        { "id": "w1", "type": "webtile", "title": "App", "x": 0, "y": 220, "w": 480, "h": 320, "url": "http://localhost:5173", "capture": true }
+      ],
+      "ink": [
+        { "id": "s1", "points": [[0, 0], [10, 12], [24, 18]], "color": "#ff0066", "width": 3 }
+      ],
+      "layouts": [
+        { "name": "Review", "nodes": { "t1": { "x": 0, "y": 0, "w": 320, "h": 200 }, "w1": { "x": 340, "y": 0, "w": 480, "h": 320 } } }
+      ]
+    }
+  ]
+}
