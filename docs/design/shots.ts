@@ -110,10 +110,12 @@ test("screenshots", async ({ page }) => {
   const box = (await handle.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + 40, box.y + 360, { steps: 8 });
+  // Wide enough (over 560 px) for the changed files to sit beside the diff, as in the phase 2 mockup.
+  await page.mouse.move(box.x + 220, box.y + 360, { steps: 8 });
   await page.mouse.up();
   await nodes.nth(0).getByRole("button", { name: "Git" }).click();
   await nodes.nth(0).getByText("Diff").click();
+  if (process.env.SHOTS !== "before") await nodes.nth(0).getByRole("button", { name: "Commit", exact: true }).click();
   await expect(nodes.nth(0).getByText("Now with a second line.")).toBeVisible();
   await page.waitForTimeout(300);
   await page.screenshot({ path: out("05-git-card") });
