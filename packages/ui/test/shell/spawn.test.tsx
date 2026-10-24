@@ -107,6 +107,16 @@ describe("SpawnDialog", () => {
     expect((await screen.findByRole("alert")).textContent).toBe("daemon down");
   });
 
+  it("Cancel closes without posting", async () => {
+    const fetch = fakeFetch();
+    const onCancel = vi.fn();
+    render(<SpawnDialog fetch={fetch} cwd="/r" onSpawned={vi.fn()} onCancel={onCancel} />);
+    fireEvent.click(await screen.findByLabelText(/codex/));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onCancel).toHaveBeenCalledOnce();
+    expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(false);
+  });
+
   it("agents sit in a fieldset legend Agent", async () => {
     render(<SpawnDialog fetch={fakeFetch()} cwd="/r" onSpawned={vi.fn()} />);
     await screen.findByLabelText(/claude/);
