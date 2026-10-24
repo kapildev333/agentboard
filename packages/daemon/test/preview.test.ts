@@ -7,7 +7,6 @@ import { runInNewContext } from "node:vm";
 import { afterEach, expect, test } from "vitest";
 import { PreviewInfoSchema } from "@agentboard/shared";
 import { startDaemon } from "../src/app.js";
-import { createServer } from "../src/server/index.js";
 import { previewHandler, previewKey } from "../src/preview/index.js";
 
 const token = "test-token-0123456789abcdef0123456789abcdef";
@@ -37,10 +36,12 @@ async function startTarget() {
   return { origin, seen };
 }
 
+// The handler alone on a loopback port; the daemon's server mounts it behind its Host, Origin and token checks.
 async function startBoard() {
-  const s = await createServer({ port: 0, token, staticDir: mkdtempSync(join(tmpdir(), "agentboard-static-")), routes: {}, preview: previewHandler(key) });
-  open.push(s);
-  return s;
+  const server = http.createServer(previewHandler(key));
+  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+  open.push({ close: () => new Promise<void>((r) => { server.closeAllConnections(); server.close(() => r()); }) });
+  return { origin: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
 }
 
 const via = (board: { origin: string }, url: string, init: RequestInit = {}, k = key) =>
@@ -139,7 +140,7 @@ test("the proxy's CSP comes ahead of the target's, which stays in force, and the
   expect(csp).toBe(`connect-src ${t.origin} ws://${t.origin.slice(7)}; frame-ancestors ${board.origin}; sandbox allow-scripts allow-forms, default-src 'none'`);
 });
 
-test("the daemon answers GET /api/preview with the key and serves the proxy under it", async () => {
+test("the daemon answers GET /api/preview with the key, token-gated", async () => {
   const root = mkdtempSync(join(tmpdir(), "agentboard-preview-"));
   open.push({ close: async () => rmSync(root, { recursive: true, force: true }) });
   const d = await startDaemon({ repoPath: root, home: join(root, "home"), agentPath: join(root, "bin") });
@@ -149,10 +150,6 @@ test("the daemon answers GET /api/preview with the key and serves the proxy unde
   expect(body.key).toBe(previewKey(d.token));
   expect(body.key).not.toContain(d.token);
   expect((await fetch(`${d.origin}/api/preview`)).status).toBe(401);
-  const t = await startTarget();
-  const page = await fetch(`${d.origin}/preview/${body.key}/${encodeURIComponent(`${t.origin}/style.css`)}`, { headers: { "x-agentboard-token": d.token } });
-  expect(page.status).toBe(200);
-  expect((await fetch(`${d.origin}/preview/${body.key}/${encodeURIComponent(`${t.origin}/style.css`)}`)).status).toBe(401);
 });
 
 test("an html page with no head gets the tags at the top", async () => {

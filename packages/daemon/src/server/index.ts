@@ -40,8 +40,6 @@ export type ServerOptions = {
   onAttach?: SocketHandler<"attach">;
   onInput?: SocketHandler<"input">;
   onResize?: SocketHandler<"resize">;
-  /** GET and HEAD under /preview/, after the Host, Origin and token checks (the L32 capture proxy). */
-  preview?: (req: http.IncomingMessage, res: http.ServerResponse) => void;
 };
 /** reply sends to the socket the message came from, e.g. the ring buffer on attach. */
 export type SocketHandler<T extends ClientMessage["t"]> =
@@ -90,7 +88,6 @@ export async function createServer(opts: ServerOptions) {
       if (authOf(req) !== "header") return end(res, 401);
       return json(res, 200, { code: issueCode() });
     }
-    if (opts.preview && url.pathname.startsWith("/preview/")) return opts.preview(req, res);
     const route = compiled.find((r) => r.method === req.method && r.pattern.test(url.pathname));
     if (route) return void handle(route, opts.routes, req, url, res);
     if (req.method === "GET") return void serveStatic(opts.staticDir, url.pathname, res);

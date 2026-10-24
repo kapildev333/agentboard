@@ -9,7 +9,7 @@ import { AgentCatalog, launchArgs, resumeArgs } from "./agents/index.js";
 import { GitService, createGitHandlers } from "./git/index.js";
 import { handleOpen } from "./open/index.js";
 import { PtyManager, loginEnv } from "./pty/index.js";
-import { previewHandler, previewKey } from "./preview/index.js";
+import { previewKey } from "./preview/index.js";
 import { createServer, type RouteHandlers } from "./server/index.js";
 import { acceptHook, adoptsNextSession, sessionFromHook, sessionIdOf } from "./session.js";
 import { DaemonFile, StateStore, agentboardHome } from "./state/index.js";
@@ -330,7 +330,6 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     token,
     staticDir: uiDist,
     routes,
-    preview: previewHandler(previewKey(token)),
     onAttach: async ({ consoleId }, reply) => {
       if (pty.list().includes(consoleId)) reply({ t: "output", consoleId, data: pty.replay(consoleId) });
     },

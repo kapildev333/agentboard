@@ -1,6 +1,7 @@
 // The web tile's capture proxy (P3-D2): GET or HEAD /preview/<key>/<encodeURIComponent(target url)>.
-// - Mounted behind the server's own checks (Host, Origin, token or session), then <key> = previewKey(launch
-//   secret) must match; the key is not the secret and opens nothing but this proxy.
+// - Meant to be mounted behind the server's own checks (Host, Origin, token or session); <key> =
+//   previewKey(launch secret) must match as well. The key is not the secret and opens nothing but this proxy.
+// - It trusts req.headers.host as the board origin, so mount it only behind the server's Host check.
 // - The target is http on localhost, 127.0.0.1 or ::1 only. A redirect is never followed: back to loopback
 //   it is rewritten through the proxy, anywhere else it is 403.
 // - The target sees Accept, Accept-Language and User-Agent only: never Cookie or Authorization.
