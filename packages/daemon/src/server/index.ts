@@ -78,6 +78,9 @@ export async function createServer(opts: ServerOptions) {
       params: route ? paramsOf(route, url.pathname) : {}, ...more,
     });
     const refused = (r: Refusal) => (end(res, r.status), opts.onCall?.(call(r.status, { reason: r.reason, origin: r.origin })));
+    // On close, not finish, so a request the client abandons before the answer is logged too.
+    const answered = (more: Partial<Call> = {}) =>
+      res.once("close", () => opts.onCall?.(res.writableFinished ? call(res.statusCode, more) : call(499, { ...more, reason: "client closed" })));
     if (req.method === "GET" && isIndex(url.pathname) && url.searchParams.has("code")) {
       const site = siteRefusal(req);
       if (site) return refused(site);
@@ -98,11 +101,11 @@ export async function createServer(opts: ServerOptions) {
     if (req.method === "POST" && url.pathname === "/auth/code") {
       // Header token only: the CLI and MCP mint codes, a page holding the cookie does not.
       if (board) return refused({ status: 401, reason: "code needs the token" });
-      res.once("finish", () => opts.onCall?.(call(res.statusCode)));
+      answered();
       return json(res, 200, { code: issueCode() });
     }
     if (route) {
-      res.once("finish", () => opts.onCall?.(call(res.statusCode, { board })));
+      answered({ board });
       return void handle(route, opts.routes, req, url, res);
     }
     if (req.method === "GET") return void serveStatic(opts.staticDir, url.pathname, res);

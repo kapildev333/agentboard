@@ -366,8 +366,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     onResize: async ({ consoleId, cols, rows }) => {
       if (running.has(consoleId)) pty.resize(consoleId, cols, rows);
     },
-    // The Integrations page polls every 5 s; logging those would push everything else out of the ring.
-    onCall: (c) => c.route !== "GET /api/integrations" && calls.record(c),
+    // The Integrations page polls every 5 s; logging those would push everything else out of the ring. A refused probe of it is logged.
+    onCall: (c) => (c.reason || c.route !== "GET /api/integrations") && calls.record(c),
   });
   const origin = server.origin;
   try {

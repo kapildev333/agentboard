@@ -36,7 +36,8 @@ export class CallLog {
   constructor(private consoleOf: ConsoleOf = () => undefined) {}
 
   record(call: Call): void {
-    const known = call.client && Object.hasOwn(CLIENTS, call.client) ? CLIENTS[call.client] : undefined;
+    // A refused caller's header is only its claim, like a console id in its path.
+    const known = !call.reason && call.client && Object.hasOwn(CLIENTS, call.client) ? CLIENTS[call.client] : undefined;
     // Only an accepted hook names its console: a refused caller could put any id in the path.
     const target = call.route === HOOK && !call.reason && call.params.consoleId ? this.consoleOf(call.params.consoleId) : undefined;
     // The daemon loads the OpenCode plugin into every opencode console, so their hooks are the plugin's. A claude
