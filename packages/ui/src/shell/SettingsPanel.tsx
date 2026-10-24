@@ -31,6 +31,14 @@ const SIGNAL: Record<AgentInfo["id"], Signal> = {
   codex: "notify",
   custom: "heuristic",
 };
+// the chip wording from the Settings artboard
+const SIGNAL_LABEL: Record<AgentInfo["id"], string> = {
+  claude: "hooks · per session",
+  gemini: "hooks",
+  opencode: "plugin · events",
+  codex: "notify + output",
+  custom: "output",
+};
 const status = (a: AgentInfo) =>
   !a.available
     ? "Not installed"
@@ -185,9 +193,9 @@ export function SettingsPanel({
               </button>
             </div>
             <p className="sp-caption">
-              AgentBoard looks for each agent on your PATH when it starts.
-              Agents with hooks or a plugin report their status exactly; the
-              rest are read from their output.
+              Status for each console comes from the CLI&apos;s own hooks.
+              Claude Code gets per-session hooks with no setup; the others are
+              read from their hooks, plugin or output.
             </p>
             <table className="sp-table" aria-labelledby="sp-agents">
               <thead>
@@ -212,7 +220,7 @@ export function SettingsPanel({
                       <td className="sp-mono">{a.version ?? "—"}</td>
                       <td>
                         <span className="chip">
-                          {a.customId ? "heuristic" : SIGNAL[a.id]}
+                          {SIGNAL_LABEL[a.customId ? "custom" : a.id]}
                         </span>
                       </td>
                       <td>
