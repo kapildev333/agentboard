@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
 import WebSocket from "ws";
-import type { Board, ConsoleNode, DaemonMessage } from "@agentboard/shared";
+import type { Board, ConsoleNode, DaemonMessage, Loop } from "@agentboard/shared";
 import { startDaemon } from "../src/app.js";
 
 const fakeAgent = fileURLToPath(new URL("../../e2e/fake-agent/index.mjs", import.meta.url));
@@ -366,4 +366,34 @@ test("a SessionEnd clear from a foreign session arms nothing (D39)", async () =>
   await hook("SessionEnd", { session_id: "nested", reason: "clear" });
   await hook("Stop", { session_id: "other-nested" });
   expect((await status()).session!.id).toBe(first);
+});
+
+test("a loop runs twice against the fake agent and its second prompt says run 2", async () => {
+  const s = setup();
+  // claude's hooks give the test the status edges; the console itself is the fake agent
+  writeFileSync(join(s.path, "claude"), `#!/bin/sh\n[ "$1" = --version ] && { echo '9.9.9 (stub)'; exit 0; }\nexec '${process.execPath}' '${fakeAgent}'\n`);
+  const d = await start(s);
+  const sock = socket(d);
+  await sock.opened;
+  const node = (await d.call("POST", "/api/consoles", { agent: "claude", cwd: s.repo })).body as ConsoleNode;
+  sock.send({ t: "attach", consoleId: node.id });
+  await until(() => sock.output(node.id).includes("fake>"));
+  const hook = (event: string) => d.call("POST", `/hook/${node.id}`, { agent: "claude", event, payload: { session_id: node.session!.id } });
+  const req = { consoleId: node.id, name: "twice", trigger: { kind: "idle", delaySec: 0 }, stop: { maxRuns: 2 }, prompt: "Run {run} toward {goal}" };
+  const created = await d.call("POST", "/api/loops", req);
+  expect(created.status).toBe(200);
+  const id = (created.body as Loop).id;
+  for (const n of [1, 2]) {
+    await hook("Stop");
+    await until(() => sock.output(node.id).includes(`you said: Run ${n} toward`));
+    await hook("UserPromptSubmit");
+  }
+  await hook("Stop");
+  const loop = await until(async () => ((await d.call("GET", "/api/loops")).body as Loop[]).find((l) => l.id === id && l.state === "retired"));
+  expect(loop.runs.map((r) => [r.n, r.outcome])).toEqual([[1, "idle"], [2, "idle · max runs"]]);
+  expect(sock.messages.some((m) => m.t === "event" && m.event.kind === "loop" && m.event.detail === "retired: max runs")).toBe(true);
+  expect((await d.call("POST", `/api/loops/${id}/resume`)).status).toBe(409);
+  expect((await d.call("DELETE", `/api/loops/${id}`)).body).toEqual({ ok: true });
+  expect((await d.call("POST", `/api/loops/${id}/run`)).status).toBe(404);
+  await until(() => readFileSync(join(s.home, "loops.json"), "utf8") === "[]");
 });
