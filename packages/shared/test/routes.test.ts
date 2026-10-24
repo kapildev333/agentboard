@@ -40,3 +40,32 @@ test("a custom agent has an id, name, command and args; needsYou is optional", (
 test("POST /api/open rejects an unknown editor", () => {
   expect(shared.OpenRequestSchema.safeParse({ editor: "vim", path: "/tmp" }).success).toBe(false);
 });
+
+const studioRoutes = [
+  "GET /api/files",
+  "GET /api/files/read",
+  "PUT /api/files/write",
+  "POST /api/consoles/:id/input",
+  "GET /api/vault/notes",
+  "GET /api/vault/note",
+  "PUT /api/vault/note",
+  "POST /api/vault/append",
+];
+
+test.each(studioRoutes)("every studio route has a request and a response schema and a fixture that parses: %s", (key) => {
+  const r = routes.find((x) => `${x.method} ${x.path}` === key);
+  expect(r?.request).toBeTruthy();
+  const ex = examples[key]!;
+  expect(shared[r!.request!].parse(ex.request)).toEqual(ex.request);
+  expect(shared[r!.response].parse(ex.response)).toEqual(ex.response);
+});
+
+test("FileContentSchema takes null text for a binary or oversized file", () => {
+  const big = { path: "a.bin", size: 2_000_000, lines: 0, text: null, language: "text" };
+  expect(shared.FileContentSchema.parse(big)).toEqual(big);
+});
+
+test("BoardSchema keeps studio pins, defaulting to none", () => {
+  const board = { version: 1, repoPath: "/tmp/r", activeWorkspaceId: "w", workspaces: [], studio: { document: "docs/a.md" } };
+  expect(shared.BoardSchema.parse(board).studio).toEqual({ pins: [], document: "docs/a.md" });
+});
