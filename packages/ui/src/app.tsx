@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ReactFlowProvider, type NodeProps } from "@xyflow/react";
-import { BoardSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type Settings } from "@agentboard/shared";
+import { BoardSchema, ConsoleNodeSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type Settings } from "@agentboard/shared";
 import { Board, WorkspaceTabs, autosaveBoard, useBoard } from "./board";
 import { CommandBar } from "./command";
 import { ConsoleNode, type SocketLike } from "./console";
@@ -11,6 +11,7 @@ import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
 import { MissionMap, StatusBadge, useNotifications } from "./status";
 import { AddMenu, ChecklistView, NoteView, TextView, noteAdds } from "./notes";
 import { WebTileView, webtileAdds } from "./webtile";
+import { StudioContext, StudioTabs, studios, useStudio, type Studio } from "./studios";
 
 type Fetch = typeof globalThis.fetch;
 const Api = createContext<{ fetch: Fetch; fontSize: number }>({ fetch: globalThis.fetch, fontSize: 13 });
@@ -145,6 +146,35 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
   const [panel, setPanel] = useState<"spawn" | "settings" | "command" | null>(null);
   const flow = useRef<{ fitView: () => unknown }>(undefined);
   const empty = useBoard((s) => !s.board.workspaces.find((w) => w.id === s.board.activeWorkspaceId)?.nodes.length);
+  const studio = useStudio();
+  const Active = studio && studios[studio];
+  // Only a studio follows the whole board; the board view re-renders through its own store hooks.
+  const board = useBoard((s) => (studio ? s.board : null));
+  const studioApi = useMemo((): Studio | null => {
+    if (!repo || !board) return null;
+    const post = async (url: string, body: unknown) => {
+      const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error(((await res.json().catch(() => null)) as { error?: string } | null)?.error ?? `${url} failed (${res.status})`);
+      return res.json();
+    };
+    return {
+      repo,
+      fetch,
+      board,
+      consoles: consoles(board),
+      saveBoard: (b) => useBoard.setState({ board: b }),
+      sendInput: async (id, data) => void (await post(`/api/consoles/${encodeURIComponent(id)}/input`, { data })),
+      spawn: async (prompt, opts = {}) => {
+        const n = ConsoleNodeSchema.parse(await post("/api/consoles", { agent: opts.agent ?? "claude", customId: opts.customId, cwd: repo, prompt }));
+        const node = opts.title ? { ...n, title: opts.title } : n;
+        const { board: b, addNode } = useBoard.getState();
+        if (consoles(b).some((c) => c.id === n.id))
+          useBoard.setState({ board: { ...b, workspaces: b.workspaces.map((w) => ({ ...w, nodes: w.nodes.map((x) => (x.id === n.id ? { ...x, title: node.title } : x)) })) } });
+        else addNode(node);
+        return node;
+      },
+    };
+  }, [repo, fetch, board]);
   useNotifications({ onFocus: focusNode });
   // Escape closes the spawn modal; its backdrop keeps every terminal from seeing the key first.
   useEffect(() => {
@@ -257,7 +287,8 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
       <div className="app">
         <header className="topbar">
           <strong className="topbar-repo" title={repo}>{repo.split("/").pop()}</strong>
-          {ready && <WorkspaceTabs />}
+          <StudioTabs active={studio} />
+          {ready && !studio && <WorkspaceTabs />}
           <span className="topbar-spacer" />
           {ready && <LayoutMenu />}
           {ready && <InkToolbar />}
@@ -272,8 +303,12 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
             Settings
           </button>
         </header>
-        <main className="board">
-          {ready ? (
+        <main className={Active ? "board studio" : "board"}>
+          {ready && Active ? (
+            <StudioContext.Provider value={studioApi}>
+              <Active />
+            </StudioContext.Provider>
+          ) : ready ? (
             <ReactFlowProvider>
               <Board nodeTypes={nodeTypes} onInit={(rf) => (flow.current = rf)} />
               <InkLayer />
@@ -281,7 +316,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           ) : (
             <p className="app-message muted">Loading the board…</p>
           )}
-          {ready && empty && (
+          {ready && !Active && empty && (
             <p className="empty-hint">
               Spawn a console or run <code>agentboard spawn</code> from any terminal
             </p>
