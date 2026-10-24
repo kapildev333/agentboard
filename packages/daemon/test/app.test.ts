@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
 import WebSocket from "ws";
@@ -454,4 +454,45 @@ test("a note step lands on the active workspace", async () => {
   const board = (await d.call("GET", `/api/board?repo=${encodeURIComponent(s.repo)}`)).body as Board;
   const ws = board.workspaces.find((w) => w.id === board.activeWorkspaceId)!;
   expect(ws.nodes).toMatchObject([{ type: "note", text: "remember" }]);
+});
+
+test("an input step turns a heuristic console working", async () => {
+  const s = setup();
+  const d = await start(s);
+  const sock = socket(d);
+  await sock.opened;
+  const c = await spawnFake(d, s.repo);
+  sock.send({ t: "attach", consoleId: c.id });
+  await until(() => sock.output(c.id).includes("fake>"));
+  const plan = planOf([{ id: "s1", kind: "input", consoleId: c.id, text: "go", summary: "Type", asks: true }]);
+  await d.call("POST", "/api/command/run", { plan, confirmed: ["s1"], skipped: [] });
+  await until(async () => ((await d.call("GET", "/api/status")).body as { consoles: ConsoleNode[] }).consoles.find((x) => x.id === c.id && x.status === "working"));
+});
+
+test("two note steps in one plan land on different cells", async () => {
+  const s = setup();
+  const d = await start(s);
+  const plan = planOf([
+    { id: "s1", kind: "note", text: "one", summary: "Note", asks: false },
+    { id: "s2", kind: "note", text: "two", summary: "Note", asks: false },
+  ]);
+  await d.call("POST", "/api/command/run", { plan, confirmed: [], skipped: [] });
+  const board = (await d.call("GET", `/api/board?repo=${encodeURIComponent(s.repo)}`)).body as Board;
+  const [a, b] = board.workspaces.find((w) => w.id === board.activeWorkspaceId)!.nodes;
+  expect([a!.x, a!.y]).not.toEqual([b!.x, b!.y]);
+});
+
+test("a note step with repo lands on that repo's board, not the start board", async () => {
+  const s = setup();
+  const d = await start(s);
+  const other = join(dirname(s.repo), "other");
+  mkdirSync(other);
+  const plan = planOf([{ id: "s1", kind: "note", text: "elsewhere", summary: "Note", asks: false }]);
+  await d.call("POST", "/api/command/run", { plan, confirmed: [], skipped: [], repo: other });
+  const notes = async (repo: string) => {
+    const board = (await d.call("GET", `/api/board?repo=${encodeURIComponent(repo)}`)).body as Board;
+    return board.workspaces.flatMap((w) => w.nodes).filter((n) => n.type === "note");
+  };
+  expect(await notes(other)).toHaveLength(1);
+  expect(await notes(s.repo)).toHaveLength(0);
 });

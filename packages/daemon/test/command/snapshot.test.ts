@@ -25,3 +25,8 @@ test("snapshot lists consoles from every workspace with branch and idleSeconds",
   ]);
   expect(s.consoles[1]!.branch).toBeUndefined();
 });
+
+test("a console with an unparseable lastActiveAt gets idleSeconds 0", () => {
+  const board = { repoPath: "/r", activeWorkspaceId: "w1", workspaces: [{ id: "w1", name: "main", nodes: [con("a", { lastActiveAt: "not a date" })] }] } as Board;
+  expect(snapshot(board, []).consoles[0]!.idleSeconds).toBe(0);
+});
