@@ -43,6 +43,8 @@ export type RunResponse = z.infer<typeof s.RunResponseSchema>;
 export type TranscribeResponse = z.infer<typeof s.TranscribeResponseSchema>;
 export type PlannerSettings = z.infer<typeof s.PlannerSettingsSchema>;
 export type VoiceSettings = z.infer<typeof s.VoiceSettingsSchema>;
+export type CallLogEntry = z.infer<typeof s.CallLogEntrySchema>;
+export type Integrations = z.infer<typeof s.IntegrationsSchema>;
 
 // Lives in daemon code, never on the wire, so it has no schema: resume is a function.
 export type AgentDef = {
