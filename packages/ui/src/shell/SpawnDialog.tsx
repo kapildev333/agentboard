@@ -9,7 +9,7 @@ import {
 
 export type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 
-export function SpawnDialog({ fetch, cwd, onSpawned }: { fetch: Fetch; cwd: string; onSpawned: (n: ConsoleNode) => void }) {
+export function SpawnDialog({ fetch, cwd, onSpawned, onCancel }: { fetch: Fetch; cwd: string; onSpawned: (n: ConsoleNode) => void; onCancel?: () => void }) {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   // A custom entry is told apart by its customId; built-in ids are unique on their own.
   const [choice, setChoice] = useState<AgentInfo>();
@@ -59,25 +59,42 @@ export function SpawnDialog({ fetch, cwd, onSpawned }: { fetch: Fetch; cwd: stri
     }
   };
 
+  const row = (a: AgentInfo) => (
+    <label key={keyOf(a)} className="agent-option">
+      <input type="radio" name="agent" disabled={!a.available} checked={keyOf(choice) === keyOf(a)} onChange={() => setChoice(a)} />
+      <span className="agent-name">{a.name ?? a.id}</span>
+      <span className="agent-meta">{a.available ? a.version : "not installed"}</span>
+    </label>
+  );
+  const custom = agents.filter((a) => a.customId);
   return (
-    <form onSubmit={submit}>
-      <fieldset>
-        <legend>Agent</legend>
-        {agents.map((a) => (
-        <label key={keyOf(a)} style={{ display: "block", opacity: a.available ? 1 : 0.4 }}>
-          <input type="radio" name="agent" disabled={!a.available} checked={keyOf(choice) === keyOf(a)} onChange={() => setChoice(a)} />
-          {a.name ?? a.id} {a.available ? a.version : "not installed"}
-        </label>
-        ))}
+    <form className="spawn" onSubmit={submit}>
+      <fieldset className="agent-list">
+        <legend className="section-title">Agent</legend>
+        {agents.filter((a) => !a.customId).map(row)}
       </fieldset>
-      <label>
-        <input type="checkbox" checked={useWorktree} onChange={(e) => setUseWorktree(e.target.checked)} />
-        new worktree
-      </label>
-      {useWorktree && <input aria-label="branch name" value={branch} onChange={(e) => setBranch(e.target.value)} />}
-      <textarea aria-label="first prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
-      <button type="submit" disabled={!choice || busy || (useWorktree && !name)}>Spawn</button>
+      {custom.length > 0 && (
+        <fieldset className="agent-list">
+          <legend className="section-title">Custom agents</legend>
+          {custom.map(row)}
+        </fieldset>
+      )}
+      <div className="spawn-worktree">
+        <label className="check">
+          <input type="checkbox" checked={useWorktree} onChange={(e) => setUseWorktree(e.target.checked)} />
+          new worktree
+        </label>
+        {useWorktree && <input aria-label="branch name" placeholder="branch name" value={branch} onChange={(e) => setBranch(e.target.value)} />}
+      </div>
+      <div className="field">
+        <span className="field-label">First prompt (optional)</span>
+        <textarea aria-label="first prompt" rows={3} value={prompt} onChange={(e) => setPrompt(e.target.value)} />
+      </div>
       {error && <p role="alert">{error}</p>}
+      <div className="actions">
+        <button type="button" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="btn-primary" disabled={!choice || busy || (useWorktree && !name)}>Spawn</button>
+      </div>
     </form>
   );
 }
