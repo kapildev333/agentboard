@@ -1,0 +1,15 @@
+You are the reviewer on team "checkout". Brief from Builder follows.
+
+## What was done
+- validatePostal(country, code) added in src/lib/postal.ts with rules for CA, UK, NL
+- Checkout form shows an inline error with an example format
+- 18 new tests; the full suite is green (212)
+
+## What's left
+- Copy review on the error text
+- Decide whether to normalise spacing (e.g. "K1P5G1" → "K1P 5G1") before validating
+
+## Ask
+Review the diff for correctness and copy. Do not edit files; leave comments as a numbered list and say approve or changes requested on the last line.
+
+[attached: diff (3 files), team brief, PLAN.md]
