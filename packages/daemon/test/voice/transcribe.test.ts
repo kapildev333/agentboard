@@ -9,6 +9,7 @@ const fake = fileURLToPath(new URL("../../../e2e/fake-transcriber/index.mjs", im
 const dirs: string[] = [];
 afterEach(() => {
   delete process.env.FAKE_TRANSCRIBER_FAIL;
+  delete process.env.FAKE_TRANSCRIBER_SLEEP;
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 const home = () => dirs[dirs.push(mkdtempSync(join(tmpdir(), "agentboard-voice-"))) - 1]!;
@@ -27,5 +28,12 @@ test("a failing command rejects with its stderr line and still removes the file"
   const h = home();
   process.env.FAKE_TRANSCRIBER_FAIL = "1";
   await expect(transcribe(Buffer.from("x"), "audio/ogg", `${process.execPath} ${fake}`, h)).rejects.toThrow("fake failure");
+  expect(left(h)).toEqual([]);
+});
+
+test("a command slower than the timeout rejects with the timeout message and removes the file", async () => {
+  const h = home();
+  process.env.FAKE_TRANSCRIBER_SLEEP = "5000";
+  await expect(transcribe(Buffer.from("x"), "audio/wav", `${process.execPath} ${fake}`, h, 200)).rejects.toThrow("timed out after 200 ms");
   expect(left(h)).toEqual([]);
 });
