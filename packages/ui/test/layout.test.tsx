@@ -69,6 +69,7 @@ it("a saved layout applies and deletes", () => {
   fireEvent.click(screen.getByRole("button", { name: "Apply Mine" }));
   expect(ws().nodes[0]).toMatchObject({ x: 50, y: 60, w: 300, h: 200 });
   expect(ws().nodes[1]).toMatchObject({ x: 7, y: 9 });
+  fireEvent.click(screen.getByRole("button", { name: "Layout" }));
   fireEvent.click(screen.getByRole("button", { name: "Delete Mine" }));
   expect(ws().layouts).toEqual([]);
   expect(within(document.body).queryByText("Mine")).toBeNull();
