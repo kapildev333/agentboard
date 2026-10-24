@@ -1,0 +1,15 @@
+{
+  "repoPath": "/tmp/demo-repo",
+  "activeWorkspaceId": "ws-main",
+  "workspaces": [{ "id": "ws-main", "name": "main" }],
+  "consoles": [
+    { "id": "c-checkout", "title": "Checkout flow", "agent": "claude", "status": "working", "branch": "feat/checkout", "cwd": "/tmp/demo-repo", "workspaceId": "ws-main", "idleSeconds": 0 },
+    { "id": "c-ci", "title": "CI cleanup", "agent": "opencode", "status": "idle", "branch": "chore/ci", "cwd": "/tmp/demo-repo", "workspaceId": "ws-main", "idleSeconds": 420 },
+    { "id": "c-lint", "title": "Lint sweep", "agent": "custom", "customId": "lint", "status": "idle", "cwd": "/tmp/demo-repo", "workspaceId": "ws-main", "idleSeconds": 95 },
+    { "id": "c-docs", "title": "Docs pass", "agent": "gemini", "status": "stopped", "branch": "docs/pass", "cwd": "/tmp/demo-repo", "workspaceId": "ws-main", "idleSeconds": 3600 }
+  ],
+  "agents": [
+    { "id": "claude", "command": "claude", "version": "2.1.0", "available": true },
+    { "id": "codex", "command": "codex", "version": null, "available": false }
+  ]
+}
