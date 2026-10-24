@@ -147,6 +147,7 @@
 
 .git-card .diff-files .field-label {
   padding-bottom: var(--space-half);
+  font-family: var(--font-sans);
 }
 
 .git-card .diff-file {

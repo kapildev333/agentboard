@@ -5,6 +5,7 @@ The board's look lives in three sheets under `packages/ui/src/styles`, imported 
 - `tokens.css`: every colour, space, radius and font as a CSS variable. Dark is the default; `prefers-color-scheme: light` swaps the colours.
 - `base.css`: element defaults (in `:where()`, so any class wins), buttons (`.btn-primary`, `.btn-sm`, `.btn-icon`), inputs, focus rings, chips, field labels, the path field.
 - `app.css`: one section per component: app shell and top bar, overlays (spawn modal, settings drawer), React Flow on the tokens, status badge, console card, note, mission map, settings, git card and diff.
+- `git.css`: the git card and its diff view (head row, action row, changed files beside the unified diff), imported by `GitCard.tsx`; its rules sit under `.git-card` so they win over the older git section in `app.css`. It uses the existing tokens only.
 
 Components carry class names only; no colour or size is written inline. Roles, labels and accessible names are unchanged, so the tests and the e2e selectors still find everything.
 
