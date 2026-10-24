@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { nodeBase } from "./node-base.js";
+import { ImageNodeSchema, SavedLayoutSchema, StrokeSchema, TextNodeSchema } from "./extras.js";
 
 export const AgentIdSchema = z.enum(["claude", "codex", "gemini", "opencode", "custom"]);
 export const ConsoleStatusSchema = z.enum(["stopped", "starting", "working", "idle", "needs_you", "exited"]);
@@ -6,14 +8,6 @@ export const SignalSchema = z.enum(["hooks", "plugin", "notify", "heuristic"]);
 
 export const DaemonInfoSchema = z.object({ port: z.number().int(), token: z.string(), pid: z.number().int() });
 
-const nodeBase = {
-  id: z.string(),
-  title: z.string(),
-  x: z.number(),
-  y: z.number(),
-  w: z.number(),
-  h: z.number(),
-};
 
 export const WorktreeSchema = z.object({ path: z.string(), branch: z.string(), base: z.string() });
 
@@ -31,7 +25,7 @@ export const ConsoleNodeSchema = z.object({
   lastActiveAt: z.string(),
 });
 export const NoteNodeSchema = z.object({ ...nodeBase, type: z.literal("note"), text: z.string() });
-export const WebTileNodeSchema = z.object({ ...nodeBase, type: z.literal("webtile"), url: z.string() });
+export const WebTileNodeSchema = z.object({ ...nodeBase, type: z.literal("webtile"), url: z.string(), capture: z.boolean().optional() });
 export const ChecklistNodeSchema = z.object({
   ...nodeBase,
   type: z.literal("checklist"),
@@ -42,6 +36,8 @@ export const BoardNodeSchema = z.discriminatedUnion("type", [
   NoteNodeSchema,
   WebTileNodeSchema,
   ChecklistNodeSchema,
+  TextNodeSchema,
+  ImageNodeSchema,
 ]);
 
 export const WorkspaceSchema = z.object({
@@ -49,6 +45,8 @@ export const WorkspaceSchema = z.object({
   name: z.string(),
   viewport: z.object({ x: z.number(), y: z.number(), zoom: z.number() }),
   nodes: z.array(BoardNodeSchema),
+  ink: z.array(StrokeSchema).optional(),
+  layouts: z.array(SavedLayoutSchema).optional(),
 });
 export const BoardSchema = z.object({
   version: z.literal(1),
