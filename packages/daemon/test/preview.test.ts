@@ -68,3 +68,9 @@ test.each([
   const board = await startBoard();
   expect((await via(board, url)).status).toBe(403);
 });
+
+test.each([["a wrong key", "0".repeat(32)], ["a short key", key.slice(0, 31)], ["the secret itself", token]])("%s is 404", async (_, k) => {
+  const t = await startTarget(), board = await startBoard();
+  expect((await via(board, `${t.origin}/page`, {}, k)).status).toBe(404);
+  expect(t.seen).toEqual([]);
+});
