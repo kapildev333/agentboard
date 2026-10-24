@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import { SettingsSchema, type AgentId, type Board, type ConsoleNode, type CustomAgent, type Settings, type Workspace } from "@agentboard/shared";
 import { AgentCatalog, launchArgs, resumeArgs } from "./agents/index.js";
 import { GitService, createGitHandlers } from "./git/index.js";
+import { LoopEngine, LoopStore } from "./loops/index.js";
 import { handleOpen } from "./open/index.js";
 import { PtyManager, loginEnv } from "./pty/index.js";
 import { createServer, type RouteHandlers } from "./server/index.js";
@@ -70,6 +71,17 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
   const running = new Set<string>();
   const adopting = new Set<string>(); // consoles waiting for their next session id (D39)
   const settingsFile = () => join(agentboardHome(), "settings.json");
+  const loopStore = new LoopStore();
+  const loops = new LoopEngine(
+    {
+      // typed input, so codex counts the output that follows as work
+      write: (id, data) => (tracker.markInput(id, data), pty.write(id, data)),
+      status: (id) => tracker.get(id),
+      save: (all) => void loopStore.save(all),
+      event: (event) => server.broadcast({ t: "event", event }),
+    },
+    await loopStore.load(),
+  );
 
   const loadBoard = (repo: string): Promise<Board> => {
     const ready = boards.get(repo);
@@ -151,6 +163,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     if (node.agent !== "custom") void AgentCatalog.readVersion(l.command, { path: agentPath });
     pty.onData(node.id, (data) => {
       tracker.markOutput(node.id, data);
+      loops.onOutput(node.id, data);
       server.broadcast({ t: "output", consoleId: node.id, data });
     });
     pty.onExit(node.id, (code) => {
@@ -175,6 +188,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     f.node.lastActiveAt = new Date().toISOString();
     changed(f.board);
   });
+  tracker.onChange((id, status) => loops.onStatus(id, status));
 
   // Required: a route added to the shared table without a handler here fails the typecheck.
   const routes: Required<RouteHandlers> = {
@@ -328,13 +342,13 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     "PUT /api/handoffs/:id": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "POST /api/handoffs/:id/send": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "GET /api/handoffs": async () => { throw new HttpError(501, "phase 4: not built yet"); },
-    "GET /api/loops": async () => { throw new HttpError(501, "phase 4: not built yet"); },
-    "POST /api/loops": async () => { throw new HttpError(501, "phase 4: not built yet"); },
-    "PUT /api/loops/:id": async () => { throw new HttpError(501, "phase 4: not built yet"); },
-    "DELETE /api/loops/:id": async () => { throw new HttpError(501, "phase 4: not built yet"); },
-    "POST /api/loops/:id/pause": async () => { throw new HttpError(501, "phase 4: not built yet"); },
-    "POST /api/loops/:id/resume": async () => { throw new HttpError(501, "phase 4: not built yet"); },
-    "POST /api/loops/:id/run": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "GET /api/loops": async () => loops.list(),
+    "POST /api/loops": async (req) => loops.create(req),
+    "PUT /api/loops/:id": async (req, { id }) => loops.update(id!, req),
+    "DELETE /api/loops/:id": async (_, { id }) => (loops.remove(id!), { ok: true as const }),
+    "POST /api/loops/:id/pause": async (_, { id }) => loops.pause(id!),
+    "POST /api/loops/:id/resume": async (_, { id }) => loops.resume(id!),
+    "POST /api/loops/:id/run": async (_, { id }) => loops.runNow(id!),
     "POST /api/composer/launch": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "GET /api/composer/templates": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "GET /api/usage": async () => { throw new HttpError(501, "phase 4: not built yet"); },
@@ -382,8 +396,10 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     close: () =>
       (closing ??= (async () => {
         await server.close();
+        loops.close();
         await Promise.all([...running].map((id) => pty.kill(id).catch(() => {})));
         await store.flush().catch((e) => console.error("agentboard: board write failed:", (e as Error).message));
+        await loopStore.flush();
         await daemonFile.remove();
       })()),
   };
