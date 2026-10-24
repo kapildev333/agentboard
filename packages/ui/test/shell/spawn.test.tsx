@@ -153,7 +153,7 @@ describe("SpawnDialog", () => {
   it("agents render as cards with a signal line and a readiness dot", async () => {
     render(<SpawnDialog fetch={fakeFetch()} cwd="/r" onSpawned={vi.fn()} />);
     const card = (await screen.findByLabelText(/claude/)).parentElement!;
-    expect(card.querySelector("[aria-hidden='true'].agent-mark")!.textContent).toBe("C");
+    expect(card.querySelector("[aria-hidden='true'].mark.mark-claude")!.textContent).toBe("C");
     expect(card.querySelector(".agent-meta")!.textContent).toBe("2.1.0 · hooks per session");
     expect(card.querySelector(".agent-dot")!.classList.contains("is-ready")).toBe(true);
     expect(screen.getByLabelText(/codex/).parentElement!.querySelector(".agent-meta")!.textContent).toBe("0.9.1 · notify");
@@ -164,7 +164,7 @@ describe("SpawnDialog", () => {
   });
 
   it("choosing New worktree shows the branch field and the .worktrees path preview", async () => {
-    render(<SpawnDialog fetch={fakeFetch()} cwd="/Users/someone/code/r" branch="dev" onSpawned={vi.fn()} />);
+    render(<SpawnDialog fetch={fakeFetch()} cwd="/Users/someone/code/r" base="dev" onSpawned={vi.fn()} />);
     await screen.findByLabelText(/claude/);
     const where = screen.getByRole("group", { name: "Where it runs" });
     expect((screen.getByLabelText(/Repo root/) as HTMLInputElement).checked).toBe(true);
@@ -181,7 +181,8 @@ describe("SpawnDialog", () => {
     const fetch = fakeFetch();
     render(<SpawnDialog fetch={fetch} cwd="/r" onSpawned={vi.fn()} />);
     fireEvent.click(await screen.findByLabelText(/codex/));
-    expect((screen.getByRole("button", { name: "Spawn" }).textContent)).toContain("⌘↵");
+    // jsdom's navigator.platform is empty, so the hint is the non-mac one.
+    expect(screen.getByRole("button", { name: "Spawn" }).textContent).toContain("Ctrl↵");
     fireEvent.keyDown(screen.getByLabelText("first prompt"), { key: "Enter", metaKey: true });
     await waitFor(() => expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(true));
   });
@@ -190,9 +191,51 @@ describe("SpawnDialog", () => {
     const fetch = fakeFetch();
     render(<SpawnDialog fetch={fetch} cwd="/r" onSpawned={vi.fn()} />);
     fireEvent.click(await screen.findByLabelText(/codex/));
-    expect(screen.getByRole("button", { name: "Spawn" }).getAttribute("aria-keyshortcuts")).toBe("Meta+Enter Control+Enter");
+    expect(screen.getByRole("button", { name: "Spawn" }).getAttribute("aria-keyshortcuts")).toBe("Control+Enter");
     fireEvent.keyDown(screen.getByLabelText("first prompt"), { key: "Enter", metaKey: true, isComposing: true });
     await new Promise((r) => setTimeout(r, 20));
     expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(false);
+  });
+  it("on a mac the shortcut reads ⌘↵ and Meta+Enter", async () => {
+    vi.spyOn(navigator, "platform", "get").mockReturnValue("MacIntel");
+    render(<SpawnDialog fetch={fakeFetch()} cwd="/r" onSpawned={vi.fn()} />);
+    await screen.findByLabelText(/codex/);
+    const spawn = screen.getByRole("button", { name: "Spawn" });
+    expect(spawn.textContent).toContain("⌘↵");
+    expect(spawn.getAttribute("aria-keyshortcuts")).toBe("Meta+Enter");
+    vi.restoreAllMocks();
+  });
+
+  it("⌘Enter does not submit while Spawn is disabled", async () => {
+    const fetch = fakeFetch();
+    render(<SpawnDialog fetch={fetch} cwd="/r" onSpawned={vi.fn()} />);
+    fireEvent.click(await screen.findByLabelText(/codex/));
+    fireEvent.click(screen.getByLabelText("new worktree"));
+    fireEvent.keyDown(screen.getByLabelText("first prompt"), { key: "Enter", metaKey: true });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(false);
+  });
+
+  it("the base branch comes from git status, with no chip while it is unknown", async () => {
+    let answer!: (r: Response) => void;
+    const fetch = vi.fn(async (url: string | URL | Request) =>
+      String(url).startsWith("/api/git/status") ? new Promise<Response>((r) => (answer = r)) : json(agents),
+    );
+    render(<SpawnDialog fetch={fetch} cwd="/r" onSpawned={vi.fn()} />);
+    await screen.findByLabelText(/claude/);
+    expect(fetch).toHaveBeenCalledWith("/api/git/status?path=%2Fr");
+    const where = screen.getByRole("group", { name: "Where it runs" });
+    expect(where.querySelector(".chip")).toBeNull();
+    expect(where.textContent).not.toContain("main");
+    answer(json({ branch: "dev", ahead: 0, behind: 0, dirty: 0, lastCommit: null }));
+    await waitFor(() => expect(where.querySelector(".chip")?.textContent).toBe("dev"));
+    expect(where.querySelector(".where-path")!.getAttribute("title")).toBe("/r");
+  });
+
+  it("a custom card reads custom · regex needs-you", async () => {
+    const custom = { id: "custom", command: "/bin/a", version: null, available: true, customId: "a", name: "Agent A" };
+    render(<SpawnDialog fetch={vi.fn(async () => json([custom]))} cwd="/r" onSpawned={vi.fn()} />);
+    const card = (await screen.findByLabelText(/Agent A/)).parentElement!;
+    expect(card.querySelector(".agent-meta")!.textContent).toBe("custom · regex needs-you");
   });
 });
