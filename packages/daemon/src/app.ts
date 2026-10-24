@@ -34,7 +34,7 @@ class HttpError extends Error {
 
 const uiDist = fileURLToPath(new URL("../../ui/dist", import.meta.url));
 const NAMES: Record<AgentId, string> = { claude: "Claude", codex: "Codex", gemini: "Gemini", opencode: "OpenCode", custom: "Custom" };
-const DEFAULT_SETTINGS: Settings = { fontSize: 13, customAgents: [] };
+const DEFAULT_SETTINGS: Settings = SettingsSchema.parse({ fontSize: 13, customAgents: [] });
 const W = 520, H = 340, GAP = 40, COLUMNS = 3;
 const run = promisify(execFile);
 
