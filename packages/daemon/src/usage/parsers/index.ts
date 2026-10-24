@@ -15,7 +15,7 @@ export type Session = {
   turns: [number, number][];
 };
 /** null: the file is not one this CLI writes, so it is skipped and not counted. */
-export type Parse = (text: string, path: string) => Session[] | null;
+export type Parse = (text: string) => Session[] | null;
 
 export const lines = (text: string): Record<string, unknown>[] =>
   text.split("\n").flatMap((l) => {

@@ -56,7 +56,7 @@ export class UsageCache {
           if (!e || e.size !== st.size || e.mtimeMs !== st.mtimeMs) {
             const text = await readFile(path, "utf8").catch(() => null);
             if (text === null) continue;
-            e = { path, size: st.size, mtimeMs: st.mtimeMs, sessions: parse(text, path) };
+            e = { path, size: st.size, mtimeMs: st.mtimeMs, sessions: parse(text) };
           }
           next.set(path, e);
           if (e.sessions) files++;
