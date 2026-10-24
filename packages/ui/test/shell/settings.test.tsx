@@ -106,7 +106,8 @@ describe("SettingsPanel", () => {
     const buttons = within(nav).getAllByRole("button");
     expect(buttons.map((b) => b.textContent)).toEqual(["Terminal", "Agents", "Safety"]);
     expect(document.activeElement).toBe(buttons[0]);
-    expect(buttons[0].getAttribute("aria-current")).toBe("true");
+    // the pane opens on Agents, the artboard's first section
+    expect(buttons[1].getAttribute("aria-current")).toBe("true");
     expect(within(nav).getByText(/^v\d+\.\d+\.\d+ · MIT$/)).toBeTruthy();
   });
 
@@ -135,5 +136,30 @@ describe("SettingsPanel", () => {
     const card = screen.getByRole("group", { name: "Custom agent 1" });
     for (const label of ["name 1", "command 1", "args 1", "needs-you regex 1"]) expect(within(card).getByLabelText(label)).toBeTruthy();
     expect(within(card).getByRole("button", { name: "Remove agent 1" })).toBeTruthy();
+  });
+
+  it("clicking Safety keeps it marked when the short last section cannot scroll to the top", () => {
+    const { container } = render(<SettingsPanel settings={settings} onChange={vi.fn()} />);
+    const pane = container.querySelector<HTMLElement>(".sp-content")!;
+    const box = (el: HTMLElement, props: Record<string, number>) =>
+      Object.entries(props).forEach(([k, v]) => Object.defineProperty(el, k, { configurable: true, value: v }));
+    box(pane, { scrollTop: 400, clientHeight: 600, scrollHeight: 1000 });
+    const tops = { Agents: [0, 500], Terminal: [500, 250], Safety: [750, 250] } as const;
+    for (const el of container.querySelectorAll<HTMLElement>("[data-section]")) {
+      const [offsetTop, offsetHeight] = tops[el.dataset.section as keyof typeof tops];
+      box(el, { offsetTop, offsetHeight });
+    }
+    const nav = screen.getByRole("navigation", { name: "Settings sections" });
+    const safety = within(nav).getByRole("button", { name: "Safety" });
+    fireEvent.click(safety);
+    fireEvent.scroll(pane);
+    expect(safety.getAttribute("aria-current")).toBe("true");
+    // scrolling Safety out of view drops the click; scrolled back to the bottom, the last section is marked again
+    box(pane, { scrollTop: 0 });
+    fireEvent.scroll(pane);
+    expect(within(nav).getByRole("button", { name: "Agents" }).getAttribute("aria-current")).toBe("true");
+    box(pane, { scrollTop: 400 });
+    fireEvent.scroll(pane);
+    expect(safety.getAttribute("aria-current")).toBe("true");
   });
 });
