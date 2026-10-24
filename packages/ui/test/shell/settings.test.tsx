@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SettingsPanel, type Settings } from "../../src/shell";
 
@@ -98,5 +98,42 @@ describe("SettingsPanel", () => {
     const added = onChange.mock.lastCall![0].customAgents[1];
     expect(added).toMatchObject({ name: "", command: "", args: [] });
     expect(added.id).toMatch(/\S/);
+  });
+
+  it("the sections nav lists Terminal, Agents and Safety and the first button takes focus", () => {
+    render(<SettingsPanel settings={settings} onChange={vi.fn()} />);
+    const nav = screen.getByRole("navigation", { name: "Settings sections" });
+    const buttons = within(nav).getAllByRole("button");
+    expect(buttons.map((b) => b.textContent)).toEqual(["Terminal", "Agents", "Safety"]);
+    expect(document.activeElement).toBe(buttons[0]);
+    expect(buttons[0].getAttribute("aria-current")).toBe("true");
+    expect(within(nav).getByText(/^v\d+\.\d+\.\d+ · MIT$/)).toBeTruthy();
+  });
+
+  it("the agents table shows Ready, Heuristic and Not installed from the agent list", async () => {
+    const agents = [
+      { id: "claude", command: "claude", version: "2.1.0", available: true },
+      { id: "codex", command: "codex", version: "0.5.0", available: true },
+      { id: "gemini", command: "gemini", version: null, available: false },
+      { id: "custom", command: "aider", version: null, available: true, customId: "aider", name: "aider" },
+    ];
+    const fetch = vi.fn(async () => new Response(JSON.stringify(agents)));
+    render(<SettingsPanel settings={settings} onChange={vi.fn()} fetch={fetch} />);
+    const table = screen.getByRole("table", { name: "Agents found on PATH" });
+    const status = async (name: string) => within(await within(table).findByRole("row", { name: new RegExp(`^${name}`) })).getAllByRole("cell")[3].textContent;
+    expect(await status("claude")).toBe("Ready");
+    expect(await status("codex")).toBe("Heuristic");
+    expect(await status("gemini")).toBe("Not installed");
+    expect(await status("aider")).toBe("Heuristic");
+    expect(fetch).toHaveBeenCalledWith("/api/agents");
+    fireEvent.click(screen.getByRole("button", { name: "Rescan" }));
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("custom agent cards keep the name, command, args and regex fields", () => {
+    render(<SettingsPanel settings={settings} onChange={vi.fn()} />);
+    const card = screen.getByRole("group", { name: "Custom agent 1" });
+    for (const label of ["name 1", "command 1", "args 1", "needs-you regex 1"]) expect(within(card).getByLabelText(label)).toBeTruthy();
+    expect(within(card).getByRole("button", { name: "Remove agent 1" })).toBeTruthy();
   });
 });
