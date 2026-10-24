@@ -323,7 +323,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       return { ok: true };
     },
     "POST /api/command/plan": async ({ text, repo }) => {
-      const [board, agents, set] = [await loadBoard(repo), await AgentCatalog.scan({ path: agentPath, custom: (await settings()).customAgents }), await settings()];
+      const [board, set] = [await loadBoard(repo), await settings()];
+      const agents = await AgentCatalog.scan({ path: agentPath, custom: set.customAgents });
       return planCommand(text, snapshot(board, agents), set);
     },
     "POST /api/command/run": async ({ plan, confirmed, skipped }) => {
