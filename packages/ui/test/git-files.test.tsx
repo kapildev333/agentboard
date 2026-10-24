@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
 import { GitCard } from "../src/git";
+import { formatAge } from "../src/git/GitCard";
 
 afterEach(cleanup);
 
@@ -48,4 +49,30 @@ it("clicking the second file shows only its hunks", async () => {
   expect(screen.getByText("+only b").className).toBe("added");
   expect(screen.queryByText("+new a")).toBeNull();
   expect(screen.getByText("unified · 1 hunk")).toBeTruthy();
+});
+
+it("the commit form is a textarea whose button counts the dirty files", async () => {
+  render(<GitCard fetch={fetch} path="/r" />);
+  fireEvent.click(await screen.findByText("Commit"));
+  expect(screen.getByLabelText("Commit message").tagName).toBe("TEXTAREA");
+  expect((screen.getByRole("button", { name: "Commit 3 files" }) as HTMLButtonElement).type).toBe("submit");
+});
+
+it("the head row shows the base after from, and leaves from out without one", async () => {
+  const { unmount } = render(<GitCard fetch={fetch} path="/r" base="main" />);
+  expect(await screen.findByText("from")).toBeTruthy();
+  expect(screen.getByText("main")).toBeTruthy();
+  expect(screen.getByText("abcdef1")).toBeTruthy();
+  unmount();
+  render(<GitCard fetch={fetch} path="/r" />);
+  await screen.findByText("feat-x");
+  expect(screen.queryByText("from")).toBeNull();
+});
+
+it("the age formatter gives minutes, hours, then days", () => {
+  const now = Date.parse("2026-10-23T12:00:00Z");
+  expect(formatAge("2026-10-23T11:48:00Z", now)).toBe("12m");
+  expect(formatAge("2026-10-23T09:00:00Z", now)).toBe("3h");
+  expect(formatAge("2026-10-21T12:00:00Z", now)).toBe("2d");
+  expect(formatAge("2026-10-23T12:00:30Z", now)).toBe("0m");
 });
