@@ -147,10 +147,13 @@ export function useVoice({ fetch, repo, onFocus, onFit, deps = {} }: {
     window.addEventListener("keydown", down, true);
     window.addEventListener("keyup", up, true);
     window.addEventListener("blur", stop);
+    const hide = () => document.visibilityState === "hidden" && stop();
+    document.addEventListener("visibilitychange", hide);
     return () => {
       window.removeEventListener("keydown", down, true);
       window.removeEventListener("keyup", up, true);
       window.removeEventListener("blur", stop);
+      document.removeEventListener("visibilitychange", hide);
     };
   }, [repo]);
 
