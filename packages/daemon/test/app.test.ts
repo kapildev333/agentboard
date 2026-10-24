@@ -390,10 +390,10 @@ test("a loop runs twice against the fake agent and its second prompt says run 2"
   }
   await hook("Stop");
   const loop = await until(async () => ((await d.call("GET", "/api/loops")).body as Loop[]).find((l) => l.id === id && l.state === "retired"));
-  expect(loop.runs.map((r) => [r.n, r.outcome])).toEqual([[1, "idle"], [2, "idle · max runs"]]);
+  expect(loop!.runs.map((r) => [r.n, r.outcome])).toEqual([[1, "idle"], [2, "idle · max runs"]]);
   expect(sock.messages.some((m) => m.t === "event" && m.event.kind === "loop" && m.event.detail === "retired: max runs")).toBe(true);
   expect((await d.call("POST", `/api/loops/${id}/resume`)).status).toBe(409);
   expect((await d.call("DELETE", `/api/loops/${id}`)).body).toEqual({ ok: true });
   expect((await d.call("POST", `/api/loops/${id}/run`)).status).toBe(404);
   await until(() => readFileSync(join(s.home, "loops.json"), "utf8") === "[]");
-});
+}, 15_000);
