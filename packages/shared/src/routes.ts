@@ -62,4 +62,12 @@ export const routes = [
   { method: "DELETE", path: "/api/memory/:id", request: null, response: "OkSchema" },
   { method: "POST", path: "/api/memory/:id/push", request: "MemoryPushRequestSchema", response: "MemoryPushResponseSchema" },
   { method: "POST", path: "/api/memory/propose", request: "MemoryProposeRequestSchema", response: "MemoryItemSchema" },
+  { method: "GET", path: "/api/files", request: "FilesQuerySchema", response: "FileTreeSchema" },
+  { method: "GET", path: "/api/files/read", request: "FilesQuerySchema", response: "FileContentSchema" },
+  { method: "PUT", path: "/api/files/write", request: "FileWriteRequestSchema", response: "OkSchema" },
+  { method: "POST", path: "/api/consoles/:id/input", request: "ConsoleInputSchema", response: "OkSchema" },
+  { method: "GET", path: "/api/vault/notes", request: "VaultQuerySchema", response: "VaultIndexSchema" },
+  { method: "GET", path: "/api/vault/note", request: "VaultNoteQuerySchema", response: "VaultNoteSchema" },
+  { method: "PUT", path: "/api/vault/note", request: "VaultWriteSchema", response: "VaultNoteSchema" },
+  { method: "POST", path: "/api/vault/append", request: "VaultAppendSchema", response: "VaultNoteSchema" },
 ] as const satisfies readonly Route[];
