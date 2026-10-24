@@ -1,0 +1,6 @@
+{"type":"summary","summary":"Demo checkout work","leafUuid":"u-0"}
+{"type":"user","sessionId":"aaaaaaaa-0000-4000-8000-000000000001","cwd":"/work/demo/shop","timestamp":"2026-10-20T08:59:00.000Z","message":{"role":"user","content":"add a coupon field"}}
+{"type":"assistant","sessionId":"aaaaaaaa-0000-4000-8000-000000000001","cwd":"/work/demo/shop","timestamp":"2026-10-20T09:00:00.000Z","requestId":"req_a1","message":{"id":"msg_a1","role":"assistant","usage":{"input_tokens":10,"output_tokens":100,"cache_read_input_tokens":0,"cache_creation_input_tokens":500}}}
+{"type":"assistant","sessionId":"aaaaaaaa-0000-4000-8000-000000000001","cwd":"/work/demo/shop","timestamp":"2026-10-20T09:30:00.000Z","requestId":"req_a2","message":{"id":"msg_a2","role":"assistant","usage":{"input_tokens":20,"output_tokens":200,"cache_read_input_tokens":1000,"cache_creation_input_tokens":0}}}
+{"type":"assistant","sessionId":"aaaaaaaa-0000-4000-8000-000000000001","cwd":"/work/demo/shop","timestamp":"2026-10-20T09:30:00.000Z","requestId":"req_a2","message":{"id":"msg_a2","role":"assistant","usage":{"input_tokens":20,"output_tokens":200,"cache_read_input_tokens":1000,"cache_creation_input_tokens":0}}}
+not json at all
