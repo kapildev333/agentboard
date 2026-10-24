@@ -9,6 +9,7 @@ import { parseClientMessage, parseDaemonMessage, routes as table, type SchemaNam
 import type { ClientMessage, DaemonMessage } from "@agentboard/shared";
 import { AUDIO_TYPES } from "../voice/index.js";
 import WebSocket, { WebSocketServer } from "ws";
+import type { Call } from "../integrations/index.js";
 
 type Route = (typeof table)[number];
 type Parsed<N> = N extends SchemaName ? ReturnType<(typeof shared)[N]["parse"]> : undefined;
@@ -40,7 +41,10 @@ export type ServerOptions = {
   onAttach?: SocketHandler<"attach">;
   onInput?: SocketHandler<"input">;
   onResize?: SocketHandler<"resize">;
+  /** Every API call once answered and every refused request; static files are not reported. */
+  onCall?: (call: Call) => void;
 };
+type Refusal = { status: number; reason: string; origin?: string };
 /** reply sends to the socket the message came from, e.g. the ring buffer on attach. */
 export type SocketHandler<T extends ClientMessage["t"]> =
   (message: Extract<ClientMessage, { t: T }>, reply: (message: DaemonMessage) => void) => Promise<void>;
@@ -68,9 +72,16 @@ export async function createServer(opts: ServerOptions) {
     res.setHeader("content-security-policy", "frame-ancestors 'none'");
     const url = target(req);
     if (!url) return end(res, 400);
+    const route = compiled.find((r) => r.method === req.method && r.pattern.test(url.pathname));
+    const call = (status: number, more: Partial<Call> = {}): Call => ({
+      route: route?.key ?? `${req.method} ${url.pathname.slice(0, 120)}`, status, client: req.headers["x-agentboard-client"]?.toString(), board: false,
+      params: route ? paramsOf(route, url.pathname) : {}, ...more,
+    });
+    const refused = (r: Refusal) => (end(res, r.status), opts.onCall?.(call(r.status, { reason: r.reason, origin: r.origin })));
     if (req.method === "GET" && isIndex(url.pathname) && url.searchParams.has("code")) {
-      if (!sameSite(req)) return end(res, 403);
-      if (!takeCode(url.searchParams.get("code")!)) return end(res, 401);
+      const site = siteRefusal(req);
+      if (site) return refused(site);
+      if (!takeCode(url.searchParams.get("code")!)) return refused({ status: 401, reason: "bad code" });
       url.searchParams.delete("code");
       const session = randomBytes(32).toString("base64url");
       sessions.add(session);
@@ -81,32 +92,42 @@ export async function createServer(opts: ServerOptions) {
       }).end();
       return;
     }
-    const refused = refuse(req, req.method !== "GET");
-    if (refused) return end(res, refused);
+    const refusal = refuse(req, req.method !== "GET");
+    if (refusal) return refused(refusal);
+    const board = authOf(req) === "cookie";
     if (req.method === "POST" && url.pathname === "/auth/code") {
       // Header token only: the CLI and MCP mint codes, a page holding the cookie does not.
-      if (authOf(req) !== "header") return end(res, 401);
+      if (board) return refused({ status: 401, reason: "code needs the token" });
+      res.once("finish", () => opts.onCall?.(call(res.statusCode)));
       return json(res, 200, { code: issueCode() });
     }
-    const route = compiled.find((r) => r.method === req.method && r.pattern.test(url.pathname));
-    if (route) return void handle(route, opts.routes, req, url, res);
+    if (route) {
+      res.once("finish", () => opts.onCall?.(call(res.statusCode, { board })));
+      return void handle(route, opts.routes, req, url, res);
+    }
     if (req.method === "GET") return void serveStatic(opts.staticDir, url.pathname, res);
     end(res, 404);
   });
   // Host stops DNS rebinding; Origin and Sec-Fetch-Site stop other pages, including other ports on
   // 127.0.0.1, which SameSite treats as the same site; the token or session stops everything else.
-  const sameSite = (req: http.IncomingMessage): boolean => {
+  // The refusal carries what the log may keep: the Origin, or the Host when that is what failed, cut short.
+  const siteRefusal = (req: http.IncomingMessage): Refusal | undefined => {
     const site = req.headers["sec-fetch-site"];
-    return ownHost(req, port) && ownOrigin(req, port) && (site === undefined || site === "same-origin" || site === "none");
+    const origin = req.headers.origin?.slice(0, 200);
+    if (!ownHost(req, port)) return { status: 403, reason: "bad Host", origin: req.headers.host?.slice(0, 200) };
+    if (!ownOrigin(req, port)) return { status: 403, reason: "bad Origin", origin };
+    if (site !== undefined && site !== "same-origin" && site !== "none") return { status: 403, reason: "bad Sec-Fetch-Site", origin };
+    return undefined;
   };
   // strict: non-GET or upgrade, where browsers always send Origin. A cookie request must prove it came
   // from the board itself: by Origin, or on a GET by Sec-Fetch-Site; only header callers may send neither.
-  const refuse = (req: http.IncomingMessage, strict: boolean): number => {
-    if (!sameSite(req)) return 403;
+  const refuse = (req: http.IncomingMessage, strict: boolean): Refusal | undefined => {
+    const site = siteRefusal(req);
+    if (site) return site;
     const auth = authOf(req);
-    if (!auth) return 401;
+    if (!auth) return { status: 401, reason: headerToken(req) === undefined && !req.headers.cookie ? "no token" : "bad token" };
     const proven = req.headers.origin !== undefined || (!strict && req.headers["sec-fetch-site"] !== undefined);
-    return auth === "cookie" && !proven ? 403 : 0;
+    return auth === "cookie" && !proven ? { status: 403, reason: "no Origin" } : undefined;
   };
   const authOf = (req: http.IncomingMessage): "header" | "cookie" | null => {
     const header = headerToken(req);
@@ -133,13 +154,18 @@ export async function createServer(opts: ServerOptions) {
     socket.on("error", () => socket.destroy());
     const url = target(req);
     if (!url) return void socket.destroy();
-    const status = url.pathname !== "/ws" ? 404 : refuse(req, true);
-    if (status) {
+    const refusal = url.pathname !== "/ws" ? { status: 404, reason: "not found" } : refuse(req, true);
+    const call = (status: number, more: Partial<Call> = {}): Call =>
+      ({ route: `GET ${url.pathname.slice(0, 120)}`, status, client: req.headers["x-agentboard-client"]?.toString(), board: false, params: {}, ...more });
+    if (refusal) {
+      const { status } = refusal;
       // A half-open client would otherwise keep the socket, and close(), waiting forever.
       socket.once("finish", () => socket.destroy());
       socket.end(`HTTP/1.1 ${status} ${http.STATUS_CODES[status]}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
+      opts.onCall?.(call(status, { reason: refusal.reason, origin: refusal.origin }));
       return;
     }
+    opts.onCall?.(call(101, { board: authOf(req) === "cookie" }));
     wss.handleUpgrade(req, socket, head, (ws) => {
       attached.set(ws, new Set());
       const client = url.searchParams.get("client");
@@ -200,6 +226,15 @@ function headerToken(req: http.IncomingMessage): string | undefined {
 }
 
 const isIndex = (pathname: string) => pathname === "/" || pathname === "/index.html";
+
+// For the log: a malformed escape, which handle() answers 400, leaves the params empty instead of throwing.
+function paramsOf(route: (typeof compiled)[number], pathname: string): Record<string, string> {
+  try {
+    return Object.fromEntries(Object.entries(route.pattern.exec(pathname)!.groups ?? {}).map(([k, v]) => [k, decodeURIComponent(v)]));
+  } catch {
+    return {};
+  }
+}
 
 const types: Record<string, string> = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",

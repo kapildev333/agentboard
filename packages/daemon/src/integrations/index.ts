@@ -36,8 +36,9 @@ export class CallLog {
   constructor(private consoleOf: ConsoleOf = () => undefined) {}
 
   record(call: Call): void {
-    const known = call.client ? CLIENTS[call.client] : undefined;
-    const target = call.route === HOOK && call.params.consoleId ? this.consoleOf(call.params.consoleId) : undefined;
+    const known = call.client && Object.hasOwn(CLIENTS, call.client) ? CLIENTS[call.client] : undefined;
+    // Only an accepted hook names its console: a refused caller could put any id in the path.
+    const target = call.route === HOOK && !call.reason && call.params.consoleId ? this.consoleOf(call.params.consoleId) : undefined;
     // The daemon loads the OpenCode plugin into every opencode console, so their hooks are the plugin's. A claude
     // console's hooks come from the daemon's own relay unless the plugin says it sent them.
     const seen = known?.seen ?? (target?.agent === "opencode" ? "opencodePlugin" : undefined);
@@ -56,6 +57,6 @@ export class CallLog {
 
   /** Newest first. */
   read(): Integrations {
-    return { seen: { ...this.seen }, log: this.ring.toReversed() };
+    return { seen: { ...this.seen }, log: [...this.ring].reverse() };
   }
 }
