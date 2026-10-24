@@ -25,7 +25,7 @@ test("safe steps alone are just announced", async () => {
 });
 
 test("text with no step gives unknown with a hint", async () => {
-  const plan = await planCommand("focus the one that needs me", snapshot, settings);
+  const plan = await planCommand("blorp zxqv wibble", snapshot, settings);
   expect(plan.steps).toEqual([]);
   expect(plan.unknown).toBe("I can spawn, close, resume, focus, fit, add a note or type into a console");
   expect(plan.reply).toContain(plan.unknown);

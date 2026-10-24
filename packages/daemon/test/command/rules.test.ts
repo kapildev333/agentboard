@@ -75,3 +75,8 @@ test("every step gets a fresh id, the shared summary and asks from its kind", ()
   expect(a!.id).not.toBe(b!.id);
   expect(a!.summary).toBe("Close CI cleanup and Lint sweep");
 });
+
+test("focus the one that needs me picks the console that needs you", () => {
+  const needy = { ...snapshot, consoles: snapshot.consoles.map((c) => (c.id === lint ? { ...c, status: "needs_you" as const } : c)) };
+  expect(parseRules("focus the one that needs me", needy)).toMatchObject([{ kind: "focus", consoleId: lint, asks: false }]);
+});
