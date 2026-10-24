@@ -16,7 +16,7 @@ const COLORS = [
 const WIDTHS = [2, 4, 8] as const;
 const MIN_STEP = 2;
 
-const useInk = create<{ mode: Mode; color: string; width: number }>()(() => ({ mode: "off", color: COLORS[0][1], width: 4 }));
+export const useInk = create<{ mode: Mode; color: string; width: number }>()(() => ({ mode: "off", color: COLORS[0][1], width: 4 }));
 const setInk = useInk.setState;
 
 // Strokes live on the active workspace, edited through the board store so autosave and the rev flow carry them.
