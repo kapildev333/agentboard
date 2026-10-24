@@ -1,0 +1,281 @@
+/* Settings drawer contents: a section nav on the left, a scrolling pane on the right; a row of chips under 560 px. */
+.settings-panel {
+  /* ponytail: local copies of the agent marks; replace with L1D's --mark-* tokens and AgentMark */
+  --mark-claude-bg: #3a2a12;
+  --mark-claude-fg: #f2c98a;
+  --mark-codex-bg: #10331f;
+  --mark-codex-fg: #7ee787;
+  --mark-gemini-bg: #13284d;
+  --mark-gemini-fg: #9dbfff;
+  --mark-opencode-bg: #2c1f4a;
+  --mark-opencode-fg: #d2a8ff;
+  --mark-custom-bg: #2a2f39;
+  --mark-custom-fg: #c0c6d1;
+
+  container-type: inline-size;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  font-size: var(--text-sm);
+}
+
+.settings-panel .sp-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.settings-panel .sp-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-panel .sp-nav-item {
+  justify-content: flex-start;
+  height: 28px;
+  padding: 0 var(--space-1);
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.settings-panel .sp-nav-item:hover {
+  color: var(--color-text);
+}
+
+.settings-panel .sp-nav-item[aria-current="true"] {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* the nav sits inside the drawer, so its ring stays inside the button */
+.settings-panel .sp-nav-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.settings-panel .sp-version {
+  margin-top: auto;
+  padding: var(--space-1);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.settings-panel .sp-content {
+  position: relative;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+}
+
+.settings-panel .sp-section {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.settings-panel .sp-heading {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.settings-panel .sp-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.settings-panel .sp-caption {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.settings-panel .sp-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.settings-panel .sp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-panel .sp-row-label {
+  display: inline-block;
+  font-weight: 500;
+}
+
+.settings-panel .sp-row-label::first-letter {
+  text-transform: uppercase;
+}
+
+.settings-panel .sp-stack {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings-panel .sp-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-panel .sp-number {
+  width: 64px;
+}
+
+.settings-panel .sp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.settings-panel .sp-table th {
+  padding: var(--space-half) var(--space-1);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.settings-panel .sp-table td {
+  height: 36px;
+  padding: 0 var(--space-1);
+  border-top: 1px solid var(--color-border);
+}
+
+.settings-panel .sp-agent,
+.settings-panel .sp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.settings-panel .sp-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-text-muted);
+}
+
+.settings-panel [data-status="Ready"] .sp-dot {
+  background: var(--status-idle-fg);
+}
+
+.settings-panel [data-status="Heuristic"] .sp-dot {
+  background: var(--status-starting-fg);
+}
+
+.settings-panel [data-status="Not installed"] {
+  color: var(--color-text-muted);
+}
+
+.settings-panel .sp-mark {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  background: var(--mark-custom-bg);
+  color: var(--mark-custom-fg);
+  font-family: "JetBrains Mono", var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.settings-panel .sp-mark[data-agent="claude"] { background: var(--mark-claude-bg); color: var(--mark-claude-fg); }
+.settings-panel .sp-mark[data-agent="codex"] { background: var(--mark-codex-bg); color: var(--mark-codex-fg); }
+.settings-panel .sp-mark[data-agent="gemini"] { background: var(--mark-gemini-bg); color: var(--mark-gemini-fg); }
+.settings-panel .sp-mark[data-agent="opencode"] { background: var(--mark-opencode-bg); color: var(--mark-opencode-fg); }
+
+.settings-panel .sp-card {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+}
+
+.settings-panel .sp-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.settings-panel .sp-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.settings-panel .sp-danger {
+  color: var(--color-danger);
+}
+
+.settings-panel .sp-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-1) var(--space-2);
+}
+
+.settings-panel .sp-chip-ok {
+  flex: none;
+  height: 20px;
+  line-height: 20px;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--status-idle-bg);
+  color: var(--status-idle-fg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* Narrow drawer: the nav becomes a row of chips above the content, the fields one column. */
+@container (max-width: 559px) {
+  .settings-panel .sp-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .settings-panel .sp-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .settings-panel .sp-nav-item {
+    height: 24px;
+    border-color: var(--color-border);
+    border-radius: var(--radius-pill);
+    font-size: var(--text-xs);
+  }
+
+  .settings-panel .sp-version {
+    margin: 0 0 0 auto;
+    padding: 0;
+  }
+
+  .settings-panel .sp-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
