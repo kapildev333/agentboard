@@ -61,6 +61,8 @@ export function useConsoleSocket(consoleId: string, factory: SocketFactory = def
   return {
     exited: exit !== undefined,
     exitCode: exit?.code,
+    /** Forget the last exit, for a console that runs again (Resume). */
+    clearExit: useCallback(() => setExit(undefined), []),
     sendResize: (cols: number, rows: number) => {
       size.current = { cols, rows };
       send({ t: "resize", consoleId, cols, rows });

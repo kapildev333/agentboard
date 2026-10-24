@@ -26,7 +26,7 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge, o
   const { node } = data;
   const el = useRef<HTMLDivElement>(null);
   const term = useRef<Terminal | null>(null);
-  const { sendInput, sendResize, exited, exitCode } = useConsoleSocket(node.id, socketFactory, (d) => term.current?.write(d));
+  const { sendInput, sendResize, exited, exitCode, clearExit } = useConsoleSocket(node.id, socketFactory, (d) => term.current?.write(d));
   const io = useRef({ sendInput, sendResize });
   io.current = { sendInput, sendResize };
   const { getZoom } = useReactFlow();
@@ -74,6 +74,11 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge, o
     term.current.options.fontSize = fontSize;
     fit.current?.fit();
   }, [fontSize]);
+
+  // A console that runs again forgets its exit: the hidden announcement and the code in the pill go.
+  useEffect(() => {
+    if (node.status && node.status !== "exited" && node.status !== "stopped") clearExit();
+  }, [node.status, clearExit]);
 
   const exitCb = useRef(onExit);
   exitCb.current = onExit;

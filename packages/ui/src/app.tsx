@@ -96,7 +96,8 @@ function ConsoleView(props: NodeProps) {
   const gitFetch = useMemo<Fetch>(
     () => async (input, init) => {
       const res = await fetch(input, init);
-      if (String(input).startsWith("/api/git/status") && res.ok)
+      // A Request's url is absolute, so compare paths.
+      if (new URL(input instanceof Request ? input.url : String(input), location.href).pathname === "/api/git/status" && res.ok)
         void res
           .clone()
           .json()
@@ -111,7 +112,12 @@ function ConsoleView(props: NodeProps) {
   };
   const resume = () => run(resumeConsole(fetch, node.id));
   const close = () => useBoard.getState().removeNode(node.id);
-  const cwd = node.cwd === repo ? "." : node.cwd.startsWith(`${repo}/`) ? node.cwd.slice(repo.length + 1) : node.cwd;
+  const [root, dir] = [repo, node.cwd].map((p) => p.replace(/(.)\/+$/, "$1")) as [string, string];
+  const cwd = dir === root ? "." : dir.startsWith(`${root}/`) ? dir.slice(root.length + 1) : dir;
+  // A console that runs again forgets its last exit code.
+  useEffect(() => {
+    if (node.status !== "exited" && node.status !== "stopped") setExitCode(undefined);
+  }, [node.status]);
   return (
     <div
       className={`card console-card is-${node.status}${node.status === "needs_you" ? " needs-you" : ""}${focused ? " is-focused" : ""}`}
@@ -136,7 +142,11 @@ function ConsoleView(props: NodeProps) {
           className="btn-sm btn-quiet"
           aria-pressed={git}
           aria-describedby={dirty > 0 ? `dirty-${node.id}` : undefined}
-          onClick={() => setGit(!git)}
+          onClick={() => {
+            // Closed, the git card stops refreshing the count, so drop it rather than show a stale one.
+            if (git) setDirty(0);
+            setGit(!git);
+          }}
         >
           Git
           {dirty > 0 && (
