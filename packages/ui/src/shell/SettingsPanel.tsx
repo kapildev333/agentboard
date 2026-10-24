@@ -20,7 +20,7 @@ const showPathEnd = (el: HTMLInputElement | null) => {
 // Stable, so the agent list is fetched once per mount.
 const browserFetch: Fetch = (input, init) => globalThis.fetch(input, init);
 
-const SECTIONS = ["Terminal", "Agents", "Safety"] as const;
+const SECTIONS = ["Terminal", "Agents", "Voice", "Command planner", "Safety"] as const;
 type Section = (typeof SECTIONS)[number];
 
 // How each built-in reports its status; claude, gemini and opencode have hooks or a plugin, the rest are read from output.
@@ -77,6 +77,25 @@ export function SettingsPanel({
     );
     setSize(String(n));
     if (n !== settings.fontSize) onChange({ ...settings, fontSize: n });
+  };
+  // Voice and planner commit on blur, so a half-typed URL is never saved; an empty field removes its object.
+  const [command, setCommand] = useState(settings.voice?.transcribeCommand ?? "");
+  const [url, setUrl] = useState(settings.planner?.url ?? "");
+  const [model, setModel] = useState(settings.planner?.model ?? "");
+  useEffect(() => setCommand(settings.voice?.transcribeCommand ?? ""), [settings.voice?.transcribeCommand]);
+  useEffect(() => setUrl(settings.planner?.url ?? ""), [settings.planner?.url]);
+  useEffect(() => setModel(settings.planner?.model ?? ""), [settings.planner?.model]);
+  const commitVoice = () => {
+    const rest = { ...settings };
+    delete rest.voice;
+    const next = command.trim() ? { ...rest, voice: { transcribeCommand: command.trim(), holdKey: "alt+space" as const } } : rest;
+    if (command.trim() !== (settings.voice?.transcribeCommand ?? "")) onChange(next);
+  };
+  const commitPlanner = () => {
+    const rest = { ...settings };
+    delete rest.planner;
+    const next = url.trim() ? { ...rest, planner: { url: url.trim(), model: model.trim() } } : rest;
+    if (url.trim() !== (settings.planner?.url ?? "") || model.trim() !== (settings.planner?.model ?? "")) onChange(next);
   };
   const setAgent = (i: number, patch: Partial<CustomAgent>) =>
     onChange({
@@ -351,6 +370,70 @@ export function SettingsPanel({
                 10000 lines · not kept across daemon restarts
               </span>
             </div>
+          </section>
+
+          <section
+            data-section="Voice"
+            className="sp-section"
+            aria-labelledby="sp-voice"
+          >
+            <h3 id="sp-voice" className="sp-heading">
+              Voice
+            </h3>
+            <div className="sp-fields">
+              <label className="field">
+                <span className="field-label">Transcribe command</span>
+                <input
+                  className="path-field"
+                  value={command}
+                  onChange={(e) => setCommand(e.target.value)}
+                  onBlur={commitVoice}
+                />
+              </label>
+            </div>
+            <p className="sp-caption">
+              Runs on this machine with the recorded audio file appended, and
+              prints the text. For example <code>whisper-cli -nt -f</code>.
+            </p>
+            <div className="sp-row">
+              <span className="sp-row-label">Hold key</span>
+              <kbd>alt+space</kbd>
+            </div>
+          </section>
+
+          <section
+            data-section="Command planner"
+            className="sp-section"
+            aria-labelledby="sp-planner"
+          >
+            <h3 id="sp-planner" className="sp-heading">
+              Command planner
+            </h3>
+            <div className="sp-fields">
+              <label className="field">
+                <span className="field-label">Planner URL</span>
+                <input
+                  className="path-field"
+                  value={url}
+                  placeholder="http://localhost:11434"
+                  onChange={(e) => setUrl(e.target.value)}
+                  onBlur={commitPlanner}
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">Model</span>
+                <input
+                  className="mono"
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  onBlur={commitPlanner}
+                />
+              </label>
+            </div>
+            <p className="sp-caption">
+              A local Ollama-compatible server on this machine; the daemon
+              refuses other hosts.
+            </p>
           </section>
 
           <section
