@@ -92,10 +92,18 @@ export function SpawnDialog({
       </span>
       <span className="agent-text">
         <span className="agent-name">{a.name ?? a.id}</span>
-        <span className="agent-meta">{[a.available && a.version, SIGNAL[a.id]].filter(Boolean).join(" · ")}</span>
+        <span className="agent-meta">
+          {!a.available && (
+            <>
+              <span className="agent-status">not installed</span>
+              {" · "}
+            </>
+          )}
+          {[a.available && a.version, SIGNAL[a.id]].filter(Boolean).join(" · ")}
+        </span>
       </span>
-      {!a.available && <span className="agent-status">not installed</span>}
-      <span className={`agent-dot${a.available ? " is-ready" : ""}`} aria-hidden="true" />
+      {/* A custom agent has no readiness to report beyond being on PATH, so only a missing one gets a dot. */}
+      {(a.id !== "custom" || !a.available) && <span className={`agent-dot${a.available ? " is-ready" : ""}`} aria-hidden="true" />}
     </label>
   );
   return (
@@ -141,39 +149,45 @@ export function SpawnDialog({
             onChange={() => setUseWorktree(true)}
           />
           <div className="where-text">
-            <label htmlFor={`${id}-wt`}>
-              <span id={`${id}-wt-n`} className="where-name">
-                new worktree
-              </span>{" "}
-              from{" "}
-              <span id={`${id}-wt-b`} className="chip">
-                {base ?? "main"}
+            <div className="where-line">
+              <label htmlFor={`${id}-wt`}>
+                <span id={`${id}-wt-n`} className="where-name">
+                  new worktree
+                </span>{" "}
+                from{" "}
+                <span id={`${id}-wt-b`} className="chip">
+                  {base ?? "main"}
+                </span>
+              </label>
+              <span id={`${id}-wt-d`} className="where-caption">
+                so two agents never edit the same files
               </span>
-            </label>
-            <span id={`${id}-wt-d`} className="where-caption">
-              so two agents never edit the same files
-            </span>
+            </div>
+            {useWorktree && (
+              <div className="wt-branch">
+                <input aria-label="branch name" placeholder="branch name" value={branch} onChange={(e) => setBranch(e.target.value)} />
+                {/* The daemon puts the worktree at .worktrees/<name>, the name as given (git/service.ts worktreeAdd). */}
+                <span className="wt-preview">→ .worktrees/{name}</span>
+              </div>
+            )}
           </div>
         </div>
-        {useWorktree && (
-          <div className="wt-branch">
-            <input aria-label="branch name" placeholder="branch name" value={branch} onChange={(e) => setBranch(e.target.value)} />
-            {/* The daemon puts the worktree at .worktrees/<name>, the name as given (git/service.ts worktreeAdd). */}
-            <span className="wt-preview">→ .worktrees/{name}</span>
-          </div>
-        )}
       </fieldset>
       <label className="field">
-        <span className="field-label">First prompt (optional)</span>
+        <span className="field-label">
+          First prompt <span className="field-optional">(optional)</span>
+        </span>
         <textarea aria-label="first prompt" rows={3} value={prompt} onChange={(e) => setPrompt(e.target.value)} />
       </label>
       {error && <p role="alert">{error}</p>}
       <div className="spawn-footer">
         <p className="spawn-note">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M2.5 7.5 5.5 10.5 11.5 4" />
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m5 12 5 5L20 7" />
           </svg>
-          Hooks post to 127.0.0.1 only. Your ~/.claude/settings.json is never edited.
+          <span>
+            Hooks post to 127.0.0.1 only. Your <code>~/.claude/settings.json</code> is never edited.
+          </span>
         </p>
         <button type="button" onClick={onCancel}>
           Cancel
