@@ -27,7 +27,7 @@ export async function transcribe(audio: Buffer, mime: string, command: string, h
   } catch (e) {
     const err = e as { killed?: boolean; stderr?: string; message: string };
     const line = String(err.stderr ?? "").split("\n").find((l) => l.trim());
-    throw new Error(line ?? (err.killed ? "transcriber timed out after 30 s" : err.message));
+    throw new Error(line ?? (err.killed ? "transcriber timed out after 30 s" : err.message), { cause: e });
   } finally {
     await rm(path, { force: true });
   }

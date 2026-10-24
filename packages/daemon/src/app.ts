@@ -13,6 +13,7 @@ import { createServer, type RouteHandlers } from "./server/index.js";
 import { acceptHook, adoptsNextSession, sessionFromHook, sessionIdOf } from "./session.js";
 import { DaemonFile, StateStore, agentboardHome } from "./state/index.js";
 import { StatusTracker } from "./status/index.js";
+import { transcribe } from "./voice/index.js";
 
 export type DaemonOptions = {
   repoPath: string;
@@ -304,6 +305,16 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       return { ok: true };
     },
     "POST /api/open": (body) => handleOpen(body),
+    "POST /api/voice/transcribe": async (input) => {
+      const command = (await settings()).voice?.transcribeCommand;
+      if (!command) throw new HttpError(412, "no transcriber configured: set Settings › Voice › transcribe command (for example whisper-cli -nt -f)");
+      const { audio, mime } = input as unknown as { audio: Buffer; mime: string };
+      try {
+        return await transcribe(audio, mime, command, agentboardHome());
+      } catch (e) {
+        throw new HttpError(502, (e as Error).message);
+      }
+    },
   };
 
   const server = await createServer({

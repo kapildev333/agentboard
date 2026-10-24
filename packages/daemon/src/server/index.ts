@@ -26,6 +26,9 @@ const compiled = table.map((r) => ({
   pattern: new RegExp("^" + r.path.replace(/:(\w+)/g, "(?<$1>[^/]+)") + "$"),
 }));
 const MAX_BODY = 1 << 20;
+// The one route with a raw body: recorded audio, passed to its handler as { audio, mime } instead of parsed JSON.
+const AUDIO_ROUTE = "POST /api/voice/transcribe";
+const MAX_AUDIO = 10 * 1024 * 1024;
 const CODE_TTL_MS = 60_000;
 
 export type ServerOptions = {
@@ -232,11 +235,15 @@ async function handle(
     params = Object.fromEntries(
       Object.entries(route.pattern.exec(url.pathname)!.groups ?? {}).map(([k, v]) => [k, decodeURIComponent(v)]),
     );
-    raw = route.method === "GET" ? Object.fromEntries(url.searchParams) : await readJson(req);
+    if (route.key === AUDIO_ROUTE) {
+      const mime = req.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() ?? "";
+      if (!["audio/webm", "audio/ogg", "audio/wav"].includes(mime)) return json(res, 415, { error: "unsupported media type" });
+      raw = { audio: await readBody(req, MAX_AUDIO), mime };
+    } else raw = route.method === "GET" ? Object.fromEntries(url.searchParams) : await readJson(req);
   } catch (err) {
     return json(res, err === tooLarge ? 413 : 400, { error: "invalid request" });
   }
-  let input: unknown;
+  let input: unknown = route.key === AUDIO_ROUTE ? raw : undefined;
   if (route.request) {
     const parsed = schema(route.request).safeParse(raw);
     if (!parsed.success) return json(res, 400, { error: "invalid request" });
@@ -248,7 +255,7 @@ async function handle(
   } catch (err) {
     // A client error (OpenError, unknown console) carries its 4xx status and a message meant for the caller.
     const status = (err as { status?: unknown }).status;
-    if (err instanceof Error && typeof status === "number" && status >= 400 && status < 500) return json(res, status, { error: err.message });
+    if (err instanceof Error && typeof status === "number" && (status === 502 || (status >= 400 && status < 500))) return json(res, status, { error: err.message });
     return json(res, 500, { error: "internal error" });
   }
   const out = schema(route.response).safeParse(result);
@@ -258,15 +265,19 @@ async function handle(
 
 const tooLarge = new Error("body too large");
 
-async function readJson(req: http.IncomingMessage): Promise<unknown> {
+async function readBody(req: http.IncomingMessage, max: number): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of req as AsyncIterable<Buffer>) {
     size += chunk.length;
-    if (size > MAX_BODY) throw tooLarge;
+    if (size > max) throw tooLarge;
     chunks.push(chunk);
   }
-  const text = Buffer.concat(chunks).toString("utf8");
+  return Buffer.concat(chunks);
+}
+
+async function readJson(req: http.IncomingMessage): Promise<unknown> {
+  const text = (await readBody(req, MAX_BODY)).toString("utf8");
   return text === "" ? undefined : JSON.parse(text);
 }
 
