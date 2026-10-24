@@ -4,7 +4,7 @@ The Usage view reads each CLI's own session logs on this disk. No network, no es
 
 Parsed files are cached in `~/.agentboard/usage.json`, one entry per file with its path, size and mtime and the sessions parsed from it (P4-D46: JSON, not sqlite). A refresh re-parses only files whose size or mtime changed and drops files that are gone. A file a parser does not recognise is skipped and not counted in `sources[].files`.
 
-Every parser was written against invented fixtures in `packages/daemon/test/usage/fixtures`; no real session log is in the repo. Only Claude Code's layout was checked against a real install. The other three CLIs are not run here (CLAUDE.md forbids running third-party agent binaries), so their fields come from their published formats, and the owner confirms them at the phase 4 gate.
+Every parser was written against invented fixtures in `packages/daemon/test/usage/fixtures`; no real session log is in the repo. None of the four was checked against a real log in this lane. The third-party CLIs cannot be run here (CLAUDE.md forbids running their binaries), so every field below comes from that CLI's published format. The owner confirms them at the phase 4 gate, which allows a 5% difference from each CLI's own numbers.
 
 ## Token fields
 
@@ -19,7 +19,7 @@ A day's bar and a group's total add up all three.
 ## Claude Code
 
 - Path: `~/.claude/projects/<project slug>/**/*.jsonl` (one file per session; subagent files under the session's folder count too). Also `<CLAUDE_CONFIG_DIR>/projects` for each claude profile.
-- Checked against: Claude Code 2.x.
+- Checked against: the 2.x log format (fields from the lane brief).
 - Fields:
   - `sessionId`: the session.
   - `timestamp`: bounds the session (first and last line).
