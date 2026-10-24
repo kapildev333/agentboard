@@ -23,8 +23,7 @@ async function postOpen(editor: Editor, path: string, doFetch: typeof fetch): Pr
 export function OpenInButtons({ path, doFetch = fetch }: { path: string; doFetch?: typeof fetch }) {
   const [error, setError] = useState<string | null>(null);
   return (
-    <div className="open-in">
-      <span className="field-label">Open in</span>
+    <div className="open-in" role="group" aria-label="Open in">
       {EDITORS.map(({ editor, label }) => (
         <button
           key={editor}
