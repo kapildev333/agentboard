@@ -59,19 +59,22 @@ export function SpawnDialog({ fetch, cwd, onSpawned, onCancel }: { fetch: Fetch;
     }
   };
 
+  const custom = agents.filter((a) => a.customId);
+  const builtIn = agents.filter((a) => !a.customId);
+  // Focus lands inside the modal, so the keyboard can reach it (a focused terminal keeps Tab).
+  const first = [...builtIn, ...custom].find((a) => a.available);
   const row = (a: AgentInfo) => (
     <label key={keyOf(a)} className="agent-option">
-      <input type="radio" name="agent" disabled={!a.available} checked={keyOf(choice) === keyOf(a)} onChange={() => setChoice(a)} />
+      <input type="radio" name="agent" autoFocus={a === first} disabled={!a.available} checked={keyOf(choice) === keyOf(a)} onChange={() => setChoice(a)} />
       <span className="agent-name">{a.name ?? a.id}</span>
       <span className="agent-meta">{a.available ? a.version : "not installed"}</span>
     </label>
   );
-  const custom = agents.filter((a) => a.customId);
   return (
     <form className="spawn" onSubmit={submit}>
       <fieldset className="agent-list">
         <legend className="section-title">Agent</legend>
-        {agents.filter((a) => !a.customId).map(row)}
+        {builtIn.map(row)}
       </fieldset>
       {custom.length > 0 && (
         <fieldset className="agent-list">

@@ -146,6 +146,13 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
   const [panel, setPanel] = useState<"spawn" | "settings" | null>(null);
   const empty = useBoard((s) => !s.board.workspaces.find((w) => w.id === s.board.activeWorkspaceId)?.nodes.length);
   useNotifications({ onFocus: focusNode });
+  // Escape closes the spawn modal; its backdrop keeps every terminal from seeing the key first.
+  useEffect(() => {
+    if (panel !== "spawn") return;
+    const close = (e: KeyboardEvent) => e.key === "Escape" && setPanel(null);
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [panel]);
 
   useEffect(() => {
     if (!repo) return;
