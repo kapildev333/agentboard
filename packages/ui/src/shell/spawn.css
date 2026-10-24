@@ -1,17 +1,5 @@
 /* Spawn dialog (Spawn.dc.html): everything inside SpawnDialog's form. The dialog chrome (title, backdrop, width) is app.tsx's. */
 .spawn {
-  /* Agent marks: replace with L1D's --mark-* tokens and AgentMark once they merge. */
-  --mark-claude-bg: #3a2a12;
-  --mark-claude-fg: #f2c98a;
-  --mark-codex-bg: #10331f;
-  --mark-codex-fg: #7ee787;
-  --mark-gemini-bg: #13284d;
-  --mark-gemini-fg: #9dbfff;
-  --mark-opencode-bg: #2c1f4a;
-  --mark-opencode-fg: #d2a8ff;
-  --mark-custom-bg: #2a2f39;
-  --mark-custom-fg: #c0c6d1;
-
   display: flex;
   flex-direction: column;
   gap: 20px;
