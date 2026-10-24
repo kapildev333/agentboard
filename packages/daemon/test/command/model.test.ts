@@ -80,3 +80,10 @@ test("the model gets 8 s, then the rules plan", async () => {
     vi.useRealTimers();
   }
 });
+
+test("the system prompt leaves out every field off the allowlist", async () => {
+  const fetch = answer('{"steps":[{"kind":"fit"}]}');
+  await planWithModel("fit", snapshot, planner, fetch as never);
+  const system = JSON.parse(String(fetch.mock.calls[0]![1]!.body)).messages[0].content as string;
+  for (const s of ["/tmp/demo-repo", "\"cwd\"", "\"repoPath\"", "\"customId\"", "2.1.0", "\"command\""]) expect(system).not.toContain(s);
+});
