@@ -1,3 +1,3 @@
-export { RepoPicker } from "./RepoPicker";
+export { RepoPicker, type RecentRepo } from "./RepoPicker";
 export { SettingsPanel, type CustomAgent, type Settings } from "./SettingsPanel";
 export { SpawnDialog, type Fetch } from "./SpawnDialog";

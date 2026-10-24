@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { NodeProps } from "@xyflow/react";
 import { BoardSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type NoteNode, type Settings } from "@agentboard/shared";
-import { Board, WorkspaceTabs, autosaveBoard, useBoard } from "./board";
+import { version } from "../package.json";
+import { Board, FolderIcon, Logo, SettingsIcon, WorkspaceTabs, autosaveBoard, useBoard } from "./board";
 import { CommandBar } from "./command";
 import { ConsoleNode, type SocketLike } from "./console";
 import { GitCard } from "./git";
 import { OpenInButtons } from "./open/OpenInButtons";
-import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
+import { RepoPicker, SettingsPanel, SpawnDialog, type RecentRepo } from "./shell";
 import { MissionMap, StatusBadge, useNotifications } from "./status";
 import { WebTileView } from "./webtile";
 
@@ -15,13 +16,16 @@ const Api = createContext<{ fetch: Fetch; fontSize: number }>({ fetch: globalThi
 
 const RECENT = "agentboard.recent";
 const consoles = (b: BoardData) => b.workspaces.flatMap((w) => w.nodes).filter((n): n is ConsoleData => n.type === "console");
-const readRecent = (): string[] => {
+const readRecent = (): RecentRepo[] => {
   try {
-    return JSON.parse(localStorage.getItem(RECENT) ?? "[]") as string[];
+    return (JSON.parse(localStorage.getItem(RECENT) ?? "[]") as (string | RecentRepo)[]).map((r) => (typeof r === "string" ? { path: r } : r));
   } catch {
     return [];
   }
 };
+/** Puts a repo first in the launch page's recent list, with its console count. */
+const remember = (path: string, n: number) =>
+  localStorage.setItem(RECENT, JSON.stringify([{ path, consoles: n }, ...readRecent().filter((r) => r.path !== path)].slice(0, 10)));
 const defaultConnect = (client: string): SocketLike =>
   new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws?client=${client}`) as unknown as SocketLike;
 
@@ -145,14 +149,26 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();
   const [settings, setSettings] = useState<Settings>({ fontSize: 13, customAgents: [] });
-  const [panel, setPanel] = useState<"spawn" | "settings" | "command" | null>(null);
+  const [panel, setPanelState] = useState<"spawn" | "settings" | "command" | null>(null);
   const flow = useRef<{ fitView: () => unknown }>(undefined);
+  // Focus goes back to whatever opened a panel when it closes.
+  const opener = useRef<HTMLElement | null>(null);
+  const setPanel = (p: typeof panel) => {
+    if (p && !panel) opener.current = document.activeElement as HTMLElement | null;
+    setPanelState(p);
+    if (!p) opener.current?.focus();
+  };
   const empty = useBoard((s) => !s.board.workspaces.find((w) => w.id === s.board.activeWorkspaceId)?.nodes.length);
   useNotifications({ onFocus: focusNode });
-  // Escape closes the spawn modal; its backdrop keeps every terminal from seeing the key first.
+  // Escape closes the spawn modal (its backdrop keeps every terminal from seeing the key first) and the settings
+  // drawer, unless the key went to a terminal, which may want it. The command bar handles its own.
   useEffect(() => {
-    if (panel !== "spawn") return;
-    const close = (e: KeyboardEvent) => e.key === "Escape" && setPanel(null);
+    if (panel !== "spawn" && panel !== "settings") return;
+    const close = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || (panel === "settings" && e.target instanceof Element && e.target.closest(".xterm"))) return;
+      setPanelState(null);
+      opener.current?.focus();
+    };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
   }, [panel]);
@@ -163,11 +179,19 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
       if (e.key.toLowerCase() !== "k" || !(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
       e.preventDefault();
       e.stopPropagation();
-      setPanel((p) => (p === "command" ? null : "command"));
+      setPanelState((p) => (p === "command" ? null : "command"));
     };
     window.addEventListener("keydown", open, true);
     return () => window.removeEventListener("keydown", open, true);
   }, []);
+
+  useEffect(() => {
+    let live = true;
+    fetch("/api/settings")
+      .then(async (r) => r.ok && live && setSettings(SettingsSchema.parse(await r.json())))
+      .catch(() => {});
+    return () => void (live = false);
+  }, [fetch]);
 
   useEffect(() => {
     if (!repo) return;
@@ -196,7 +220,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
       const board = await read();
       if (!live) return;
       useBoard.getState().setBoard(board);
-      localStorage.setItem(RECENT, JSON.stringify([repo, ...readRecent().filter((r) => r !== repo)].slice(0, 10)));
+      remember(repo, consoles(board).length);
       setReady(true);
       cleanups.push(
         autosaveBoard((b) => void save(b)),
@@ -204,6 +228,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
         useBoard.subscribe((s, prev) => {
           if (s.board === prev.board || s.board.repoPath !== prev.board.repoPath) return;
           const now = new Set(consoles(s.board).map((n) => n.id));
+          if (now.size !== consoles(prev.board).length) remember(repo, now.size);
           for (const n of consoles(prev.board))
             if (!now.has(n.id) && !closed.has(n.id)) {
               closed.add(n.id);
@@ -232,8 +257,6 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
         cleanups.push(() => s.close());
       };
       open();
-      const sres = await fetch("/api/settings").catch(() => null);
-      if (live && sres?.ok) setSettings(SettingsSchema.parse(await sres.json()));
     })().catch((e: Error) => live && setError(e.message));
     return () => {
       live = false;
@@ -243,23 +266,54 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
 
   const go = (path: string) => (location.search = `?repo=${encodeURIComponent(path)}`);
   if (error) return <p role="alert" className="app-message">{error}</p>;
-  if (!repo)
-    return (
-      <main className="picker">
-        <h1>AgentBoard</h1>
-        <RepoPicker recent={readRecent()} onOpen={go} />
-      </main>
-    );
 
   const saveSettings = (s: Settings) => {
     setSettings(s);
     void fetch("/api/settings", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(s) });
   };
+  const brand = (
+    <span className="brand">
+      <Logo />
+      <strong>AgentBoard</strong>
+    </span>
+  );
+  const settingsButton = (
+    <button type="button" className="btn-icon btn-quiet" aria-label="Settings" aria-expanded={panel === "settings"} onClick={() => setPanel(panel === "settings" ? null : "settings")}>
+      <SettingsIcon />
+    </button>
+  );
+  const settingsDrawer = panel === "settings" && (
+    <div role="dialog" aria-label="Settings" className="drawer">
+      <h2 className="panel-title">Settings</h2>
+      <SettingsPanel settings={settings} onChange={saveSettings} />
+    </div>
+  );
+  if (!repo)
+    return (
+      <div className="launch">
+        <header className="topbar">
+          {brand}
+          <span className="chip">v{version}</span>
+          <span className="topbar-spacer" />
+          {settingsButton}
+        </header>
+        <main className="launch-body">
+          <RepoPicker recent={readRecent()} onOpen={go} fetch={fetch} />
+        </main>
+        {settingsDrawer}
+      </div>
+    );
+
   return (
     <Api.Provider value={{ fetch, fontSize: settings.fontSize }}>
       <div className="app">
         <header className="topbar">
-          <strong className="topbar-repo" title={repo}>{repo.split("/").pop()}</strong>
+          {brand}
+          <span className="topbar-divider" aria-hidden="true" />
+          <span className="topbar-repo" title={repo}>
+            <FolderIcon />
+            <strong>{repo.replace(/\/+$/, "").split("/").pop()}</strong>
+          </span>
           {ready && <WorkspaceTabs />}
           <span className="topbar-spacer" />
           <button type="button" className="btn-primary" aria-expanded={panel === "spawn"} onClick={() => setPanel(panel === "spawn" ? null : "spawn")}>
@@ -268,9 +322,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           <button type="button" aria-label="Command" aria-keyshortcuts="Meta+K Control+K" aria-expanded={panel === "command"} onClick={() => setPanel(panel === "command" ? null : "command")}>
             Command <kbd>⌘K</kbd>
           </button>
-          <button type="button" aria-expanded={panel === "settings"} onClick={() => setPanel(panel === "settings" ? null : "settings")}>
-            Settings
-          </button>
+          {settingsButton}
         </header>
         <main className="board">
           {ready ? <Board nodeTypes={nodeTypes} onInit={(rf) => (flow.current = rf)} /> : <p className="app-message muted">Loading the board…</p>}
@@ -283,12 +335,13 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
         <div className="rail">
           <MissionMap onFocus={focusNode} fetch={fetch} />
         </div>
-        <CommandBar open={panel === "command"} onClose={() => setPanel(null)} fetch={fetch} repo={repo} onFocus={focusNode} onFit={() => void flow.current?.fitView()} />
-        {panel === "spawn" && <div className="backdrop" onClick={() => setPanel(null)} />}
-        {(panel === "spawn" || panel === "settings") && (
-          <div role="dialog" aria-label={panel === "spawn" ? "Spawn console" : "Settings"} className={panel === "spawn" ? "modal" : "drawer"}>
-            <h2 className="panel-title">{panel === "spawn" ? "Spawn console" : "Settings"}</h2>
-            {panel === "spawn" ? (
+        {/* setPanelState, not setPanel: the bar may have just focused a console, which keeps the focus */}
+        <CommandBar open={panel === "command"} onClose={() => setPanelState(null)} fetch={fetch} repo={repo} onFocus={focusNode} onFit={() => void flow.current?.fitView()} />
+        {panel === "spawn" && (
+          <>
+            <div className="backdrop" onClick={() => setPanel(null)} />
+            <div role="dialog" aria-label="Spawn console" className="modal">
+              <h2 className="panel-title">Spawn console</h2>
               <SpawnDialog
                 fetch={fetch}
                 cwd={repo}
@@ -299,11 +352,10 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
                   setPanel(null);
                 }}
               />
-            ) : (
-              <SettingsPanel settings={settings} onChange={saveSettings} />
-            )}
-          </div>
+            </div>
+          </>
         )}
+        {settingsDrawer}
       </div>
     </Api.Provider>
   );
