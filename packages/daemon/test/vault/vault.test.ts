@@ -1,12 +1,13 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import type { VaultIndex, VaultNote } from "@agentboard/shared";
 import { afterEach, expect, test } from "vitest";
 import { createVaultHandlers } from "../../src/vault/index.js";
 
-// Handlers are typed by the route table once L60 lands; the tests only read fields off JSON.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = any;
+type Routes = ReturnType<typeof createVaultHandlers>;
+type Key = keyof Routes;
+type Input<K extends Key> = Parameters<Routes[K]>[0];
 const dirs: string[] = [];
 afterEach(() => { for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
 
@@ -18,7 +19,7 @@ function setup(notes: Record<string, string>) {
     writeFileSync(join(repo, "docs/vault", p), text);
   }
   const h = createVaultHandlers({ repoOf: async (r) => r });
-  return { repo, h, notes: () => h["GET /api/vault/notes"]({ repo }, {}, undefined as never) as Promise<Json> };
+  return { repo, h, notes: (): Promise<VaultIndex> => call(h, "GET /api/vault/notes", { repo }) };
 }
 
 test("three notes with links produce the expected links and backlinks", async () => {
@@ -29,14 +30,16 @@ test("three notes with links produce the expected links and backlinks", async ()
   });
   const idx = await notes();
   expect(idx.root).toBe("docs/vault");
-  const by = Object.fromEntries(idx.notes.map((n: Json) => [n.path, n]));
+  const by = Object.fromEntries(idx.notes.map((n) => [n.path, n]));
   expect(by["a.md"]).toMatchObject({ title: "Alpha", folder: "", links: ["Beta", "Nowhere"] });
   expect(by["a.md"].backlinks).toEqual(["b.md", "sub/c.md"]);
   expect(by["b.md"].backlinks).toEqual(["a.md"]);
   expect(by["sub/c.md"]).toMatchObject({ title: "c", folder: "sub", links: ["Alpha"], backlinks: [] });
 });
 
-const call = (h: Json, key: string, arg: object) => h[key](arg, {}, undefined);
+function call<K extends Key>(h: Routes, key: K, input: Input<K>) {
+  return (h[key] as (i: Input<K>, p: Record<string, string>) => ReturnType<Routes[K]>)(input, {});
+}
 
 test("an alias and a heading link resolve, case-insensitively", async () => {
   const { repo, h } = setup({
@@ -78,7 +81,17 @@ test("the index picks up an edit through the cache", async () => {
 
 test.each(["../x.md", "a/../../x.md", "/etc/passwd.md", "a.txt", "a\\b.md"])("refuses %s with 400", async (path) => {
   const { repo, h } = setup({});
-  for (const [key, arg] of [["GET /api/vault/note", {}], ["PUT /api/vault/note", { text: "x" }], ["POST /api/vault/append", { text: "x", author: "a" }]] as const) {
-    await expect(call(h, key, { repo, path, ...arg })).rejects.toMatchObject({ status: 400 });
-  }
+  await expect(call(h, "GET /api/vault/note", { repo, path })).rejects.toMatchObject({ status: 400 });
+  await expect(call(h, "PUT /api/vault/note", { repo, path, text: "x" })).rejects.toMatchObject({ status: 400 });
+  await expect(call(h, "POST /api/vault/append", { repo, path, text: "x", author: "a" })).rejects.toMatchObject({ status: 400 });
+});
+
+test("a symlinked folder leaving the repo refuses a new note, and nothing is written outside", async () => {
+  const { repo, h } = setup({});
+  const outside = mkdtempSync(join(tmpdir(), "agentboard-outside-"));
+  dirs.push(outside);
+  symlinkSync(outside, join(repo, "docs/vault/link"), "dir");
+  await expect(call(h, "PUT /api/vault/note", { repo, path: "link/new.md", text: "x" })).rejects.toMatchObject({ status: 400 });
+  await expect(call(h, "POST /api/vault/append", { repo, path: "link/new.md", text: "x", author: "a" })).rejects.toMatchObject({ status: 400 });
+  expect(existsSync(join(outside, "new.md"))).toBe(false);
 });
