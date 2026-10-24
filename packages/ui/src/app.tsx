@@ -212,19 +212,19 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
   useEffect(() => {
     if (!repo || !ready) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== "n" || e.altKey) return;
+      if (e.key.toLowerCase() !== "n" || e.altKey || typing(e.target)) return;
       if (mod(e) && e.shiftKey) {
         e.preventDefault();
-        opener.current = document.activeElement as HTMLElement | null;
-        setPanelState("spawn");
-      } else if (!mod(e) && !e.shiftKey && !typing(e.target)) {
+        // setPanel keeps the opener of a panel that is already open
+        setPanel("spawn");
+      } else if (!mod(e) && !e.shiftKey) {
         e.preventDefault();
         addNoteAtCentre();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [repo, ready]);
+  }, [repo, ready, panel]);
 
   useEffect(() => {
     if (!repo) return;
