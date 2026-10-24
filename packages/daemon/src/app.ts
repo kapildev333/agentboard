@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -10,6 +11,7 @@ import { runPlan } from "./command/run.js";
 import { snapshot } from "./command/snapshot.js";
 import { AgentCatalog, launchArgs, resumeArgs } from "./agents/index.js";
 import { GitService, createGitHandlers } from "./git/index.js";
+import { HandoffService, TeamTriggers } from "./handoff/index.js";
 import { handleOpen } from "./open/index.js";
 import { PtyManager, loginEnv } from "./pty/index.js";
 import { createServer, type RouteHandlers } from "./server/index.js";
@@ -253,6 +255,38 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     changed(f.board);
   });
 
+  const handoffConsole = (id: string) => {
+    const f = find(id);
+    return f && { node: f.node, teams: f.ws.teams ?? [] };
+  };
+  const handoffs = new HandoffService({
+    home: agentboardHome,
+    userHome: homedir(),
+    console: handoffConsole,
+    tracker,
+    replay: (id) => pty.replay(id),
+    write: (id, data) => {
+      tracker.markInput(id, data);
+      pty.write(id, data);
+    },
+    diff: (path) => git.diff({ path }),
+    spawn: async ({ fromConsoleId, title, ...req }) => {
+      const node = await routes["POST /api/consoles"]({ ...req, cwd: mustFind(fromConsoleId).node.cwd, callerConsoleId: fromConsoleId }, {});
+      const f = mustFind(node.id);
+      f.node.title = title;
+      changed(f.board);
+      return node.id;
+    },
+    resume: async (id) => void (await routes["POST /api/consoles/:id/resume"](undefined, { id })),
+    // ponytail: broadcast only until L42's event log lands; then this appends to it.
+    event: (e) => server.broadcast({ t: "event", event: { id: randomUUID(), ts: new Date().toISOString(), ...e } }),
+    changed: (id) => {
+      const f = find(id);
+      if (f) changed(f.board);
+    },
+  });
+  new TeamTriggers({ tracker, console: handoffConsole, service: handoffs });
+
   // Required: a route added to the shared table without a handler here fails the typecheck.
   const routes: Required<RouteHandlers> = {
     "GET /api/board": async ({ repo }) => loadBoard(repo),
@@ -364,10 +398,10 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     "GET /api/preview": async () => { throw new HttpError(501, "not implemented until lane L32"); },
     // Phase 4 stubs; each lane replaces its own (L42 events, L45 handoffs, L47 loops, L49 composer, L4A usage, L4C memory).
     "GET /api/events": async () => { throw new HttpError(501, "phase 4: not built yet"); },
-    "POST /api/handoffs": async () => { throw new HttpError(501, "phase 4: not built yet"); },
-    "PUT /api/handoffs/:id": async () => { throw new HttpError(501, "phase 4: not built yet"); },
-    "POST /api/handoffs/:id/send": async () => { throw new HttpError(501, "phase 4: not built yet"); },
-    "GET /api/handoffs": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "POST /api/handoffs": (req) => handoffs.draft(req),
+    "PUT /api/handoffs/:id": (h, { id }) => handoffs.update(id!, h),
+    "POST /api/handoffs/:id/send": (_, { id }) => handoffs.send(id!),
+    "GET /api/handoffs": (q) => handoffs.list(q.console),
     "GET /api/loops": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "POST /api/loops": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "PUT /api/loops/:id": async () => { throw new HttpError(501, "phase 4: not built yet"); },
