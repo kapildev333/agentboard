@@ -162,10 +162,60 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
   };
 
   // Beside the caller when there is one, else the next cell of a three-column grid.
-  const place = (ws: Workspace, caller?: ConsoleNode) => {
+  const place = (ws: Workspace, caller?: ConsoleNode, nearby = false) => {
+    if (caller && nearby) {
+      // The next free slot to the right of a console a command named.
+      let x = caller.x + caller.w + GAP;
+      while (ws.nodes.some((n) => n.id !== caller.id && n.y < caller.y + H && n.y + n.h > caller.y && n.x < x + W && n.x + n.w > x)) x += W + GAP;
+      return { x, y: caller.y };
+    }
     if (caller) return { x: caller.x + caller.w + GAP, y: caller.y };
     const n = ws.nodes.filter((x) => x.type === "console").length;
     return { x: (n % COLUMNS) * (W + GAP), y: Math.floor(n / COLUMNS) * (H + GAP) };
+  };
+
+  // The spawn path, shared by POST /api/consoles and the command executor; nearId places beside that console.
+  const spawnConsole = async (req: SpawnRequest, nearId?: string) => {
+    const caller = nearId || req.callerConsoleId ? find((nearId ?? req.callerConsoleId)!) : undefined;
+    const repo = caller?.board.repoPath ?? repoFor(req.cwd);
+    const board = await loadBoard(repo);
+    const ws = caller?.ws ?? board.workspaces.find((w) => w.id === board.activeWorkspaceId) ?? board.workspaces[0];
+    if (!ws) throw new HttpError(400, "board has no workspace");
+    const custom = req.agent === "custom" ? await customFor(req.customId) : undefined;
+    const now = new Date().toISOString();
+    const name = custom?.name ?? NAMES[req.agent];
+    const node: ConsoleNode = {
+      id: randomUUID(),
+      type: "console",
+      title: req.worktree ? `${name}: ${req.worktree}` : name,
+      ...place(ws, caller?.node, !!nearId),
+      w: W,
+      h: H,
+      agent: req.agent,
+      cwd: req.cwd,
+      // Claude takes its session id from us (--session-id); the others report theirs in a hook.
+      ...(req.agent === "claude" && { session: { provider: "claude" as const, id: randomUUID() } }),
+      ...(custom && { customId: custom.id }),
+      status: "stopped",
+      createdAt: now,
+      lastActiveAt: now,
+    };
+    const prepared = prepare(node, custom, false, req.prompt);
+    if (req.worktree) {
+      const base = (await git.status({ path: repo })).branch;
+      node.worktree = await git.worktree({ repo, name: req.worktree, base });
+      node.cwd = node.worktree.path;
+    }
+    ws.nodes.push(node);
+    try {
+      start(node, prepared);
+    } catch (e) {
+      ws.nodes = ws.nodes.filter((n) => n.id !== node.id);
+      tracker.remove(node.id);
+      throw e;
+    }
+    changed(board);
+    return node;
   };
 
   tracker.onChange((id, status) => {
@@ -206,48 +256,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       server.broadcast({ t: "board", board: incoming }, client);
       return { ok: true, rev: incoming.rev };
     },
-    "POST /api/consoles": async (req) => {
-      const caller = req.callerConsoleId ? find(req.callerConsoleId) : undefined;
-      const repo = caller?.board.repoPath ?? repoFor(req.cwd);
-      const board = await loadBoard(repo);
-      const ws = caller?.ws ?? board.workspaces.find((w) => w.id === board.activeWorkspaceId) ?? board.workspaces[0];
-      if (!ws) throw new HttpError(400, "board has no workspace");
-      const custom = req.agent === "custom" ? await customFor(req.customId) : undefined;
-      const now = new Date().toISOString();
-      const name = custom?.name ?? NAMES[req.agent];
-      const node: ConsoleNode = {
-        id: randomUUID(),
-        type: "console",
-        title: req.worktree ? `${name}: ${req.worktree}` : name,
-        ...place(ws, caller?.node),
-        w: W,
-        h: H,
-        agent: req.agent,
-        cwd: req.cwd,
-        // Claude takes its session id from us (--session-id); the others report theirs in a hook.
-        ...(req.agent === "claude" && { session: { provider: "claude" as const, id: randomUUID() } }),
-        ...(custom && { customId: custom.id }),
-        status: "stopped",
-        createdAt: now,
-        lastActiveAt: now,
-      };
-      const prepared = prepare(node, custom, false, req.prompt);
-      if (req.worktree) {
-        const base = (await git.status({ path: repo })).branch;
-        node.worktree = await git.worktree({ repo, name: req.worktree, base });
-        node.cwd = node.worktree.path;
-      }
-      ws.nodes.push(node);
-      try {
-        start(node, prepared);
-      } catch (e) {
-        ws.nodes = ws.nodes.filter((n) => n.id !== node.id);
-        tracker.remove(node.id);
-        throw e;
-      }
-      changed(board);
-      return node;
-    },
+    "POST /api/consoles": (req) => spawnConsole(req),
     "DELETE /api/consoles/:id": async (_, { id }) => {
       const f = mustFind(id!);
       // Off the board first, so the exit this kill causes finds no node and a racing PUT cannot bring it back.

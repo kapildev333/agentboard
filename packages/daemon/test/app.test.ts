@@ -367,3 +367,48 @@ test("a SessionEnd clear from a foreign session arms nothing (D39)", async () =>
   await hook("Stop", { session_id: "other-nested" });
   expect((await status()).session!.id).toBe(first);
 });
+
+// Phase 5: the command bar's routes.
+const spawnFake = (d: Awaited<ReturnType<typeof start>>, repo: string) =>
+  d.call("POST", "/api/consoles", { agent: "custom", customId: "fake", cwd: repo }).then((r) => r.body as ConsoleNode);
+const planOf = (steps: unknown[]) => ({ id: "p", text: "t", steps, plannedBy: "rules", ms: 1, reply: "ok" });
+
+test("POST /api/command/plan plans 'fit all consoles'", async () => {
+  const s = setup();
+  const d = await start(s);
+  const r = await d.call("POST", "/api/command/plan", { text: "fit all consoles", repo: s.repo });
+  expect(r.status).toBe(200);
+  expect((r.body as { steps: { kind: string; asks: boolean }[] }).steps).toMatchObject([{ kind: "fit", asks: false }]);
+});
+
+test("POST /api/command/run with a confirmed close removes the console", async () => {
+  const s = setup();
+  const d = await start(s);
+  const c = await spawnFake(d, s.repo);
+  const plan = planOf([{ id: "s1", kind: "close", consoleIds: [c.id], summary: "Close", asks: true }]);
+  expect((await d.call("POST", "/api/command/run", { plan, confirmed: [], skipped: [] })).status).toBe(409);
+  const r = await d.call("POST", "/api/command/run", { plan, confirmed: ["s1"], skipped: [] });
+  expect(r.body).toMatchObject({ results: [{ stepId: "s1", status: "done" }] });
+  const board = (await d.call("GET", `/api/board?repo=${encodeURIComponent(s.repo)}`)).body as Board;
+  expect(consolesOf(board)).toEqual([]);
+});
+
+test("a spawn step with near lands right of that console", async () => {
+  const s = setup();
+  const d = await start(s);
+  const a = await spawnFake(d, s.repo);
+  const plan = planOf([{ id: "s1", kind: "spawn", agent: "custom", customId: "fake", near: a.id, summary: "Spawn", asks: false }]);
+  const r = await d.call("POST", "/api/command/run", { plan, confirmed: [], skipped: [] });
+  const id = (r.body as { results: { consoleId: string }[] }).results[0]!.consoleId;
+  const board = (await d.call("GET", `/api/board?repo=${encodeURIComponent(s.repo)}`)).body as Board;
+  const b = consolesOf(board).find((n) => n.id === id)!;
+  expect(b).toMatchObject({ x: a.x + a.w + 40, y: a.y });
+});
+
+test("PUT /api/settings refuses a non-loopback planner URL", async () => {
+  const s = setup();
+  const d = await start(s);
+  const put = (url: string) => d.call("PUT", "/api/settings", { fontSize: 13, customAgents: [], planner: { url, model: "m" } });
+  expect((await put("http://example.com:11434")).status).toBe(400);
+  for (const ok of ["http://localhost:11434", "http://127.0.0.1:11434", "http://[::1]:11434"]) expect((await put(ok)).status).toBe(200);
+});
