@@ -46,29 +46,31 @@ export function WebTileView(props: NodeProps & { fetch?: Fetch }) {
   useEffect(() => {
     let live = true;
     doFetch("/api/preview")
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => (r.status === 200 ? r.json() : null))
       .then((b: { key?: string } | null) => live && b?.key && setPreviewKey(b.key))
       .catch(() => {});
     return () => {
       live = false;
     };
   }, []);
+  const proxied = capture && !!previewKey;
   useEffect(() => {
     const on = (e: MessageEvent) => {
-      if (e.origin !== location.origin || !frame.current || e.source !== frame.current.contentWindow) return;
+      // A captured frame is sandboxed without allow-same-origin, so its origin is "null"; the source check is what vouches for it.
+      if (e.origin !== (proxied ? "null" : location.origin) || !frame.current || e.source !== frame.current.contentWindow) return;
       const m = e.data as { agentboard?: string; level?: string; text?: string; method?: string; url?: string; status?: number; ms?: number } | null;
       if (m?.agentboard === "console") setLogs((l) => last(l, { level: String(m.level), text: String(m.text) }));
       else if (m?.agentboard === "network") setNet((l) => last(l, { method: String(m.method), url: String(m.url), status: Number(m.status), ms: Number(m.ms) }));
     };
     window.addEventListener("message", on);
     return () => window.removeEventListener("message", on);
-  }, []);
+  }, [proxied]);
 
   const commit = () => {
     if (draft !== node.url) setUrl(node.id, draft);
   };
   const ok = isLocal(node.url);
-  const src = capture && previewKey ? `/preview/${previewKey}/${encodeURIComponent(node.url)}` : node.url;
+  const src = proxied ? `/preview/${previewKey}/${encodeURIComponent(node.url)}` : node.url;
   const errors = logs.filter((l) => l.level === "error").length;
   return (
     <div className="card webtile">
@@ -82,7 +84,7 @@ export function WebTileView(props: NodeProps & { fetch?: Fetch }) {
           onBlur={commit}
         />
         <button type="button" className="btn-sm" onClick={() => setReloads(reloads + 1)}>Reload</button>
-        <a className="btn-sm" href={node.url} target="_blank" rel="noopener">Open</a>
+        {ok && <a className="btn-sm" href={node.url} target="_blank" rel="noopener">Open</a>}
         {previewKey && (
           <button type="button" className="btn-sm" aria-pressed={capture} onClick={() => setCapture(!capture)}>Capture</button>
         )}
@@ -94,7 +96,7 @@ export function WebTileView(props: NodeProps & { fetch?: Fetch }) {
           className="webtile-frame nodrag nowheel"
           title={`Preview of ${node.url}`}
           src={src}
-          sandbox="allow-scripts allow-same-origin allow-forms"
+          sandbox={proxied ? "allow-scripts allow-forms" : "allow-scripts allow-same-origin allow-forms"}
         />
       ) : (
         <p className="webtile-hint muted">Only localhost URLs load here</p>
