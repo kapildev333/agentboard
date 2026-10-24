@@ -25,7 +25,7 @@ export class DaemonClient {
     const route = routes.find((r) => r.method === method && r.path === path)!;
     const info = this.loadInfo(); // per request, so a restarted daemon is picked up and a missing one is an error result
     const url = new URL(`http://127.0.0.1:${info.port}${path}`);
-    const headers: Record<string, string> = { "x-agentboard-token": info.token };
+    const headers: Record<string, string> = { "x-agentboard-token": info.token, "x-agentboard-client": "mcp" };
     let body: string | undefined;
     if (route.request) {
       const parsed = schema(route.request).parse(input);
