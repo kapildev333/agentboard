@@ -6,6 +6,8 @@ import { useBoard } from "../src/board";
 import { InkLayer, InkToolbar } from "../src/ink";
 
 beforeAll(() => {
+  // jsdom has no PointerEvent, so fireEvent would drop clientX and clientY.
+  globalThis.PointerEvent ??= class extends MouseEvent {} as typeof PointerEvent;
   // React Flow measures nodes with ResizeObserver, which jsdom lacks.
   globalThis.ResizeObserver ??= class {
     observe() {}
