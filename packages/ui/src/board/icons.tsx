@@ -23,6 +23,13 @@ export const SettingsIcon = () => (
   </Icon>
 );
 
+export const SearchIcon = () => (
+  <Icon>
+    <circle cx="7.3" cy="7.3" r="4.7" />
+    <path d="m13.5 13.5-2.8-2.8" />
+  </Icon>
+);
+
 export const CopyIcon = () => (
   <Icon>
     <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />

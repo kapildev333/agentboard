@@ -442,6 +442,20 @@ button.empty-action:hover:not(:disabled) {
   font-size: var(--text-md);
 }
 
+/* The command bar's trigger looks like a search field (Main artboard). */
+.command-trigger {
+  justify-content: flex-start;
+  gap: var(--space-1);
+  width: 220px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.command-trigger .kbd {
+  margin-left: auto;
+}
+
 .topbar-spacer {
   flex: 1;
 }

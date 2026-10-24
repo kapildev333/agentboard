@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { NodeProps } from "@xyflow/react";
 import { BoardSchema, GitStatusSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type NoteNode, type Settings } from "@agentboard/shared";
 import { version } from "../package.json";
-import { Board, EmptyBoard, FolderIcon, Logo, SettingsIcon, WorkspaceTabs, ZoomLevel, addNoteAtCentre, autosaveBoard, mod, typing, useBoard } from "./board";
+import { Board, EmptyBoard, FolderIcon, Logo, SearchIcon, SettingsIcon, WorkspaceTabs, ZoomLevel, addNoteAtCentre, autosaveBoard, mod, typing, useBoard } from "./board";
 import { CommandBar } from "./command";
 import { ConsoleNode, type SocketLike } from "./console";
 import { GitCard } from "./git";
@@ -355,11 +355,13 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           {ready && <WorkspaceTabs />}
           <span className="topbar-spacer" />
           {ready && <ZoomLevel />}
+          <button type="button" className="command-trigger" aria-label="Command" aria-keyshortcuts="Meta+K Control+K" aria-expanded={panel === "command"} onClick={() => setPanel(panel === "command" ? null : "command")}>
+            <SearchIcon />
+            <span>Command…</span>
+            <kbd className="kbd">⌘K</kbd>
+          </button>
           <button type="button" className="btn-primary" aria-expanded={panel === "spawn"} onClick={() => setPanel(panel === "spawn" ? null : "spawn")}>
             Spawn console
-          </button>
-          <button type="button" aria-label="Command" aria-keyshortcuts="Meta+K Control+K" aria-expanded={panel === "command"} onClick={() => setPanel(panel === "command" ? null : "command")}>
-            Command <kbd>⌘K</kbd>
           </button>
           {settingsButton}
         </header>
