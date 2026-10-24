@@ -1,5 +1,5 @@
 import { execFile, execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -135,4 +135,38 @@ test("write refuses a binary target and a directory", async () => {
   const h = handlers(repo);
   expect(await status(h["PUT /api/files/write"]({ repo: "r", path: "b.bin", text: "x" }, {}))).toBe(400);
   expect(await status(h["PUT /api/files/write"]({ repo: "r", path: "src", text: "x" }, {}))).toBe(400);
+});
+
+test("write keeps the mode of the file it replaces", async () => {
+  const repo = makeRepo();
+  chmodSync(join(repo, "src", "a.ts"), 0o755);
+  await handlers(repo)["PUT /api/files/write"]({ repo: "r", path: "src/a.ts", text: "x" }, {});
+  expect(statSync(join(repo, "src", "a.ts")).mode & 0o777).toBe(0o755);
+});
+
+test("write through a symlink inside the repository updates the target and keeps the link", async () => {
+  const repo = makeRepo();
+  symlinkSync("a.ts", join(repo, "src", "link.ts"));
+  await handlers(repo)["PUT /api/files/write"]({ repo: "r", path: "src/link.ts", text: "via link\n" }, {});
+  expect(lstatSync(join(repo, "src", "link.ts")).isSymbolicLink()).toBe(true);
+  expect(readFileSync(join(repo, "src", "a.ts"), "utf8")).toBe("via link\n");
+});
+
+test("a file name with a space and a rename carry statuses", async () => {
+  const repo = makeRepo();
+  writeFileSync(join(repo, "my file.txt"), "n");
+  git(repo, "mv", "README.md", "READ ME.md");
+  const entries = (await handlers(repo)["GET /api/files"]({ repo: "r" }, {})).entries;
+  expect(entries.find((e) => e.name === "my file.txt")?.status).toBe("?");
+  expect(entries.find((e) => e.name === "READ ME.md")?.status).toBe("M");
+});
+
+test("a path that normalises to a legal one is still refused for its ..", async () => {
+  const h = handlers(makeRepo());
+  expect(await status(h["GET /api/files/read"]({ repo: "r", path: "src/../src/a.ts" }, {}))).toBe(400);
+});
+
+test("a .git spelled in another case is refused", async () => {
+  const h = handlers(makeRepo());
+  expect(await status(h["GET /api/files/read"]({ repo: "r", path: ".GIT/HEAD" }, {}))).toBe(400);
 });
