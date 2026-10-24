@@ -7,6 +7,7 @@ import type { Duplex } from "node:stream";
 import * as shared from "@agentboard/shared";
 import { parseClientMessage, parseDaemonMessage, routes as table, type SchemaName } from "@agentboard/shared";
 import type { ClientMessage, DaemonMessage } from "@agentboard/shared";
+import { AUDIO_TYPES } from "../voice/index.js";
 import WebSocket, { WebSocketServer } from "ws";
 
 type Route = (typeof table)[number];
@@ -237,7 +238,7 @@ async function handle(
     );
     if (route.key === AUDIO_ROUTE) {
       const mime = req.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() ?? "";
-      if (!["audio/webm", "audio/ogg", "audio/wav"].includes(mime)) return json(res, 415, { error: "unsupported media type" });
+      if (!AUDIO_TYPES.includes(mime)) return json(res, 415, { error: "unsupported media type" });
       raw = { audio: await readBody(req, MAX_AUDIO), mime };
     } else raw = route.method === "GET" ? Object.fromEntries(url.searchParams) : await readJson(req);
   } catch (err) {
