@@ -143,7 +143,7 @@ test("a live console shows its lastLine in status, and its spawn is an event lis
     const st = (await d.call("GET", "/api/status")).body as { summaries?: { id: string; lastLine: string; repoPath: string }[] };
     return st.summaries?.find((c) => c.id === node.id && c.lastLine.includes("fake>"));
   });
-  expect(line.repoPath).toBe(s.repo);
+  expect(line!.repoPath).toBe(s.repo);
   const events = (await d.call("GET", "/api/events")).body as { kind: string; consoleId?: string }[];
   expect(events).toContainEqual(expect.objectContaining({ kind: "spawn", consoleId: node.id }));
   expect(sock.messages).toContainEqual(expect.objectContaining({ t: "event", event: expect.objectContaining({ kind: "spawn", consoleId: node.id }) }));

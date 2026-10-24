@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { SettingsSchema, type AgentId, type Board, type ConsoleNode, type CustomAgent, type Settings, type Workspace } from "@agentboard/shared";
 import { AgentCatalog, launchArgs, resumeArgs } from "./agents/index.js";
+import { ConsoleSummaries, EventLog } from "./events/index.js";
 import { GitService, createGitHandlers } from "./git/index.js";
 import { handleOpen } from "./open/index.js";
 import { PtyManager, loginEnv } from "./pty/index.js";
@@ -64,6 +65,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
   const store = new StateStore();
   const pty = new PtyManager();
   const tracker = new StatusTracker();
+  const events = new EventLog(agentboardHome());
+  const summaries = new ConsoleSummaries();
   const git = createGitHandlers(new GitService({ exec: async (cmd, args, o) => (await run(cmd, args, o)).stdout }));
   const boards = new Map<string, Board>();
   const loading = new Map<string, Promise<Board>>();
@@ -148,8 +151,10 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       throw new HttpError(400, `could not start ${l.command}: ${(e as Error).message}`);
     }
     running.add(node.id);
+    events.append({ kind: "spawn", consoleId: node.id, agent: node.agent, title: node.title, detail: `${node.title} started` });
     if (node.agent !== "custom") void AgentCatalog.readVersion(l.command, { path: agentPath });
     pty.onData(node.id, (data) => {
+      summaries.feed(node.id, data);
       tracker.markOutput(node.id, data);
       server.broadcast({ t: "output", consoleId: node.id, data });
     });
@@ -157,6 +162,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       running.delete(node.id);
       adopting.delete(node.id); // a Resume starts with its recorded session, not an open adoption (D39)
       tracker.markExit(node.id, code);
+      events.append({ kind: "exit", consoleId: node.id, agent: node.agent, title: node.title, detail: `${node.title} exited with code ${code}` });
       server.broadcast({ t: "exit", consoleId: node.id, code });
     });
   };
@@ -171,6 +177,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
   tracker.onChange((id, status) => {
     const f = find(id);
     if (!f) return;
+    events.append({ kind: "status", consoleId: id, agent: f.node.agent, title: f.node.title, detail: `${f.node.title} is ${status}`, status });
     f.node.status = status;
     f.node.lastActiveAt = new Date().toISOString();
     changed(f.board);
@@ -271,7 +278,10 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       return f.node;
     },
     "GET /api/agents": async () => AgentCatalog.scan({ path: agentPath, custom: (await settings()).customAgents }),
-    "GET /api/status": async () => ({ consoles: [...boards.values()].flatMap(consoles) }),
+    "GET /api/status": async () => ({
+      consoles: [...boards.values()].flatMap(consoles),
+      summaries: [...boards.values()].flatMap((b) => summaries.summarise(b)),
+    }),
     "POST /hook/:consoleId": async (body, { consoleId }) => {
       const f = mustFind(consoleId!);
       const next = sessionIdOf(body.payload);
@@ -287,6 +297,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
         f.node.session = { provider: f.node.agent, id: sid };
         changed(f.board);
       }
+      events.append({ kind: "hook", consoleId: consoleId!, agent: f.node.agent, title: f.node.title, detail: body.event });
       tracker.handleHook(consoleId!, body);
       return { ok: true };
     },
@@ -323,7 +334,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     "GET /api/assets/:id": async () => { throw new HttpError(501, "not implemented until lane L34"); },
     "GET /api/preview": async () => { throw new HttpError(501, "not implemented until lane L32"); },
     // Phase 4 stubs; each lane replaces its own (L42 events, L45 handoffs, L47 loops, L49 composer, L4A usage, L4C memory).
-    "GET /api/events": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "GET /api/events": async (q) => events.list(q),
     "POST /api/handoffs": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "PUT /api/handoffs/:id": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "POST /api/handoffs/:id/send": async () => { throw new HttpError(501, "phase 4: not built yet"); },
@@ -352,6 +363,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     token,
     staticDir: uiDist,
     routes,
+    onRefused: ({ reason, path, origin }) =>
+      events.append({ kind: "security", detail: `refused ${path}: ${reason}${origin ? ` (origin ${origin})` : ""}` }),
     onAttach: async ({ consoleId }, reply) => {
       if (pty.list().includes(consoleId)) reply({ t: "output", consoleId, data: pty.replay(consoleId) });
     },
@@ -365,6 +378,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     },
   });
   const origin = server.origin;
+  events.onEvent((event) => server.broadcast({ t: "event", event }));
   try {
     await loadBoard(opts.repoPath);
     await daemonFile.write({ port: server.port, token, pid: process.pid });
