@@ -1,0 +1,10 @@
+{
+  "id": "ev-0412",
+  "ts": "2026-10-23T21:14:00.000Z",
+  "kind": "status",
+  "consoleId": "c-flaky",
+  "agent": "opencode",
+  "title": "Flaky test hunter",
+  "detail": "needs you: Bash go install",
+  "status": "needs_you"
+}

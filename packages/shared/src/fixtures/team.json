@@ -1,0 +1,12 @@
+{
+  "id": "team-checkout",
+  "name": "checkout",
+  "roles": [
+    { "name": "planner", "consoleId": "c-planner", "order": 1 },
+    { "name": "builder", "consoleId": "c-builder", "order": 2 },
+    { "name": "reviewer", "consoleId": null, "order": 3 }
+  ],
+  "brief": "Goal: postal validation for CA, UK, NL in checkout.\nConstraints: keep tests green; no new dependencies; copy in plain English with an example.\nDone when: Form shows inline error, tests cover 3 countries, reviewer signs off.",
+  "triggers": { "handoffOnIdle": true, "includeDiff": true, "startStopped": true },
+  "collapsed": false
+}

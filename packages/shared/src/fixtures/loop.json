@@ -1,0 +1,16 @@
+{
+  "id": "loop-gateway-perf",
+  "consoleId": "c-gateway-bench",
+  "name": "Gateway perf loop",
+  "trigger": { "kind": "idle", "delaySec": 30 },
+  "stop": { "goal": { "pattern": "p95 (\\d+)ms", "op": "lte", "value": 12 }, "maxRuns": 10, "timeBoxMin": 120 },
+  "prompt": "Run {run}. Last bench: {last_output}. Target is {goal}. Profile the hot path in internal/limiter, make one focused change, run `make bench`, and report p95 as \"p95 NNms\" on the last line. Do not touch the public API.",
+  "state": "running",
+  "runs": [
+    { "n": 1, "startedAt": "2026-10-23T20:46:00.000Z", "endedAt": "2026-10-23T21:08:00.000Z", "outcome": "paused 4m · needed you (Bash: go install)", "tokens": 44000 },
+    { "n": 2, "startedAt": "2026-10-23T21:09:00.000Z", "endedAt": "2026-10-23T21:30:00.000Z", "outcome": "p95 17ms · goal not met", "tokens": 41600 },
+    { "n": 3, "startedAt": "2026-10-23T21:31:00.000Z", "endedAt": "2026-10-23T21:50:00.000Z", "outcome": "p95 14ms · goal not met", "tokens": 38100 },
+    { "n": 4, "startedAt": "2026-10-23T21:52:00.000Z", "outcome": "running", "tokens": null }
+  ],
+  "createdAt": "2026-10-23T20:45:00.000Z"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "plan-build-review",
+  "name": "Plan → build → review",
+  "description": "3 slots, roles set, handoff order on",
+  "slots": [
+    { "agent": "claude", "role": "planner", "prompt": "Read the issue, write PLAN.md with numbered steps, then stop.", "useShared": false },
+    { "agent": "claude", "role": "builder", "prompt": "Wait for the planner's brief. Implement step by step; one commit per step.", "useShared": true },
+    { "agent": "codex", "role": "reviewer", "prompt": "Review the builder's diff. Comments only; end with approve / changes requested.", "useShared": false }
+  ],
+  "shared": "Work only inside your worktree. Keep tests green. Finish by summarising what changed in 3 lines."
+}
