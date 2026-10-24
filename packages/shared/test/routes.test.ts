@@ -37,6 +37,26 @@ test("a custom agent has an id, name, command and args; needsYou is optional", (
   expect(shared.CustomAgentSchema.safeParse({ name: "Fake", command: "fake" }).success).toBe(false);
 });
 
+test("routes.json lists every phase 4 route with existing schema names", () => {
+  const phase4 = [
+    "GET /api/events",
+    "POST /api/handoffs", "PUT /api/handoffs/:id", "POST /api/handoffs/:id/send", "GET /api/handoffs",
+    "GET /api/loops", "POST /api/loops", "PUT /api/loops/:id", "DELETE /api/loops/:id",
+    "POST /api/loops/:id/pause", "POST /api/loops/:id/resume", "POST /api/loops/:id/run",
+    "POST /api/composer/launch", "GET /api/composer/templates",
+    "GET /api/usage", "GET /api/usage.csv",
+    "GET /api/memory", "POST /api/memory", "PUT /api/memory/:id", "DELETE /api/memory/:id",
+    "POST /api/memory/:id/push", "POST /api/memory/propose",
+  ];
+  for (const key of phase4) {
+    const r = routes.find((r) => `${r.method} ${r.path}` === key);
+    expect(r, key).toBeDefined();
+    expect(examples[key], key).toBeDefined();
+    for (const name of [r!.request, r!.response]) if (name) expect(shared[name], `${key} ${name}`).toBeDefined();
+  }
+  expect(routes.find((r) => r.path === "/api/usage.csv")!.response).toBe("TextSchema");
+});
+
 test("POST /api/open rejects an unknown editor", () => {
   expect(shared.OpenRequestSchema.safeParse({ editor: "vim", path: "/tmp" }).success).toBe(false);
 });
