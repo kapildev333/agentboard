@@ -15,12 +15,15 @@
   --radius-lg: 10px;
   --radius-pill: 999px;
 
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  /* Inter and JetBrains Mono are self-hosted (@fontsource-variable, imported in main.tsx); the rest is the fallback. */
+  --font-sans: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --text-2xs: 11px;
   --text-xs: 12px;
   --text-sm: 13px;
   --text-md: 14px;
   --text-lg: 16px;
+  --text-xl: 20px;
 
   --topbar-height: 44px;
   --rail-width: 264px;
@@ -87,6 +90,18 @@
   --status-stopped-bg: #2a2f39;
   --status-exited-fg: #a3abbb;
   --status-exited-bg: #22262e;
+
+  /* agent marks: a monogram per agent in an ANSI hue, never a vendor logo */
+  --mark-claude-fg: #f2c98a;
+  --mark-claude-bg: #3a2a12;
+  --mark-codex-fg: #7ee787;
+  --mark-codex-bg: #10331f;
+  --mark-gemini-fg: #9dbfff;
+  --mark-gemini-bg: #13284d;
+  --mark-opencode-fg: #d2a8ff;
+  --mark-opencode-bg: #2c1f4a;
+  --mark-custom-fg: #c0c6d1;
+  --mark-custom-bg: #2a2f39;
 }
 
 @media (prefers-color-scheme: light) {
@@ -131,5 +146,16 @@
     --status-stopped-bg: #e6e9ee;
     --status-exited-fg: #555e6e;
     --status-exited-bg: #eceef2;
+
+    --mark-claude-fg: #6b4500;
+    --mark-claude-bg: #fdf0c2;
+    --mark-codex-fg: #13623a;
+    --mark-codex-bg: #d9f5e3;
+    --mark-gemini-fg: #1d3f9e;
+    --mark-gemini-bg: #dde7ff;
+    --mark-opencode-fg: #5a2ca0;
+    --mark-opencode-bg: #ece0ff;
+    --mark-custom-fg: #3c4350;
+    --mark-custom-bg: #e6e9ee;
   }
 }

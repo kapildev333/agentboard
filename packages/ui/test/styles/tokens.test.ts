@@ -8,8 +8,8 @@ const [dark, light] = css.split("@media (prefers-color-scheme: light)");
 
 describe("tokens.css", () => {
   it("names Inter and JetBrains Mono first in the font stacks", () => {
-    expect(dark).toMatch(/--font-sans:\s*"?Inter/);
-    expect(dark).toMatch(/--font-mono:\s*"JetBrains Mono"/);
+    expect(dark).toMatch(/--font-sans:\s*"Inter Variable"/);
+    expect(dark).toMatch(/--font-mono:\s*"JetBrains Mono Variable"/);
     expect(dark).toMatch(/--text-2xs:\s*11px/);
     expect(dark).toMatch(/--text-xl:\s*20px/);
   });

@@ -3,15 +3,17 @@ import { FitAddon } from "@xterm/addon-fit";
 import { useReactFlow } from "@xyflow/react";
 import { Terminal } from "@xterm/xterm";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { AgentId } from "@agentboard/shared";
 import { CONSOLE_DRAG_HANDLE } from "./dragHandle";
 import { unscaleMouse } from "./zoomMouse";
 import { useConsoleSocket, type SocketFactory } from "./useConsoleSocket";
 
 // xterm's theme keys for the 16 ANSI colours; brightBlack reads --term-ansi-bright-black.
+const MARK: Record<AgentId, string> = { claude: "C", codex: "X", gemini: "G", opencode: "O", custom: "?" };
 const ANSI = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"].flatMap((c) => [c, `bright${c[0]!.toUpperCase()}${c.slice(1)}`]);
 
 export interface ConsoleNodeProps {
-  data: { node: { id: string; title: string } };
+  data: { node: { id: string; title: string; agent?: AgentId } };
   socketFactory?: SocketFactory;
   fontSize?: number;
   statusBadge?: ReactNode;
@@ -35,7 +37,7 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
     const token = (name: string) => css.getPropertyValue(name).trim() || undefined;
     const ansi = Object.fromEntries(ANSI.map((name) => [name, token(`--term-ansi-${name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`)]));
     const theme = { background: token("--term-bg"), foreground: token("--term-fg"), cursor: token("--term-fg"), selectionBackground: token("--term-selection"), ...ansi };
-    const t = new Terminal({ fontFamily: "Menlo, monospace", fontSize, scrollback: 10000, cursorBlink: false, allowProposedApi: false, theme });
+    const t = new Terminal({ fontFamily: '"JetBrains Mono Variable", Menlo, monospace', fontSize, scrollback: 10000, cursorBlink: false, allowProposedApi: false, theme });
     const f = new FitAddon();
     t.loadAddon(f);
     t.open(el.current!);
@@ -74,6 +76,11 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
   return (
     <div className="console">
       <header className={`${CONSOLE_DRAG_HANDLE.slice(1)} console-header`}>
+        {data.node.agent && (
+          <span className={`mark mark-${data.node.agent}`} role="img" aria-label={data.node.agent}>
+            {MARK[data.node.agent]}
+          </span>
+        )}
         <span className="console-title">{data.node.title}</span> {statusBadge}
       </header>
       <div

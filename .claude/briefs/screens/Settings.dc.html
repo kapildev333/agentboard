@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-danger{border-color:#ff8a80;color:#ff8a80;background:transparent}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.input{display:flex;align-items:center;height:30px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font-size:13px;box-sizing:border-box}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}.m-gemini{background:#13284d;color:#9dbfff}.m-opencode{background:#2c1f4a;color:#d2a8ff}.m-custom{background:#2a2f39;color:#c0c6d1}
+.canvas{background-color:#0e1014;background-image:radial-gradient(#2c313c 1px,transparent 1.5px);background-size:20px 20px}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.nav{display:flex;align-items:center;gap:8px;width:100%;height:30px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:#9ba3b4;text-align:left;font-size:13px}
+.nav.on{background:#262b35;color:#e7e9ee;font-weight:600}
+.row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid #2b303b}
+.row:last-child{border-bottom:0}
+.sw{position:relative;width:34px;height:20px;border-radius:999px;background:#2a2f39;border:1px solid #646c80;flex:none}
+.sw.on{background:#7b93ff;border-color:#7b93ff}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#e7e9ee}
+.sw.on::after{left:16px;background:#0b1020}
+.seg{display:inline-flex;border:1px solid #646c80;border-radius:6px;overflow:hidden}
+.seg button{height:26px;padding:0 10px;border:0;background:transparent;color:#9ba3b4;font-size:12px}
+.seg button.on{background:#262b35;color:#e7e9ee;font-weight:600}
+.ico{width:14px;height:14px;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014;position:relative">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:500">acme-storefront</span><span class="chip">main</span></div>
+    <nav aria-label="Workspaces" style="display:flex;align-items:center;align-self:stretch;margin-left:8px"><button class="tab on">main <span class="kbd">⌘1</span></button><button class="tab">checkout <span class="kbd">⌘2</span></button></nav>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary">Spawn console</button>
+    <button class="btn btn-icon" aria-label="Settings" aria-expanded="true" style="border-color:#7b93ff"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <div style="display:flex;flex:1;min-height:856px">
+    <main class="canvas" aria-label="Board" style="position:relative;flex:1;min-width:0;overflow:hidden">
+      <div class="card" aria-hidden="true" style="position:absolute;left:24px;top:24px;width:440px;height:330px;opacity:.5"></div>
+      <div class="card" aria-hidden="true" style="position:absolute;left:488px;top:24px;width:440px;height:330px;opacity:.5"></div>
+      <div class="card" aria-hidden="true" style="position:absolute;left:24px;top:378px;width:440px;height:300px;opacity:.5"></div>
+    </main>
+  </div>
+
+  <div aria-hidden="true" style="position:absolute;inset:44px 0 0;background:rgb(4 6 10 / .5)"></div>
+
+  <aside role="dialog" aria-labelledby="settings-title" aria-modal="true" style="position:absolute;top:44px;right:0;bottom:0;width:640px;max-width:100%;background:#161920;border-left:1px solid #2b303b;box-shadow:0 12px 40px rgb(0 0 0/.5);display:flex;flex-direction:column;box-sizing:border-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px 12px;border-bottom:1px solid #2b303b">
+      <h1 id="settings-title" style="margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em">Settings</h1>
+      <div style="display:flex;align-items:center;gap:8px"><span class="mono muted" style="font-size:11px">~/.agentboard/settings.json</span><button class="btn btn-quiet btn-icon" aria-label="Close"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+    </div>
+
+    <div style="display:flex;flex:1;min-height:0">
+      <nav aria-label="Settings sections" style="width:150px;flex:none;padding:12px 8px;border-right:1px solid #2b303b;display:flex;flex-direction:column;gap:2px">
+        <button class="nav">Terminal</button>
+        <button class="nav on">Agents</button>
+        <button class="nav">Profiles</button>
+        <button class="nav">Notifications</button>
+        <button class="nav">Appearance</button>
+        <button class="nav">Integrations</button>
+        <button class="nav">Daemon</button>
+        <div style="flex:1"></div>
+        <span class="mono muted" style="font-size:11px;padding:0 10px">v0.2.0 · MIT</span>
+      </nav>
+
+      <div style="flex:1;min-width:0;overflow:auto;padding:16px 24px 24px;display:flex;flex-direction:column;gap:24px">
+
+        <section style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:center;justify-content:space-between"><h2 style="margin:0;font-size:14px;font-weight:600">Agents found on PATH</h2><button class="btn btn-quiet btn-sm">Rescan</button></div>
+          <p class="muted" style="margin:0 0 6px;font-size:12px">Status for each console comes from the CLI's own hooks. Claude Code gets per-session hooks with no setup; the others need a one-time, visible change you approve.</p>
+          <div style="border:1px solid #2b303b;border-radius:8px;overflow:hidden">
+            <div style="display:grid;grid-template-columns:1.4fr 0.7fr 1fr 1.1fr;gap:12px;padding:8px 12px;background:#12151b;border-bottom:1px solid #2b303b" class="label"><span>Agent</span><span>Version</span><span>Signal</span><span>Status</span></div>
+            <div style="display:grid;grid-template-columns:1.4fr 0.7fr 1fr 1.1fr;gap:12px;padding:10px 12px;align-items:center;border-bottom:1px solid #2b303b"><span style="display:flex;align-items:center;gap:8px"><span class="mark m-claude">C</span>claude</span><span class="mono muted" style="font-size:12px">2.1.4</span><span class="chip">hooks · per session</span><span style="display:flex;align-items:center;gap:6px;color:#6fdc9a"><span class="dot" style="background:#6fdc9a"></span>Ready</span></div>
+            <div style="display:grid;grid-template-columns:1.4fr 0.7fr 1fr 1.1fr;gap:12px;padding:10px 12px;align-items:center;border-bottom:1px solid #2b303b"><span style="display:flex;align-items:center;gap:8px"><span class="mark m-codex">X</span>codex</span><span class="mono muted" style="font-size:12px">0.48.0</span><span class="chip">notify + output</span><span style="display:flex;align-items:center;gap:8px"><span style="display:flex;align-items:center;gap:6px;color:#f5d36b"><span class="dot" style="background:#e3c76b"></span>Heuristic</span><button class="btn btn-sm">Set up…</button></span></div>
+            <div style="display:grid;grid-template-columns:1.4fr 0.7fr 1fr 1.1fr;gap:12px;padding:10px 12px;align-items:center;border-bottom:1px solid #2b303b"><span style="display:flex;align-items:center;gap:8px"><span class="mark m-gemini">G</span>gemini</span><span class="mono muted" style="font-size:12px">0.12.1</span><span class="chip">hooks</span><span style="display:flex;align-items:center;gap:6px;color:#6fdc9a"><span class="dot" style="background:#6fdc9a"></span>Ready</span></div>
+            <div style="display:grid;grid-template-columns:1.4fr 0.7fr 1fr 1.1fr;gap:12px;padding:10px 12px;align-items:center"><span style="display:flex;align-items:center;gap:8px"><span class="mark m-opencode">O</span>opencode</span><span class="mono muted" style="font-size:12px">1.3.0</span><span class="chip">plugin · events</span><span style="display:flex;align-items:center;gap:6px;color:#6fdc9a"><span class="dot" style="background:#6fdc9a"></span>Ready <span class="mono muted" style="font-size:11px">· pinned 1.3</span></span></div>
+          </div>
+        </section>
+
+        <section style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between"><h2 style="margin:0;font-size:14px;font-weight:600">Custom agents</h2><button class="btn btn-sm">Add agent</button></div>
+          <div class="card" style="padding:14px 16px;display:flex;flex-direction:column;gap:12px;box-shadow:none;background:#12151b">
+            <div style="display:flex;align-items:center;gap:10px"><span class="mark m-custom">A</span><span style="font-weight:600;flex:1">aider</span><button class="btn btn-quiet btn-sm btn-danger" style="border-color:transparent">Remove</button></div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+              <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500">Command</span><input class="input mono" value="aider"></label>
+              <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500">Args</span><input class="input mono" value="--no-auto-commits"></label>
+              <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500">Needs-you regex</span><input class="input mono" value="\(Y\)es/\(N\)o|\[y/n\]"></label>
+              <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500">Idle after quiet</span><span style="display:flex;gap:8px;align-items:center"><input class="input mono" value="20" style="width:72px"><span class="muted" style="font-size:12px">seconds</span></span></label>
+            </div>
+          </div>
+        </section>
+
+        <section style="display:flex;flex-direction:column;gap:2px">
+          <h2 style="margin:0 0 6px;font-size:14px;font-weight:600">Terminal</h2>
+          <div class="row"><span>Font size</span><span style="display:flex;align-items:center;gap:8px"><input class="input mono" value="13" aria-label="Font size" style="width:64px"><span class="muted" style="font-size:12px">px</span></span></div>
+          <div class="row"><span>Font</span><input class="input mono" value="JetBrains Mono, Menlo, monospace" aria-label="Terminal font" style="width:260px"></div>
+          <div class="row"><span>Scrollback</span><span style="display:flex;align-items:center;gap:8px"><input class="input mono" value="10000" aria-label="Scrollback lines" style="width:92px"><span class="muted" style="font-size:12px">lines · not kept across daemon restarts</span></span></div>
+          <div class="row"><span>Copy on select</span><button class="sw on" role="switch" aria-checked="true" aria-label="Copy on select"></button></div>
+          <div class="row"><span>Renderer</span><div class="seg"><button class="on">WebGL</button><button>DOM</button><button>Auto</button></div></div>
+        </section>
+
+        <section style="display:flex;flex-direction:column;gap:2px">
+          <h2 style="margin:0 0 6px;font-size:14px;font-weight:600">Safety</h2>
+          <div class="row"><span style="display:flex;flex-direction:column;gap:2px"><span>Auto-approve flags</span><span class="muted" style="font-size:12px">Off for every agent. Loops and handoffs never answer a permission prompt.</span></span><span class="chip" style="color:#6fdc9a;border-color:#10331f;background:#10331f">locked off</span></div>
+          <div class="row"><span style="display:flex;flex-direction:column;gap:2px"><span>Daemon bind</span><span class="mono muted" style="font-size:12px">127.0.0.1:51823 · token per launch · Origin and Host checked · no CORS</span></span><button class="btn btn-sm">Rotate token</button></div>
+        </section>
+
+      </div>
+    </div>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
