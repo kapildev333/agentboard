@@ -46,6 +46,8 @@ export const WorkspaceSchema = z.object({
   nodes: z.array(BoardNodeSchema),
   ink: z.array(StrokeSchema).optional(),
   layouts: z.array(SavedLayoutSchema).optional(),
+  /** Phase 4; lazy because TeamSchema lives in the phase 4 block at the end. */
+  teams: z.array(z.lazy(() => TeamSchema)).optional(),
 });
 export const BoardSchema = z.object({
   version: z.literal(1),
@@ -163,7 +165,16 @@ export const PlannerSettingsSchema = z.object({ url: z.string().url(), model: z.
 export const VoiceSettingsSchema = z.object({ transcribeCommand: z.string(), holdKey: z.literal("alt+space") });
 
 // ~/.agentboard/settings.json
-export const SettingsSchema = z.object({ fontSize: z.number(), customAgents: z.array(CustomAgentSchema), planner: PlannerSettingsSchema.optional(), voice: VoiceSettingsSchema.optional() });
+export const SettingsSchema = z.object({
+  fontSize: z.number(),
+  customAgents: z.array(CustomAgentSchema),
+  planner: PlannerSettingsSchema.optional(),
+  voice: VoiceSettingsSchema.optional(),
+  // Phase 4, defaulted so an old settings file loads.
+  profiles: z.array(z.lazy(() => ProfileSchema)).default([]),
+  composerTemplates: z.array(z.lazy(() => ComposerTemplateSchema)).default([]),
+  memory: z.object({ offerAtSpawn: z.boolean() }).default({ offerAtSpawn: false }),
+});
 export const OpenRequestSchema = z.object({ editor: z.enum(["code", "zed", "finder"]), path: z.string() });
 
 // Phase 4: orchestration and continuity
