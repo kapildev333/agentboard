@@ -412,3 +412,46 @@ test("PUT /api/settings refuses a non-loopback planner URL", async () => {
   expect((await put("http://example.com:11434")).status).toBe(400);
   for (const ok of ["http://localhost:11434", "http://127.0.0.1:11434", "http://[::1]:11434"]) expect((await put(ok)).status).toBe(200);
 });
+
+test("a second spawn near the same console skips the occupied slot", async () => {
+  const s = setup();
+  const d = await start(s);
+  const a = await spawnFake(d, s.repo);
+  const run = async (id: string) => {
+    const plan = planOf([{ id, kind: "spawn", agent: "custom", customId: "fake", near: a.id, summary: "Spawn", asks: false }]);
+    const r = await d.call("POST", "/api/command/run", { plan, confirmed: [], skipped: [] });
+    return (r.body as { results: { consoleId: string }[] }).results[0]!.consoleId;
+  };
+  const [first, second] = [await run("s1"), await run("s2")];
+  const board = (await d.call("GET", `/api/board?repo=${encodeURIComponent(s.repo)}`)).body as Board;
+  const at = (id: string) => consolesOf(board).find((n) => n.id === id)!;
+  expect(at(first).x).toBe(a.x + a.w + 40);
+  expect(at(second).x).toBe(a.x + 2 * (a.w + 40));
+});
+
+test("a confirmed input step types text and Enter into the console; a console that is not running fails the step", async () => {
+  const s = setup();
+  const d = await start(s);
+  const sock = socket(d);
+  await sock.opened;
+  const c = await spawnFake(d, s.repo);
+  sock.send({ t: "attach", consoleId: c.id });
+  await until(() => sock.output(c.id).includes("fake>"));
+  const plan = planOf([
+    { id: "s1", kind: "input", consoleId: c.id, text: "hi there", summary: "Type", asks: true },
+    { id: "s2", kind: "input", consoleId: "not-running", text: "x", summary: "Type", asks: true },
+  ]);
+  const r = await d.call("POST", "/api/command/run", { plan, confirmed: ["s1", "s2"], skipped: [] });
+  expect(r.body).toMatchObject({ results: [{ stepId: "s1", status: "done" }, { stepId: "s2", status: "failed", error: expect.stringContaining("not running") }] });
+  await until(() => sock.output(c.id).includes("you said: hi there"));
+});
+
+test("a note step lands on the active workspace", async () => {
+  const s = setup();
+  const d = await start(s);
+  const plan = planOf([{ id: "s1", kind: "note", text: "remember", summary: "Note", asks: false }]);
+  expect((await d.call("POST", "/api/command/run", { plan, confirmed: [], skipped: [] })).body).toMatchObject({ results: [{ status: "done" }] });
+  const board = (await d.call("GET", `/api/board?repo=${encodeURIComponent(s.repo)}`)).body as Board;
+  const ws = board.workspaces.find((w) => w.id === board.activeWorkspaceId)!;
+  expect(ws.nodes).toMatchObject([{ type: "note", text: "remember" }]);
+});
