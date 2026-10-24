@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { GitDiffSchema, type GitDiff } from "@agentboard/shared";
 import { readJson } from "./http";
 
-const colors = { added: "#1a7f37", removed: "#cf222e" };
-
 export function DiffView({ fetch, path }: { fetch: typeof globalThis.fetch; path: string }) {
   const [diff, setDiff] = useState<GitDiff>();
   const [error, setError] = useState<string>();
@@ -17,15 +15,15 @@ export function DiffView({ fetch, path }: { fetch: typeof globalThis.fetch; path
   if (!diff) return null;
   let inHunk = false;
   return (
-    <div>
-      <ul>
+    <div className="diff-view">
+      <ul className="diff-files">
         {diff.files.map((f) => (
           <li key={f.path}>
-            <span>{f.status}</span> <span>{f.path}</span>
+            <span className="diff-file-status">{f.status}</span> <span className="diff-file-path">{f.path}</span>
           </li>
         ))}
       </ul>
-      <pre style={{ fontFamily: "monospace" }}>
+      <pre className="diff">
         {diff.patch.split("\n").map((line, i) => {
           // ---/+++ are headers only before a file's first @@; "diff --git" starts the next file.
           if (line.startsWith("diff ")) inHunk = false;
@@ -33,7 +31,7 @@ export function DiffView({ fetch, path }: { fetch: typeof globalThis.fetch; path
           const header = !inHunk && (line.startsWith("+++") || line.startsWith("---"));
           const kind = header ? undefined : line.startsWith("+") ? "added" : line.startsWith("-") ? "removed" : undefined;
           return (
-            <div key={i} className={kind} style={kind ? { color: colors[kind] } : undefined}>
+            <div key={i} className={kind}>
               {line}
             </div>
           );
