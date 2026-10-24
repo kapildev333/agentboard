@@ -30,8 +30,9 @@ test.afterAll(async () => {
 
 test.use({ actionTimeout: 15_000 });
 
+// Matches the title element alone: the header also carries the agent mark and the status badge.
 const consoleNode = (page: Page, title: string) =>
-  page.locator(".react-flow__node-console").filter({ has: page.locator("header", { hasText: new RegExp(`^${title} `) }) });
+  page.locator(".react-flow__node-console").filter({ has: page.locator(".console-title", { hasText: new RegExp(`^${title}$`) }) });
 
 /** Types a cue into a console and waits for the fake agent to report it ran; returns the cue's results. */
 async function cue(page: Page, title: string, name: string) {
