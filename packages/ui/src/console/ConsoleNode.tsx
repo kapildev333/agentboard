@@ -88,7 +88,7 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge, o
       <header className={`${CONSOLE_DRAG_HANDLE.slice(1)} console-header`}>
         <span className="console-title" title={node.title}>
           {node.title}
-        </span>
+        </span>{" "}
         {node.agent && <AgentMark agent={node.agent} name={node.title} />}
         {node.worktree && (
           <span className="chip console-branch" title={`branch ${node.worktree.branch}`}>
