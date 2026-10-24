@@ -91,3 +91,31 @@ test("a HEAD reaches the target as a HEAD and comes back without a body", async 
   expect(await res.text()).toBe("");
   expect(t.seen.map((s) => s.method)).toEqual(["HEAD"]);
 });
+
+test("the target never receives a cookie or authorization header", async () => {
+  const t = await startTarget(), board = await startBoard();
+  const res = await via(board, `${t.origin}/page`, {
+    headers: { cookie: "agentboard_1=s", accept: "text/html", "accept-language": "en", "user-agent": "ua", "x-other": "1" },
+  });
+  expect(res.status).toBe(200);
+  const sent = t.seen[0]!.headers;
+  expect(sent).not.toHaveProperty("cookie");
+  expect(sent).not.toHaveProperty("authorization");
+  expect(sent).not.toHaveProperty("x-agentboard-token");
+  expect(sent).not.toHaveProperty("x-other");
+  expect(sent).toMatchObject({ accept: "text/html", "accept-language": "en", "user-agent": "ua" });
+});
+
+test("a css target passes through byte for byte", async () => {
+  const t = await startTarget(), board = await startBoard();
+  const res = await via(board, `${t.origin}/style.css`);
+  expect(res.status).toBe(200);
+  expect(res.headers.get("content-type")).toBe("text/css");
+  expect(Buffer.from(await res.arrayBuffer()).equals(CSS)).toBe(true);
+  expect(res.headers.get("cache-control")).toBe("no-store");
+});
+
+test("an html page with no head gets the tags at the top", async () => {
+  const t = await startTarget(), board = await startBoard();
+  expect(await (await via(board, `${t.origin}/bare`)).text()).toMatch(new RegExp(`^<base href="${t.origin}/"><script>[^<]*</script><p>no head</p>$`));
+});
