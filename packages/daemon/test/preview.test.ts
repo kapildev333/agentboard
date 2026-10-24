@@ -55,3 +55,16 @@ test("an html target comes back with the capture script and a base tag", async (
   expect(res.headers.get("x-content-type-options")).toBe("nosniff");
   expect(res.headers.get("set-cookie")).toBeNull();
 });
+
+test.each([
+  "http://example.com/",
+  "https://127.0.0.1/",
+  "http://10.0.0.1/",
+  "http://127.0.0.1.example.com/",
+  "file:///etc/hosts",
+  "http://user:pw@127.0.0.1/",
+  "not a url",
+])("a non-loopback target is 403: %s", async (url) => {
+  const board = await startBoard();
+  expect((await via(board, url)).status).toBe(403);
+});
