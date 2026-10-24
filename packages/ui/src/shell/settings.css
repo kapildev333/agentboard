@@ -15,11 +15,13 @@
   container-type: inline-size;
   flex: 1;
   min-height: 0;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   font-size: var(--text-sm);
 }
 
 .settings-panel .sp-layout {
+  flex: 1;
   min-height: 0;
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr);
@@ -69,12 +71,14 @@
   min-height: 0;
   overflow: auto;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: var(--space-4);
 }
 
 .settings-panel .sp-section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2);
 }
 
@@ -112,6 +116,7 @@
 
 .settings-panel .sp-row-label {
   display: inline-block;
+  flex: none;
   font-weight: 500;
 }
 
@@ -125,15 +130,22 @@
   min-width: 0;
 }
 
+/* read-only values: a long font stack is cut with an ellipsis (its title holds all of it), a sentence wraps */
 .settings-panel .sp-control {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
   min-width: 0;
   text-align: right;
+}
+
+.settings-panel .sp-control.sp-mono {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.settings-panel .sp-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .settings-panel .sp-number {
@@ -164,6 +176,7 @@
 .settings-panel .sp-agent,
 .settings-panel .sp-status {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   gap: var(--space-1);
 }
