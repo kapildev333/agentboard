@@ -30,14 +30,12 @@ test("LoopSchema rejects a trigger of an unknown kind", () => {
   expect(shared.LoopSchema.safeParse({ ...loop, trigger: { kind: "webhook", url: "/x" } }).success).toBe(false);
 });
 
-test("an old settings file without profiles, composerTemplates and memory parses with the defaults", () => {
-  expect(shared.SettingsSchema.parse({ fontSize: 13, customAgents: [] })).toEqual({
-    fontSize: 13,
-    customAgents: [],
-    profiles: [],
-    composerTemplates: [],
-    memory: { offerAtSpawn: false },
-  });
+// The fields stay absent rather than defaulted: readers use `?? []` and `?.offerAtSpawn ?? false`,
+// so GET /api/settings for an old file answers exactly what it did before phase 4.
+test("an old settings file without profiles, composerTemplates and memory parses unchanged", () => {
+  expect(shared.SettingsSchema.parse({ fontSize: 13, customAgents: [] })).toEqual({ fontSize: 13, customAgents: [] });
+  const full = { fontSize: 13, customAgents: [], profiles: [fixture("profile")], composerTemplates: [fixture("composer-template")], memory: { offerAtSpawn: true } };
+  expect(shared.SettingsSchema.parse(full)).toEqual(full);
 });
 
 test("the status response carries summaries beside consoles, and one without summaries still parses", () => {
