@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { CONSOLE_DRAG_HANDLE, ConsoleNode } from "../../src/console";
+import { ConsoleOverlay } from "../../src/console/ConsoleOverlay";
 
 const x = vi.hoisted(() => ({
   zoom: 1,
@@ -296,5 +297,35 @@ describe("console card", () => {
     const pill = header.querySelector("[data-status]")!;
     expect(pill.getAttribute("data-status")).toBe("working");
     expect(pill.textContent).toBe("Working");
+  });
+
+  const actions = () => ({ onResume: vi.fn(), onStartFresh: vi.fn(), onRemove: vi.fn() });
+
+  it("a stopped console shows the Resume session overlay", () => {
+    const a = actions();
+    const node = { status: "stopped" as const, session: { provider: "claude" as const, id: "1a2b3c4d-0000-0000-0000-00009f0e8d7c" } };
+    const { getByRole, getByText } = render(<ConsoleOverlay node={node} {...a} />);
+    expect(getByText("Stopped")).toBeTruthy();
+    expect(getByText(/daemon restarted/)).toBeTruthy();
+    expect(getByText("1a2b…8d7c")).toBeTruthy();
+    fireEvent.click(getByRole("button", { name: "Resume" }));
+    expect(a.onResume).toHaveBeenCalled();
+    fireEvent.click(getByRole("button", { name: "Start fresh" }));
+    expect(a.onStartFresh).toHaveBeenCalled();
+  });
+
+  it("an exited console shows Relaunch and Remove node", () => {
+    const a = actions();
+    const { getByRole, queryByText } = render(<ConsoleOverlay node={{ status: "exited" }} {...a} />);
+    expect(queryByText("Stopped")).toBeNull();
+    fireEvent.click(getByRole("button", { name: "Relaunch" }));
+    expect(a.onStartFresh).toHaveBeenCalled();
+    fireEvent.click(getByRole("button", { name: "Remove node" }));
+    expect(a.onRemove).toHaveBeenCalled();
+  });
+
+  it("a running console has no overlay", () => {
+    const { container } = render(<ConsoleOverlay node={{ status: "working" }} {...actions()} />);
+    expect(container.innerHTML).toBe("");
   });
 });
