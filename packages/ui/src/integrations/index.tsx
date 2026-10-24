@@ -29,8 +29,8 @@ const CLIS = [
 const CLAUDE_PLUGIN = "claude plugin marketplace add kapildev333/agentboard\nclaude plugin install agentboard@agentboard";
 const POLL_MS = 5000;
 
-// The server's own refusals: Host, Origin, token. A handler's 4xx is an answer, not a refusal.
-const refused = (result: string) => /^40[13]\b/.test(result);
+// The server's own refusals: Host, Origin, token, which carry a reason. A handler's bare 4xx is an answer, not a refusal.
+const refused = (result: string) => /^40[13] /.test(result);
 const ago = (at: string | undefined, now: Date) => {
   if (!at) return "not seen yet";
   const min = Math.floor((now.getTime() - Date.parse(at)) / 60_000);
@@ -69,7 +69,8 @@ export function IntegrationsPage({ fetch, onBack, host = location.host, now: clo
   const [data, setData] = useState<Integrations>();
   const [error, setError] = useState(false);
   const [cli, setCli] = useState<(typeof CLIS)[number]["id"]>("claude");
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"done" | "failed" | null>(null);
+  const ids = useId();
   const now = clock();
 
   useEffect(() => {
@@ -94,11 +95,17 @@ export function IntegrationsPage({ fetch, onBack, host = location.host, now: clo
   }, [onBack]);
 
   const tab = CLIS.find((c) => c.id === cli)!;
-  const copy = () =>
-    void navigator.clipboard?.writeText(tab.line).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
+  // No clipboard (an insecure context, an old browser) or a refused write: the text stays there to select by hand.
+  const copy = () => {
+    if (!navigator.clipboard) return setCopied("failed");
+    navigator.clipboard.writeText(tab.line).then(
+      () => {
+        setCopied("done");
+        setTimeout(() => setCopied((c) => (c === "done" ? null : c)), 1500);
+      },
+      () => setCopied("failed"),
+    );
+  };
   const seen = data?.seen ?? {};
   const today = now.toDateString();
   const refusedToday = data?.log.filter((e) => refused(e.result) && new Date(e.at).toDateString() === today).length ?? 0;
@@ -146,18 +153,19 @@ export function IntegrationsPage({ fetch, onBack, host = location.host, now: clo
             </p>
             <div className="int-tabs" role="tablist" aria-label="CLI">
               {CLIS.map((c) => (
-                <button key={c.id} type="button" role="tab" aria-selected={c.id === cli} className={c.id === cli ? "int-tab on" : "int-tab"}
-                  onClick={() => (setCli(c.id), setCopied(false))}>
+                <button key={c.id} id={`${ids}-${c.id}`} type="button" role="tab" aria-selected={c.id === cli} aria-controls={`${ids}-panel`}
+                  className={c.id === cli ? "int-tab on" : "int-tab"} onClick={() => (setCli(c.id), setCopied(null))}>
                   <span className={`mark mark-${c.id}`} aria-hidden="true">{c.mark}</span>
                   {c.id}
                 </button>
               ))}
             </div>
-            <div role="tabpanel" className="int-panel">
+            <div role="tabpanel" id={`${ids}-panel`} aria-labelledby={`${ids}-${cli}`} className="int-panel">
               <div className="int-card-head">
                 <span className="section-title">{tab.label}</span>
                 <button type="button" className="btn-sm" onClick={copy}>Copy</button>
-                {copied && <span className="int-copied" role="status">Copied</span>}
+                {copied === "done" && <span className="int-copied" role="status">Copied</span>}
+                {copied === "failed" && <span className="int-copy-failed" role="status">Copy failed, select the text</span>}
               </div>
               <pre className="int-code">{tab.line}</pre>
               <Seen at={seen.mcp} now={now} />

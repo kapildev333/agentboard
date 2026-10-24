@@ -194,6 +194,11 @@
   font-size: var(--text-xs);
 }
 
+.int-copy-failed {
+  color: var(--color-danger);
+  font-size: var(--text-xs);
+}
+
 .int-seen {
   display: inline-flex;
   align-items: center;
