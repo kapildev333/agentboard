@@ -8,6 +8,7 @@ import {
   type Node,
   type NodeProps,
   type NodeTypes,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useEffect, useMemo, useState } from "react";
@@ -17,6 +18,40 @@ import { CONSOLE_DRAG_HANDLE } from "../console/dragHandle";
 import { useBoard } from "./store";
 
 type Data = { node: BoardNode };
+
+// The mounted canvas (one at a time), for the chrome outside React Flow's tree: the zoom level and Add a note.
+let flow: ReactFlowInstance<Node<Data>> | undefined;
+const activeViewport = () => {
+  const { board } = useBoard.getState();
+  return board.workspaces.find((w) => w.id === board.activeWorkspaceId)?.viewport ?? { x: 0, y: 0, zoom: 1 };
+};
+
+/** The canvas zoom as a percentage; a click resets it to 100 %. */
+export function ZoomLevel() {
+  const zoom = useBoard((s) => s.board.workspaces.find((w) => w.id === s.board.activeWorkspaceId)?.viewport.zoom ?? 1);
+  const pct = `${Math.round(zoom * 100)}%`;
+  return (
+    <button
+      type="button"
+      className="btn-sm btn-quiet zoom-level mono"
+      aria-label={`${pct}, reset zoom to 100%`}
+      onClick={() => void flow?.zoomTo(1).then(() => flow && useBoard.getState().setViewport(flow.getViewport()))}
+    >
+      {pct}
+    </button>
+  );
+}
+
+const NOTE = { w: 240, h: 140 };
+
+/** Adds a note at the middle of what the canvas shows. */
+export function addNoteAtCentre() {
+  const v = flow?.getViewport() ?? activeViewport();
+  const pane = document.querySelector(".react-flow")?.getBoundingClientRect();
+  const x = ((pane?.width ?? 0) / 2 - v.x) / v.zoom - NOTE.w / 2;
+  const y = ((pane?.height ?? 0) / 2 - v.y) / v.zoom - NOTE.h / 2;
+  useBoard.getState().addNode({ id: crypto.randomUUID(), type: "note", title: "Note", x: Math.round(x), y: Math.round(y), ...NOTE, text: "New note" });
+}
 
 /** Wraps every node view with the test id and a resizer that writes back through resizeNode; app.css shows the resizer on hover. */
 function withFrame(View: NodeTypes[string]) {
@@ -66,13 +101,13 @@ function Canvas({ ws, nodeTypes, onInit }: { ws: Workspace; nodeTypes: NodeTypes
     () => setNodes((prev) => toFlow(ws.nodes, new Set(prev.filter((n) => n.selected).map((n) => n.id)))),
     [ws.nodes],
   );
+  useEffect(() => () => void (flow = undefined), []);
   return (
     <ReactFlow
       minZoom={0.25}
       maxZoom={2}
       nodes={nodes}
       nodeTypes={nodeTypes}
-      onInit={onInit}
       onNodesChange={(changes) => {
         setNodes((ns) => applyNodeChanges(changes, ns));
         // Every drag ends, and keyboard moves arrive, as a change with dragging: false; resizer ticks (absent) save on resize end.
@@ -83,10 +118,14 @@ function Canvas({ ws, nodeTypes, onInit }: { ws: Workspace; nodeTypes: NodeTypes
       }}
       defaultViewport={ws.viewport}
       panOnScroll
+      onInit={(i) => {
+        flow = i;
+        onInit?.(i);
+      }}
       onMoveEnd={(_, v) => setViewport(v)}
     >
-      <MiniMap pannable zoomable />
-      <Controls />
+      <MiniMap pannable zoomable position="bottom-right" />
+      <Controls position="bottom-left" orientation="vertical" showInteractive={false} />
       <Background />
     </ReactFlow>
   );

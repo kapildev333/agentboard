@@ -13,24 +13,95 @@
   min-height: 0;
 }
 
-.empty-hint {
+/* The empty workspace card, centred over the canvas. */
+.empty-board {
   position: absolute;
   inset: 50% var(--space-4) auto;
+  z-index: 5;
   transform: translateY(-50%);
-  margin: 0 auto;
+  display: grid;
+  gap: var(--space-2);
   max-width: 520px;
-  padding: var(--space-2) var(--space-3);
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  text-align: center;
-  pointer-events: none;
+  margin: 0 auto;
+  padding: var(--space-3);
 }
 
-.empty-hint code {
+.empty-board code {
   color: var(--color-text);
-  font-size: var(--text-sm);
+}
+
+.empty-actions,
+.empty-hints {
+  display: grid;
+  gap: var(--space-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.empty-action {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: var(--space-2);
+  width: 100%;
+  height: auto;
+  padding: var(--space-1) var(--space-2);
+  border-color: var(--color-border);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  white-space: normal;
+  text-align: left;
+}
+
+.empty-action:hover:not(:disabled),
+.empty-action:focus-visible {
+  background: var(--color-surface-raised);
+}
+
+.empty-action:focus-visible {
+  outline-offset: -2px;
+}
+
+.empty-action-text {
+  display: grid;
+  gap: 2px;
+}
+
+.empty-cli {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.empty-cli .label {
+  flex-basis: 100%;
+}
+
+.empty-cli code {
+  flex: 1;
+}
+
+.empty-cli [role="status"]:empty {
+  display: none;
+}
+
+.empty-hints {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.empty-hints .kbd {
+  margin-right: var(--space-half);
+}
+
+.zoom-level {
+  min-width: 52px;
+}
+
+.zoom-level:focus-visible {
+  outline-offset: -2px;
 }
 
 /* ---- Launch page (no repo yet) ---- */
@@ -436,15 +507,27 @@
   --xy-resize-background-color: var(--color-accent);
 }
 
+/* The minimap (bottom right) and the zoom toolbar (bottom left) are cards on the canvas. */
 .react-flow__minimap {
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
 .react-flow__controls {
-  border-radius: var(--radius-sm);
+  padding: var(--space-half);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
   overflow: hidden;
+}
+
+.react-flow__controls-button {
+  width: var(--control-height);
+  height: var(--control-height);
+  border: 0;
+  border-radius: var(--radius-sm);
 }
 
 /* inset, so the clipped controls box does not cut the ring */

@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { NodeProps } from "@xyflow/react";
-import { BoardSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type NoteNode, type Settings } from "@agentboard/shared";
+import { BoardSchema, GitStatusSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type NoteNode, type Settings } from "@agentboard/shared";
 import { version } from "../package.json";
-import { Board, FolderIcon, Logo, SettingsIcon, WorkspaceTabs, autosaveBoard, useBoard } from "./board";
+import { Board, EmptyBoard, FolderIcon, Logo, SettingsIcon, WorkspaceTabs, ZoomLevel, addNoteAtCentre, autosaveBoard, mod, typing, useBoard } from "./board";
 import { CommandBar } from "./command";
 import { ConsoleNode, type SocketLike } from "./console";
 import { GitCard } from "./git";
@@ -193,6 +193,39 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
     return () => void (live = false);
   }, [fetch]);
 
+  // The repo's branch for the top bar chip; no chip while it is unknown (or the folder is not a git repo).
+  const [branch, setBranch] = useState<string>();
+  useEffect(() => {
+    if (!repo) return;
+    let live = true;
+    fetch(`/api/git/status?path=${encodeURIComponent(repo)}`)
+      .then((r) => r.json())
+      .then((j) => {
+        const s = GitStatusSchema.safeParse(j);
+        if (live && s.success) setBranch(s.data.branch);
+      })
+      .catch(() => {});
+    return () => void (live = false);
+  }, [repo, fetch]);
+
+  // ⌘⇧N spawns a console; N adds a note unless a terminal or a field has the key.
+  useEffect(() => {
+    if (!repo || !ready) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== "n" || e.altKey) return;
+      if (mod(e) && e.shiftKey) {
+        e.preventDefault();
+        opener.current = document.activeElement as HTMLElement | null;
+        setPanelState("spawn");
+      } else if (!mod(e) && !e.shiftKey && !typing(e.target)) {
+        e.preventDefault();
+        addNoteAtCentre();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [repo, ready]);
+
   useEffect(() => {
     if (!repo) return;
     let live = true;
@@ -313,9 +346,11 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           <span className="topbar-repo" title={repo}>
             <FolderIcon />
             <strong>{repo.replace(/\/+$/, "").split("/").pop()}</strong>
+            {branch && <span className="chip" title={branch}>{branch}</span>}
           </span>
           {ready && <WorkspaceTabs />}
           <span className="topbar-spacer" />
+          {ready && <ZoomLevel />}
           <button type="button" className="btn-primary" aria-expanded={panel === "spawn"} onClick={() => setPanel(panel === "spawn" ? null : "spawn")}>
             Spawn console
           </button>
@@ -326,11 +361,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
         </header>
         <main className="board">
           {ready ? <Board nodeTypes={nodeTypes} onInit={(rf) => (flow.current = rf)} /> : <p className="app-message muted">Loading the board…</p>}
-          {ready && empty && (
-            <p className="empty-hint">
-              Spawn a console or run <code>agentboard spawn</code> from any terminal
-            </p>
-          )}
+          {ready && empty && <EmptyBoard onSpawn={() => setPanel("spawn")} />}
         </main>
         <div className="rail">
           <MissionMap onFocus={focusNode} fetch={fetch} />
