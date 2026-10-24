@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Handoff brief</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.input{display:flex;align-items:center;height:30px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font-size:13px;box-sizing:border-box}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st-idle{background:#10331f;color:#6fdc9a}.st-stopped{background:#2a2f39;color:#c0c6d1}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.role{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;background:#2c1f4a;color:#d2a8ff;font-size:11px;font-weight:600}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}.m-gemini{background:#13284d;color:#9dbfff}.m-opencode{background:#2c1f4a;color:#d2a8ff}
+.canvas{background-color:#0e1014;background-image:radial-gradient(#2c313c 1px,transparent 1.5px);background-size:20px 20px}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.sec{display:flex;flex-direction:column;gap:6px}
+.sec h3{margin:0;font-size:12px;font-weight:600;color:#c0c6d1}
+.sec ul{margin:0;padding-left:16px;font-size:13px;line-height:1.5}
+.tgt{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #2b303b;border-radius:8px;background:#1e222a;cursor:pointer}
+.tgt.on{border-color:#7b93ff;box-shadow:0 0 0 1px #7b93ff}
+.code{background:#0b0d11;border:1px solid #2b303b;border-radius:6px;padding:10px 12px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;line-height:1.6;color:#c0c6d1;white-space:pre-wrap;margin:0}
+.ico{width:14px;height:14px;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014;position:relative">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:500">acme-storefront</span><span class="chip">main</span></div>
+    <nav aria-label="Workspaces" style="display:flex;align-items:center;align-self:stretch;margin-left:8px"><button class="tab">main <span class="kbd">⌘1</span></button><button class="tab on">checkout <span class="kbd">⌘2</span></button></nav>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary">Spawn console</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <div style="display:flex;flex:1;min-height:856px">
+    <main class="canvas" aria-label="Board" style="position:relative;flex:1;min-width:0;overflow:hidden">
+      <div aria-hidden="true" style="position:absolute;left:24px;top:24px;width:992px;height:420px;border:1px dashed #6a4fb0;border-radius:14px;background:rgb(44 31 74 / .18);opacity:.6"></div>
+      <div class="card" aria-hidden="true" style="position:absolute;left:48px;top:84px;width:300px;height:320px;opacity:.5"></div>
+      <div class="card" aria-hidden="true" style="position:absolute;left:372px;top:84px;width:300px;height:320px;opacity:.5"></div>
+      <div class="card" aria-hidden="true" style="position:absolute;left:696px;top:84px;width:300px;height:320px;opacity:.5"></div>
+    </main>
+    <aside aria-hidden="true" style="width:264px;background:#161920;border-left:1px solid #2b303b"></aside>
+  </div>
+
+  <div aria-hidden="true" style="position:absolute;inset:0;background:rgb(4 6 10 / .6)"></div>
+
+  <div role="dialog" aria-labelledby="ho-title" aria-modal="true" class="card" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:920px;max-width:calc(100% - 32px);max-height:calc(100% - 48px);display:flex;flex-direction:column;box-shadow:0 12px 40px rgb(0 0 0/.5);overflow:hidden">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:20px 24px 0">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;gap:10px"><h1 id="ho-title" style="margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em">Hand off</h1><span style="display:flex;align-items:center;gap:6px"><span class="mark m-claude">C</span>Builder<span class="role">builder</span></span><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#9ba3b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg><span style="display:flex;align-items:center;gap:6px"><span class="mark m-codex">X</span>Reviewer<span class="role">reviewer</span></span></div>
+        <p class="muted" style="margin:0">The outgoing session is summarised from its own transcript into a brief. You edit it; the target gets it as a prompt. No permission is ever answered on your behalf.</p>
+      </div>
+      <button class="btn btn-quiet btn-icon" aria-label="Close"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:0;flex:1;min-height:0">
+
+      <section style="padding:18px 24px 20px;display:flex;flex-direction:column;gap:14px;border-right:1px solid #2b303b;overflow:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between"><span class="label">Brief · editable</span><span style="display:flex;gap:6px;align-items:center"><span class="mono muted" style="font-size:11px">~480 tokens</span><button class="btn btn-quiet btn-sm">Regenerate</button></span></div>
+
+        <div class="sec"><h3>What was done</h3><ul><li><span class="mono">validatePostal(country, code)</span> added in <span class="mono">src/lib/postal.ts</span> with rules for CA, UK, NL</li><li>Checkout form shows an inline error with an example format</li><li>18 new tests; the full suite is green (212)</li></ul></div>
+        <div class="sec"><h3>What's left</h3><ul><li>Copy review on the error text</li><li>Decide whether to normalise spacing (e.g. "K1P5G1" → "K1P 5G1") before validating</li></ul></div>
+        <div class="sec"><h3>Decisions and gotchas</h3><ul><li>UK rule accepts the GIR 0AA special case</li><li>Did not touch the address autocomplete; it formats postal codes on its own</li></ul></div>
+        <div class="sec"><h3>Ask of the reviewer</h3><textarea class="input" rows="3" style="height:auto;padding:8px 10px;resize:vertical;font-family:inherit;line-height:1.5">Review the diff for correctness and copy. Do not edit files; leave comments as a numbered list and say "approve" or "changes requested" on the last line.</textarea></div>
+
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="label">Attached</span>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:#7b93ff;margin:0">Diff since last handoff <span class="chip">3 files · +131 −11</span></label>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:#7b93ff;margin:0">Team brief <span class="chip">checkout</span></label>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:#7b93ff;margin:0"><span class="mono">PLAN.md</span></label>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" style="accent-color:#7b93ff;margin:0">Last 50 lines of the outgoing terminal</label>
+        </div>
+      </section>
+
+      <section style="padding:18px 24px 20px;display:flex;flex-direction:column;gap:14px;overflow:auto;background:#12151b">
+        <span class="label">Target</span>
+        <label class="tgt on"><input type="radio" name="t" checked style="accent-color:#7b93ff;margin:0"><span class="mark m-codex">X</span><span style="display:flex;flex-direction:column;gap:1px;flex:1"><span style="font-weight:600">Reviewer</span><span class="muted" style="font-size:12px">codex · read-only on main · stopped, will start</span></span><span class="pill st-stopped" style="height:20px;font-size:11px">Stopped</span></label>
+        <label class="tgt"><input type="radio" name="t" style="accent-color:#7b93ff;margin:0"><span class="mark m-claude">C</span><span style="display:flex;flex-direction:column;gap:1px;flex:1"><span style="font-weight:600">Planner</span><span class="muted" style="font-size:12px">claude · main · idle</span></span><span class="pill st-idle" style="height:20px;font-size:11px">Idle</span></label>
+        <label class="tgt"><input type="radio" name="t" style="accent-color:#7b93ff;margin:0"><span class="mark" style="background:#2a2f39;color:#c0c6d1">+</span><span style="display:flex;flex-direction:column;gap:1px;flex:1"><span style="font-weight:600">New console</span><span class="muted" style="font-size:12px">pick an agent, optional worktree</span></span></label>
+
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+          <span class="label">After sending</span>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:#7b93ff;margin:0">Mark Builder as handed off (stays idle, not closed)</label>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:#7b93ff;margin:0">Focus the target console</label>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" style="accent-color:#7b93ff;margin:0">Add a sticky with the brief beside both</label>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-height:0">
+          <span class="label">What the reviewer will receive</span>
+          <pre class="code" style="flex:1;overflow:hidden">You are the reviewer on team "checkout". Brief from Builder follows.
+
+## What was done
+- validatePostal(country, code) in src/lib/postal.ts (CA, UK, NL)
+- Inline error with example format in the checkout form
+- 18 new tests, suite green (212)
+
+## What's left
+- Copy review on the error text
+- Normalise spacing before validating?
+
+## Ask
+Review the diff for correctness and copy. Do not edit files…
+
+[attached: diff (3 files), team brief, PLAN.md]</pre>
+        </div>
+      </section>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;padding:14px 24px;border-top:1px solid #2b303b;background:#12151b">
+      <span class="muted" style="font-size:12px">Brief saved to <span class="mono">~/.agentboard/handoffs/</span> either way</span>
+      <span style="flex:1"></span>
+      <button class="btn">Cancel</button>
+      <button class="btn">Copy brief</button>
+      <button class="btn btn-primary">Start Reviewer and send</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

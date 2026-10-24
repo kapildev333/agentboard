@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Usage and token analytics</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}.m-gemini{background:#13284d;color:#9dbfff}.m-opencode{background:#2c1f4a;color:#d2a8ff}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.seg{display:inline-flex;border:1px solid #646c80;border-radius:6px;overflow:hidden}
+.seg button{height:26px;padding:0 10px;border:0;background:transparent;color:#9ba3b4;font-size:12px}
+.seg button.on{background:#262b35;color:#e7e9ee;font-weight:600}
+.stat{display:flex;flex-direction:column;gap:4px;padding:14px 16px}
+.stat .v{font-size:24px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.bar{display:flex;flex-direction:column-reverse;flex:1;gap:1px;min-width:0}
+.bar span{display:block;width:100%;border-radius:1px}
+.c-claude{background:#d9a066}.c-codex{background:#5fc47a}.c-gemini{background:#79a6ff}.c-opencode{background:#b58cf0}
+.trow{display:grid;grid-template-columns:1.3fr .6fr .8fr .8fr .8fr .7fr 110px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid #2b303b;font-size:12px;font-variant-numeric:tabular-nums}
+.trow:last-child{border-bottom:0}
+.num{font-family:"JetBrains Mono",ui-monospace,monospace;text-align:right}
+.spark{display:flex;align-items:flex-end;gap:2px;height:20px}
+.spark span{display:block;width:6px;background:#646c80;border-radius:1px}
+.ico{width:14px;height:14px;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <nav aria-label="Views" style="display:flex;align-items:center;align-self:stretch"><button class="tab">Board</button><button class="tab">Mission map</button><button class="tab">Teams</button><button class="tab">Loops</button><button class="tab on">Usage</button></nav>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary">Spawn console</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <main style="flex:1;padding:24px 32px 28px;display:flex;flex-direction:column;gap:18px;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em">Usage</h1>
+      <span class="muted" style="font-size:12px">Read from each CLI's own session logs on this disk. No network, no estimates.</span>
+      <span style="flex:1"></span>
+      <div class="seg" role="group" aria-label="Range"><button>Today</button><button class="on">14 days</button><button>30 days</button><button>All</button></div>
+      <div class="seg" role="group" aria-label="Group by"><button class="on">By agent</button><button>By repo</button><button>By console</button></div>
+      <button class="btn btn-sm">Export CSV</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px">
+      <div class="card stat"><span class="label">Tokens · 14 days</span><span class="v">18.4M</span><span class="muted" style="font-size:12px">11.9M in · 2.1M out · 4.4M cache read</span></div>
+      <div class="card stat"><span class="label">Sessions</span><span class="v">92</span><span class="muted" style="font-size:12px">6.6 a day · median 41 min</span></div>
+      <div class="card stat"><span class="label">Busiest console</span><span class="v" style="font-size:18px;display:flex;align-items:center;gap:8px"><span class="mark m-claude">C</span>Checkout flow</span><span class="muted" style="font-size:12px">4.1M tokens · 9 sessions</span></div>
+      <div class="card stat"><span class="label">Needs-you waits</span><span class="v">38 <span class="muted" style="font-size:13px;font-weight:400">min total</span></span><span class="muted" style="font-size:12px">longest 6 m 12 s · median 24 s</span></div>
+      <div class="card stat"><span class="label">Matches the CLIs' own numbers</span><span class="v" style="color:#6fdc9a">±1.8%</span><span class="muted" style="font-size:12px">checked against <span class="mono">claude /cost</span> and codex usage</span></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px;flex:1;min-height:0">
+
+      <section class="card" aria-label="Tokens per day by agent" style="padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <h2 style="margin:0;font-size:14px;font-weight:600">Tokens per day</h2>
+          <div style="display:flex;gap:14px;font-size:12px" class="muted">
+            <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px" class="c-claude"></span>claude</span>
+            <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px" class="c-codex"></span>codex</span>
+            <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px" class="c-gemini"></span>gemini</span>
+            <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px" class="c-opencode"></span>opencode</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:40px 1fr;gap:8px;flex:1;min-height:220px">
+          <div class="mono muted" style="display:flex;flex-direction:column;justify-content:space-between;font-size:10px;text-align:right;padding-bottom:18px"><span>2.0M</span><span>1.5M</span><span>1.0M</span><span>0.5M</span><span>0</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:stretch;gap:8px;flex:1;border-bottom:1px solid #2b303b;border-left:1px solid #2b303b;padding:0 4px">
+              <div class="bar"><span class="c-claude" style="height:38%"></span><span class="c-codex" style="height:12%"></span><span class="c-gemini" style="height:6%"></span><span class="c-opencode" style="height:9%"></span></div>
+              <div class="bar"><span class="c-claude" style="height:42%"></span><span class="c-codex" style="height:14%"></span><span class="c-gemini" style="height:4%"></span><span class="c-opencode" style="height:11%"></span></div>
+              <div class="bar"><span class="c-claude" style="height:21%"></span><span class="c-codex" style="height:8%"></span><span class="c-gemini" style="height:2%"></span><span class="c-opencode" style="height:5%"></span></div>
+              <div class="bar"><span class="c-claude" style="height:9%"></span><span class="c-codex" style="height:3%"></span><span class="c-gemini" style="height:1%"></span><span class="c-opencode" style="height:2%"></span></div>
+              <div class="bar"><span class="c-claude" style="height:46%"></span><span class="c-codex" style="height:16%"></span><span class="c-gemini" style="height:8%"></span><span class="c-opencode" style="height:12%"></span></div>
+              <div class="bar"><span class="c-claude" style="height:51%"></span><span class="c-codex" style="height:11%"></span><span class="c-gemini" style="height:9%"></span><span class="c-opencode" style="height:14%"></span></div>
+              <div class="bar"><span class="c-claude" style="height:44%"></span><span class="c-codex" style="height:19%"></span><span class="c-gemini" style="height:5%"></span><span class="c-opencode" style="height:8%"></span></div>
+              <div class="bar"><span class="c-claude" style="height:39%"></span><span class="c-codex" style="height:13%"></span><span class="c-gemini" style="height:12%"></span><span class="c-opencode" style="height:10%"></span></div>
+              <div class="bar"><span class="c-claude" style="height:48%"></span><span class="c-codex" style="height:9%"></span><span class="c-gemini" style="height:14%"></span><span class="c-opencode" style="height:7%"></span></div>
+              <div class="bar"><span class="c-claude" style="height:18%"></span><span class="c-codex" style="height:6%"></span><span class="c-gemini" style="height:3%"></span><span class="c-opencode" style="height:4%"></span></div>
+              <div class="bar"><span class="c-claude" style="height:7%"></span><span class="c-codex" style="height:2%"></span><span class="c-gemini" style="height:1%"></span><span class="c-opencode" style="height:3%"></span></div>
+              <div class="bar"><span class="c-claude" style="height:53%"></span><span class="c-codex" style="height:17%"></span><span class="c-gemini" style="height:10%"></span><span class="c-opencode" style="height:13%"></span></div>
+              <div class="bar"><span class="c-claude" style="height:57%"></span><span class="c-codex" style="height:14%"></span><span class="c-gemini" style="height:11%"></span><span class="c-opencode" style="height:9%"></span></div>
+              <div class="bar" style="outline:1px solid #646c80;outline-offset:2px;border-radius:2px"><span class="c-claude" style="height:36%"></span><span class="c-codex" style="height:10%"></span><span class="c-gemini" style="height:8%"></span><span class="c-opencode" style="height:6%"></span></div>
+            </div>
+            <div class="mono muted" style="display:flex;justify-content:space-between;font-size:10px;padding:0 4px"><span>Oct 10</span><span>Oct 13</span><span>Oct 16</span><span>Oct 19</span><span>Oct 22</span><span style="color:#e7e9ee">today</span></div>
+          </div>
+        </div>
+        <p class="muted" style="margin:0;font-size:12px">Weekends dip; the Oct 22–23 peak is the checkout team plus the perf loop. Hover a bar for the per-console split.</p>
+      </section>
+
+      <section class="card" aria-label="Per repo" style="padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+        <h2 style="margin:0;font-size:14px;font-weight:600">By repo</h2>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between;font-size:12px"><span>acme-storefront</span><span class="mono">11.2M</span></div><div style="height:8px;border-radius:4px;background:#1e222a;overflow:hidden;display:flex"><span class="c-claude" style="width:38%"></span><span class="c-codex" style="width:12%"></span><span class="c-gemini" style="width:4%"></span><span class="c-opencode" style="width:7%"></span></div></div>
+          <div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between;font-size:12px"><span>gatekeeper</span><span class="mono">4.6M</span></div><div style="height:8px;border-radius:4px;background:#1e222a;overflow:hidden;display:flex"><span class="c-claude" style="width:5%"></span><span class="c-gemini" style="width:20%"></span></div></div>
+          <div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between;font-size:12px"><span>route-manager</span><span class="mono">2.6M</span></div><div style="height:8px;border-radius:4px;background:#1e222a;overflow:hidden;display:flex"><span class="c-claude" style="width:9%"></span><span class="c-opencode" style="width:5%"></span></div></div>
+        </div>
+        <div style="height:1px;background:#2b303b"></div>
+        <h2 style="margin:0;font-size:14px;font-weight:600">Where the numbers come from</h2>
+        <ul class="mono muted" style="margin:0;padding-left:16px;font-size:11px;line-height:1.8">
+          <li>~/.claude/projects/**/*.jsonl</li>
+          <li>~/.codex/sessions/**/*.jsonl</li>
+          <li>~/.gemini/tmp/**/logs.json</li>
+          <li>~/.local/share/opencode/storage/</li>
+        </ul>
+        <p class="muted" style="margin:0;font-size:12px">Parsed locally, cached in <span class="mono">~/.agentboard/usage.sqlite</span>. Paths are per CLI version and re-checked at startup.</p>
+      </section>
+    </div>
+
+    <section class="card" aria-label="Per agent" style="padding:14px 18px;display:flex;flex-direction:column;gap:4px">
+      <div class="trow muted" style="border-bottom:1px solid #2b303b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600"><span>Agent</span><span class="num">Sessions</span><span class="num">Input</span><span class="num">Output</span><span class="num">Cache read</span><span class="num">Avg / session</span><span>14-day trend</span></div>
+      <div class="trow"><span style="display:flex;align-items:center;gap:8px"><span class="mark m-claude">C</span>claude <span class="chip">2 profiles</span></span><span class="num">51</span><span class="num">7.9M</span><span class="num">1.3M</span><span class="num">3.6M</span><span class="num">251k</span><span class="spark"><span style="height:40%"></span><span style="height:45%"></span><span style="height:25%"></span><span style="height:10%"></span><span style="height:50%"></span><span style="height:55%"></span><span style="height:48%"></span><span style="height:42%"></span><span style="height:52%"></span><span style="height:20%"></span><span style="height:8%"></span><span style="height:58%"></span><span style="height:62%"></span><span style="height:40%;background:#d9a066"></span></span></div>
+      <div class="trow"><span style="display:flex;align-items:center;gap:8px"><span class="mark m-codex">X</span>codex</span><span class="num">18</span><span class="num">2.1M</span><span class="num">0.4M</span><span class="num">0.6M</span><span class="num">172k</span><span class="spark"><span style="height:30%"></span><span style="height:35%"></span><span style="height:20%"></span><span style="height:8%"></span><span style="height:40%"></span><span style="height:28%"></span><span style="height:48%"></span><span style="height:33%"></span><span style="height:22%"></span><span style="height:15%"></span><span style="height:5%"></span><span style="height:42%"></span><span style="height:35%"></span><span style="height:25%;background:#5fc47a"></span></span></div>
+      <div class="trow"><span style="display:flex;align-items:center;gap:8px"><span class="mark m-gemini">G</span>gemini</span><span class="num">9</span><span class="num">1.2M</span><span class="num">0.2M</span><span class="num">0.1M</span><span class="num">167k</span><span class="spark"><span style="height:15%"></span><span style="height:10%"></span><span style="height:5%"></span><span style="height:2%"></span><span style="height:20%"></span><span style="height:22%"></span><span style="height:12%"></span><span style="height:30%"></span><span style="height:35%"></span><span style="height:8%"></span><span style="height:2%"></span><span style="height:25%"></span><span style="height:28%"></span><span style="height:20%;background:#79a6ff"></span></span></div>
+      <div class="trow"><span style="display:flex;align-items:center;gap:8px"><span class="mark m-opencode">O</span>opencode <span class="chip">ollama · local</span></span><span class="num">14</span><span class="num">0.7M</span><span class="num">0.2M</span><span class="num">—</span><span class="num">64k</span><span class="spark"><span style="height:22%"></span><span style="height:28%"></span><span style="height:12%"></span><span style="height:5%"></span><span style="height:30%"></span><span style="height:35%"></span><span style="height:20%"></span><span style="height:25%"></span><span style="height:18%"></span><span style="height:10%"></span><span style="height:8%"></span><span style="height:33%"></span><span style="height:22%"></span><span style="height:15%;background:#b58cf0"></span></span></div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

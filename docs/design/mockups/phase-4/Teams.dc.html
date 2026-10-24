@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Teams and roles</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.input{display:flex;align-items:center;height:30px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font-size:13px;box-sizing:border-box}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st-working{background:#13284d;color:#9dbfff}.st-idle{background:#10331f;color:#6fdc9a}.st-needs{background:#ff6b5e;color:#1f0604;font-weight:700;box-shadow:0 0 0 2px #161920,0 0 0 3px #ff6b5e}.st-stopped{background:#2a2f39;color:#c0c6d1}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.role{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px;border-radius:999px;background:#2c1f4a;color:#d2a8ff;font-size:11px;font-weight:600;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}.m-gemini{background:#13284d;color:#9dbfff}.m-opencode{background:#2c1f4a;color:#d2a8ff}
+.term{background:#0b0d11;border-radius:6px;color:#d9dee8;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:11px;line-height:1.6;padding:8px 10px;white-space:pre;overflow:hidden;margin:0}
+.t-dim{color:#8b949e}.t-green{color:#7ee787}.t-yellow{color:#e3c76b}.t-blue{color:#79a6ff}.t-cyan{color:#76e3ea}
+.cursor{display:inline-block;width:6px;height:12px;background:#d9dee8;vertical-align:-2px}
+.canvas{background-color:#0e1014;background-image:radial-gradient(#2c313c 1px,transparent 1.5px);background-size:20px 20px}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.node-head{display:flex;align-items:center;gap:8px;height:34px;padding:0 8px 0 10px;border-bottom:1px solid #2b303b;cursor:grab}
+.rrow{display:grid;grid-template-columns:90px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #2b303b}
+.rrow:last-child{border-bottom:0}
+.ico{width:14px;height:14px;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:500">acme-storefront</span><span class="chip">main</span></div>
+    <nav aria-label="Workspaces" style="display:flex;align-items:center;align-self:stretch;margin-left:8px"><button class="tab">main <span class="kbd">⌘1</span></button><button class="tab on">checkout <span class="kbd">⌘2</span></button></nav>
+    <div style="flex:1"></div>
+    <button class="btn btn-quiet btn-sm mono" aria-label="Zoom level">80%</button>
+    <button class="btn btn-primary">Spawn console</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <div style="display:flex;flex:1;min-height:856px">
+    <main class="canvas" aria-label="Board" style="position:relative;flex:1;min-width:0;overflow:hidden">
+
+      <section aria-label="Team: checkout" style="position:absolute;left:24px;top:24px;width:992px;height:420px;border:1px dashed #6a4fb0;border-radius:14px;background:rgb(44 31 74 / .18);box-sizing:border-box">
+        <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 14px;border-bottom:1px dashed #6a4fb0">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#d2a8ff" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-5-6.3"></path></svg>
+          <span style="font-weight:600">Team · checkout</span>
+          <span class="muted" style="font-size:12px">planner → builder → reviewer</span>
+          <span style="flex:1"></span>
+          <span class="chip">3 consoles</span><span class="chip" style="color:#6fdc9a;border-color:#10331f;background:#10331f">handoff ready</span>
+          <button class="btn btn-sm">Run handoff</button>
+          <button class="btn btn-quiet btn-sm btn-icon" aria-label="Team settings" style="width:24px">…</button>
+        </div>
+
+        <svg aria-hidden="true" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none" viewBox="0 0 992 420">
+          <path d="M324 220 H348" stroke="#6a4fb0" stroke-width="2" fill="none"></path><path d="M342 214l6 6-6 6" stroke="#6a4fb0" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M648 220 H672" stroke="#6a4fb0" stroke-width="2" fill="none"></path><path d="M666 214l6 6-6 6" stroke="#6a4fb0" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+
+        <article class="card" aria-label="Console: Planner" style="position:absolute;left:24px;top:60px;width:300px;height:320px;display:flex;flex-direction:column;overflow:hidden">
+          <header class="node-head"><span class="mark m-claude">C</span><span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Planner</span><span class="role">planner</span><span class="pill st-idle" style="height:20px;font-size:11px"><span class="dot" style="background:#6fdc9a"></span>Idle</span></header>
+          <pre class="term" style="flex:1;margin:8px"><span class="t-dim">›</span> Plan the postal validation work
+
+<span class="t-green">●</span> Wrote PLAN.md
+  1. validatePostal(country, code)
+  2. Form error state + copy
+  3. Tests CA / UK / NL
+<span class="t-dim">Plan ready. Handing off to builder.</span></pre>
+          <footer style="display:flex;align-items:center;gap:4px;height:28px;padding:0 6px 0 10px;border-top:1px solid #2b303b"><span class="mono muted" style="font-size:11px">main</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Brief</button></footer>
+        </article>
+
+        <article class="card" aria-label="Console: Builder" style="position:absolute;left:348px;top:60px;width:300px;height:320px;display:flex;flex-direction:column;overflow:hidden">
+          <header class="node-head"><span class="mark m-claude">C</span><span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Builder</span><span class="role">builder</span><span class="pill st-working" style="height:20px;font-size:11px"><span class="dot" style="background:#9dbfff"></span>Working</span></header>
+          <pre class="term" style="flex:1;margin:8px"><span class="t-dim">› brief from Planner (3 steps)</span>
+
+<span class="t-green">●</span> Edit <span class="t-cyan">src/lib/postal.ts</span>
+<span class="t-green">●</span> Edit <span class="t-cyan">src/checkout/Form.tsx</span>
+<span class="t-yellow">●</span> Bash <span class="t-dim">npm test -- postal</span> <span class="cursor"></span></pre>
+          <footer style="display:flex;align-items:center;gap:4px;height:28px;padding:0 6px 0 10px;border-top:1px solid #2b303b"><span class="mono muted" style="font-size:11px">.worktrees/feat-checkout</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Git</button></footer>
+        </article>
+
+        <article class="card" aria-label="Console: Reviewer" style="position:absolute;left:672px;top:60px;width:300px;height:320px;display:flex;flex-direction:column;overflow:hidden">
+          <header class="node-head"><span class="mark m-codex">X</span><span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Reviewer</span><span class="role">reviewer</span><span class="pill st-stopped" style="height:20px;font-size:11px"><span class="dot" style="background:#646c80"></span>Waiting</span></header>
+          <div style="flex:1;margin:8px;border-radius:6px;background:#0b0d11;display:flex;align-items:center;justify-content:center;padding:16px;text-align:center" class="muted"><span style="font-size:12px;line-height:1.5">Starts when Builder goes idle with tests green.<br>Gets the diff and the brief, nothing else.</span></div>
+          <footer style="display:flex;align-items:center;gap:4px;height:28px;padding:0 6px 0 10px;border-top:1px solid #2b303b"><span class="mono muted" style="font-size:11px">read-only · main</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Start now</button></footer>
+        </article>
+      </section>
+
+      <section aria-label="Team: infra (collapsed)" class="card" style="position:absolute;left:24px;top:470px;width:480px;height:120px;box-sizing:border-box;padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-color:#2b303b">
+        <div style="display:flex;align-items:center;gap:10px"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#9ba3b4" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-5-6.3"></path></svg><span style="font-weight:600">Team · infra</span><span class="muted" style="font-size:12px">collapsed</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Expand</button></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="mark m-opencode">O</span><span style="flex:1">CI cleanup</span><span class="role" style="background:#2a2f39;color:#c0c6d1">builder</span><span class="pill st-working" style="height:18px;font-size:10px">Working</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="mark m-gemini">G</span><span style="flex:1">Gateway perf loop</span><span class="role" style="background:#2a2f39;color:#c0c6d1">bench</span><span class="pill st-working" style="height:18px;font-size:10px">Working</span></div>
+      </section>
+
+      <div class="card" style="position:absolute;left:528px;top:470px;width:488px;height:120px;box-sizing:border-box;padding:12px 14px;display:flex;flex-direction:column;gap:6px;border-style:dashed;border-color:#646c80;background:transparent;box-shadow:none;color:#9ba3b4">
+        <span style="font-weight:600;color:#e7e9ee">New team</span>
+        <span style="font-size:12px;line-height:1.5">Drag consoles here, or pick roles on the right. Roles are labels plus a handoff order; a role never gets permissions the console does not already have.</span>
+      </div>
+    </main>
+
+    <aside aria-label="Team settings" style="width:400px;flex:none;background:#161920;border-left:1px solid #2b303b;display:flex;flex-direction:column;box-sizing:border-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid #2b303b">
+        <div style="display:flex;align-items:center;gap:8px"><span class="role">team</span><h1 style="margin:0;font-size:16px;font-weight:700">checkout</h1></div>
+        <button class="btn btn-quiet btn-sm">Rename</button>
+      </div>
+      <div style="flex:1;overflow:auto;padding:16px 20px;display:flex;flex-direction:column;gap:20px">
+        <section style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:center;justify-content:space-between"><span class="label">Roles · handoff order</span><button class="btn btn-quiet btn-sm">Add role</button></div>
+          <div>
+            <div class="rrow"><span class="role">planner</span><span style="display:flex;align-items:center;gap:8px"><span class="mark m-claude">C</span><span>Planner</span><span class="muted" style="font-size:12px">claude · main</span></span><span class="mono muted" style="font-size:11px">1</span></div>
+            <div class="rrow"><span class="role">builder</span><span style="display:flex;align-items:center;gap:8px"><span class="mark m-claude">C</span><span>Builder</span><span class="muted" style="font-size:12px">claude · worktree</span></span><span class="mono muted" style="font-size:11px">2</span></div>
+            <div class="rrow"><span class="role">reviewer</span><span style="display:flex;align-items:center;gap:8px"><span class="mark m-codex">X</span><span>Reviewer</span><span class="muted" style="font-size:12px">codex · read-only</span></span><span class="mono muted" style="font-size:11px">3</span></div>
+          </div>
+        </section>
+
+        <section style="display:flex;flex-direction:column;gap:8px">
+          <span class="label">Shared brief · sent with every handoff</span>
+          <textarea class="input" rows="6" style="height:auto;padding:8px 10px;resize:vertical;font-family:inherit;line-height:1.5">Goal: postal validation for CA, UK, NL in checkout.
+Constraints: keep tests green; no new dependencies; copy in plain English with an example.
+Done when: Form shows inline error, tests cover 3 countries, reviewer signs off.</textarea>
+        </section>
+
+        <section style="display:flex;flex-direction:column;gap:10px">
+          <span class="label">Handoff triggers</span>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:#7b93ff;margin:0">When a role goes idle, summarise and brief the next</label>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked style="accent-color:#7b93ff;margin:0">Include the diff since the last handoff</label>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" style="accent-color:#7b93ff;margin:0">Start the next console if it is stopped</label>
+          <label style="display:flex;align-items:center;gap:8px;color:#9ba3b4"><input type="checkbox" disabled style="margin:0">Answer permission prompts <span class="chip" style="color:#ff8a80">never</span></label>
+        </section>
+
+        <section style="display:flex;flex-direction:column;gap:8px">
+          <span class="label">Last handoff</span>
+          <div style="padding:10px 12px;border:1px solid #2b303b;border-radius:8px;background:#12151b;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px">Planner → Builder · 21:58</span><span class="muted" style="font-size:12px">3-step plan, 0 files changed, 412 tokens in the brief</span><a href="#" style="font-size:12px">Open brief</a></div>
+        </section>
+      </div>
+      <div style="display:flex;gap:8px;padding:12px 20px;border-top:1px solid #2b303b;background:#12151b"><button class="btn btn-quiet btn-sm" style="color:#ff8a80">Disband team</button><span style="flex:1"></span><button class="btn btn-primary">Run handoff now</button></div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

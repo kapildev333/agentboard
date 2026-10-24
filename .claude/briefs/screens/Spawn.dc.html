@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Spawn console</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.input{display:flex;align-items:center;height:32px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font-size:13px;box-sizing:border-box;width:100%}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;font-size:12px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}.m-gemini{background:#13284d;color:#9dbfff}.m-opencode{background:#2c1f4a;color:#d2a8ff}.m-custom{background:#2a2f39;color:#c0c6d1}
+.canvas{background-color:#0e1014;background-image:radial-gradient(#2c313c 1px,transparent 1.5px);background-size:20px 20px}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.agent{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #2b303b;border-radius:8px;background:#1e222a;cursor:pointer}
+.agent.on{border-color:#7b93ff;box-shadow:0 0 0 1px #7b93ff}
+.agent.off{opacity:.55;cursor:not-allowed}
+.where{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid #2b303b;border-radius:8px;background:#1e222a;cursor:pointer}
+.where.on{border-color:#7b93ff;box-shadow:0 0 0 1px #7b93ff}
+.ico{width:14px;height:14px;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014;position:relative">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;flex-wrap:wrap;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:500">acme-storefront</span><span class="chip">main</span></div>
+    <nav aria-label="Workspaces" style="display:flex;align-items:center;align-self:stretch;margin-left:8px">
+      <button class="tab on">main <span class="kbd">⌘1</span></button>
+      <button class="tab">checkout <span class="kbd">⌘2</span></button>
+      <button class="tab">infra <span class="kbd">⌘3</span></button>
+    </nav>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary">Spawn console</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <div style="display:flex;flex:1;min-height:856px">
+    <main class="canvas" aria-label="Board" style="position:relative;flex:1;min-width:0;overflow:hidden">
+      <div class="card" aria-hidden="true" style="position:absolute;left:24px;top:24px;width:440px;height:330px;opacity:.5"></div>
+      <div class="card" aria-hidden="true" style="position:absolute;left:488px;top:24px;width:440px;height:330px;opacity:.5"></div>
+      <div class="card" aria-hidden="true" style="position:absolute;left:24px;top:378px;width:440px;height:300px;opacity:.5"></div>
+    </main>
+    <aside aria-hidden="true" style="width:264px;background:#161920;border-left:1px solid #2b303b"></aside>
+  </div>
+
+  <div aria-hidden="true" style="position:absolute;inset:0;background:rgb(4 6 10 / .6)"></div>
+
+  <div role="dialog" aria-labelledby="spawn-title" aria-modal="true" class="card" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:600px;max-width:calc(100% - 32px);max-height:calc(100% - 48px);display:flex;flex-direction:column;box-shadow:0 12px 40px rgb(0 0 0/.5);overflow:hidden">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:20px 24px 0">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <h1 id="spawn-title" style="margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em">Spawn console</h1>
+        <p class="muted" style="margin:0;font-size:13px">A real PTY with your login shell's environment. Auto-approve flags stay off.</p>
+      </div>
+      <button class="btn btn-quiet btn-icon" aria-label="Close"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px;padding:20px 24px;overflow:auto">
+
+      <fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+        <legend class="label" style="padding:0;margin-bottom:8px">Agent</legend>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+          <label class="agent on"><input type="radio" name="agent" checked style="accent-color:#7b93ff;margin:0"><span class="mark m-claude">C</span><span style="display:flex;flex-direction:column;gap:1px;flex:1;min-width:0"><span style="font-weight:600">claude</span><span class="mono muted" style="font-size:11px">2.1.4 · hooks per session</span></span><span class="dot" style="background:#6fdc9a" aria-label="ready"></span></label>
+          <label class="agent"><input type="radio" name="agent" style="accent-color:#7b93ff;margin:0"><span class="mark m-codex">X</span><span style="display:flex;flex-direction:column;gap:1px;flex:1;min-width:0"><span style="font-weight:600">codex</span><span class="mono" style="font-size:11px;color:#f5d36b">0.48.0 · set up notify first</span></span><span class="dot" style="background:#e3c76b" aria-label="hooks not set up"></span></label>
+          <label class="agent"><input type="radio" name="agent" style="accent-color:#7b93ff;margin:0"><span class="mark m-gemini">G</span><span style="display:flex;flex-direction:column;gap:1px;flex:1;min-width:0"><span style="font-weight:600">gemini</span><span class="mono muted" style="font-size:11px">0.12.1 · hooks</span></span><span class="dot" style="background:#6fdc9a" aria-label="ready"></span></label>
+          <label class="agent"><input type="radio" name="agent" style="accent-color:#7b93ff;margin:0"><span class="mark m-opencode">O</span><span style="display:flex;flex-direction:column;gap:1px;flex:1;min-width:0"><span style="font-weight:600">opencode</span><span class="mono muted" style="font-size:11px">1.3.0 · plugin · ollama/qwen3</span></span><span class="dot" style="background:#6fdc9a" aria-label="ready"></span></label>
+          <label class="agent"><input type="radio" name="agent" style="accent-color:#7b93ff;margin:0"><span class="mark m-custom">A</span><span style="display:flex;flex-direction:column;gap:1px;flex:1;min-width:0"><span style="font-weight:600">aider</span><span class="mono muted" style="font-size:11px">custom · regex needs-you</span></span></label>
+          <button class="agent" style="color:#9ba3b4;justify-content:center"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Custom command</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="muted" style="font-size:12px">Profile</span><button class="btn btn-sm" style="gap:8px">default <span class="mono muted">~/.claude</span><svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><span class="muted" style="font-size:12px">· a second account runs side by side with its own config dir</span></div>
+      </fieldset>
+
+      <fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+        <legend class="label" style="padding:0;margin-bottom:8px">Where it runs</legend>
+        <label class="where"><input type="radio" name="where" style="accent-color:#7b93ff;margin:3px 0 0"><span style="display:flex;flex-direction:column;gap:2px;flex:1"><span style="font-weight:600">Repo root</span><span class="mono muted" style="font-size:11px">~/code/acme-storefront · main</span></span></label>
+        <label class="where on"><input type="radio" name="where" checked style="accent-color:#7b93ff;margin:3px 0 0">
+          <span style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:0">
+            <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:600">New worktree from</span><button class="btn btn-sm mono" style="gap:6px">main <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><span class="muted" style="font-size:12px">so two agents never edit the same files</span></span>
+            <span style="display:flex;gap:8px;align-items:center"><input class="input mono" value="feat/postal-validation" aria-label="Worktree branch name" style="flex:1"><span class="mono muted" style="font-size:11px;white-space:nowrap">→ .worktrees/feat-postal-validation</span></span>
+          </span>
+        </label>
+      </fieldset>
+
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+        <label style="display:flex;flex-direction:column;gap:6px"><span class="label">Title <span style="text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></span><input class="input" value="Postal validation"></label>
+        <label style="display:flex;flex-direction:column;gap:6px"><span class="label">Session id</span><span class="input mono muted" aria-readonly="true">auto · 9c41…e07a</span></label>
+      </div>
+
+      <label style="display:flex;flex-direction:column;gap:6px">
+        <span class="label">First prompt <span style="text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></span>
+        <textarea class="input" rows="3" style="height:auto;padding:8px 10px;resize:vertical;font-family:inherit">Validate postal codes per country in the checkout form. Keep the existing tests green; add cases for CA, UK and NL.</textarea>
+      </label>
+
+      <details style="border-top:1px solid #2b303b;padding-top:12px">
+        <summary class="muted" style="cursor:pointer;font-size:12px;display:flex;align-items:center;gap:6px">Advanced <span class="mono" style="font-size:11px">extra args · env · scrollback · auto-approve (off)</span></summary>
+      </details>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;padding:14px 24px;border-top:1px solid #2b303b;background:#12151b">
+      <span class="muted" style="font-size:12px;display:flex;align-items:center;gap:6px"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#6fdc9a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg>Hooks post to 127.0.0.1 only. Your <span class="mono">~/.claude/settings.json</span> is never edited.</span>
+      <span style="flex:1"></span>
+      <button class="btn">Cancel</button>
+      <button class="btn btn-primary">Spawn <span class="kbd" style="background:#6a7fe6;border-color:#6a7fe6;color:#0b1020">⌘↵</span></button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
