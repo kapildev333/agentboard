@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, vi } from "vitest";
-import { BoardSnapshotSchema, PlanSchema, type Settings } from "@agentboard/shared";
+import { BoardSnapshotSchema, PlanSchema, type Plan, type Settings } from "@agentboard/shared";
 import { planCommand } from "../../src/command/plan.js";
 import { planWithModel } from "../../src/command/model.js";
 
@@ -61,4 +61,22 @@ test("the system prompt carries the snapshot but never terminal text", async () 
   await planWithModel("fit", snapshot, planner, fetch as never);
   const system = JSON.parse(String(fetch.mock.calls[0]![1]!.body)).messages[0].content as string;
   for (const s of ["c-checkout", "Checkout flow", "feat/checkout", "needs_you", "spawn", "consoleIds", "main"]) expect(system).toContain(s);
+});
+
+test("the model gets 8 s, then the rules plan", async () => {
+  vi.useFakeTimers();
+  try {
+    const hang = vi.fn<typeof fetch>(
+      (...args) => new Promise((_, reject) => args[1]!.signal!.addEventListener("abort", () => reject(new Error("aborted")))),
+    );
+    let plan: Plan | undefined;
+    const planned = planCommand("fit all", snapshot, withPlanner, { fetch: hang }).then((p) => (plan = p));
+    await vi.advanceTimersByTimeAsync(7999);
+    expect(plan).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    await planned;
+    expect(plan!.plannedBy).toBe("rules");
+  } finally {
+    vi.useRealTimers();
+  }
 });
