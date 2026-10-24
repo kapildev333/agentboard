@@ -74,7 +74,7 @@ describe("ConsoleView", () => {
     const api = fakeApi(boardWith(consoleNode("c1", { status: "stopped", agent: "claude", session: { provider: "claude", id: "s1" } }), consoleNode("c2", { status: "working" })));
     render(<App fetch={api.fetch} search="?repo=%2Fr" connect={fakeSocket} />);
 
-    const banner = await screen.findByText(/Daemon restarted · 1 console is back in place as stopped/);
+    const banner = await screen.findByText(/· 1 console is back in place as stopped/);
     fireEvent.click(within(banner.closest("[role=status]") as HTMLElement).getByRole("button", { name: "Resume all" }));
     await waitFor(() => expect(api.calls).toContainEqual({ url: "/api/consoles/c1/resume", method: "POST", body: undefined }));
 

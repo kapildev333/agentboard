@@ -307,7 +307,7 @@ describe("console card", () => {
     const { getByRole, getByText } = render(<ConsoleOverlay node={node} {...a} />);
     expect(getByText("Stopped")).toBeTruthy();
     expect(getByText(/daemon restarted/)).toBeTruthy();
-    expect(getByText("1a2b…8d7c")).toBeTruthy();
+    expect(getByText("session 1a2b…8d7c")).toBeTruthy();
     fireEvent.click(getByRole("button", { name: "Resume" }));
     expect(a.onResume).toHaveBeenCalled();
     fireEvent.click(getByRole("button", { name: "Start fresh" }));

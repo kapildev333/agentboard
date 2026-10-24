@@ -27,7 +27,7 @@ export const ago = (ms: number) => {
   const m = Math.floor(ms / 60_000);
   if (m < 1) return "now";
   if (m < 60) return `${m}m`;
-  if (m < 1440) return `${Math.floor(m / 60)}h`;
+  if (m < 1440) return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m`;
   return `${Math.floor(m / 1440)}d`;
 };
 
@@ -66,6 +66,11 @@ export const MoreIcon = () => (
 export const ChevronIcon = () => (
   <Icon size={12}>
     <path d="M5 6.5l3 3 3-3" />
+  </Icon>
+);
+export const RestartIcon = () => (
+  <Icon>
+    <path d="M13.3 8a5.3 5.3 0 1 1-1.5-3.8M13.3 2.7v3.3H10" />
   </Icon>
 );
 export const CloseIcon = () => (

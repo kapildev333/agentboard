@@ -9,6 +9,7 @@
   gap: var(--space-1);
   height: 36px;
   padding: 0 var(--space-1) 0 10px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 /* The mark (base.css) follows the title in the DOM, so the header's text starts with the title; it draws first. */
@@ -49,13 +50,23 @@
   font-weight: 600;
 }
 
+/* every pill but Needs you leads with a dot of its own colour */
+.console .console-pill:not([data-status="needs_you"])::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 .console .console-pill[data-status="needs_you"] {
   box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3px var(--status-needs-you-bg);
 }
 
 /* ---- terminal ---- */
 .console .console-term {
-  margin: 0 var(--space-1);
+  margin: var(--space-1);
   border-radius: var(--radius-sm);
   background: var(--term-bg);
   transition: opacity 120ms;
@@ -77,7 +88,7 @@
 /* Over the terminal: below the 36 px header, inside its 8 px margin. */
 .console-card .console-overlay {
   position: absolute;
-  inset: 36px var(--space-1) 0;
+  inset: calc(36px + var(--space-1)) var(--space-1) var(--space-1);
   display: grid;
   place-items: center;
   padding: var(--space-2);
@@ -107,11 +118,8 @@
 
 .console-card .console-session {
   color: var(--color-text-muted);
-  font-size: var(--text-xs);
-}
-
-.console-card .console-session code {
   font-family: var(--font-mono);
+  font-size: var(--text-xs);
 }
 
 .console-card .console-overlay-actions {
@@ -122,13 +130,15 @@
 
 .console-card .console-exited-actions {
   position: absolute;
-  right: calc(var(--space-1) + var(--space-1));
-  bottom: var(--space-1);
+  right: var(--space-2);
+  bottom: var(--space-2);
   display: flex;
   gap: var(--space-1);
 }
 
 .console-card .console-danger {
+  border-color: var(--color-danger);
+  background: transparent;
   color: var(--color-danger);
 }
 
@@ -161,7 +171,8 @@
 .console-card .console-footer {
   gap: var(--space-half);
   height: 30px;
-  padding: 0 var(--space-half) 0 10px;
+  padding: 0 6px 0 10px;
+  border-top: 1px solid var(--color-border);
 }
 
 .console-card .console-cwd {
@@ -264,4 +275,9 @@
 .restart-banner p {
   margin: 0;
   margin-right: var(--space-1);
+}
+
+.restart-banner > svg {
+  flex: none;
+  color: var(--status-starting-fg);
 }

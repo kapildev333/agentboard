@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { Board, ConsoleNode } from "@agentboard/shared";
 import { useBoard } from "../board";
 import { resumeConsole, startFresh } from "./actions";
-import { CloseIcon } from "./chrome";
+import { CloseIcon, RestartIcon } from "./chrome";
 
 const stopped = (b: Board) =>
   b.workspaces.flatMap((w) => w.nodes).filter((n): n is ConsoleNode => n.type === "console" && n.status === "stopped" && n.session !== undefined);
@@ -25,16 +25,19 @@ export function RestartBanner({ fetch }: { fetch: typeof globalThis.fetch }) {
   };
   return (
     <div role="status" className="restart-banner">
+      <RestartIcon />
       <p>
-        Daemon restarted · {count} {count === 1 ? "console is" : "consoles are"} back in place as stopped. Scrollback is gone; each CLI's own
-        conversation resumes.
+        <strong>Daemon restarted</strong>{" "}
+        <span className="muted">
+          · {count} {count === 1 ? "console is" : "consoles are"} back in place as stopped. Scrollback is gone; each CLI's own conversation resumes.
+        </span>
       </p>
       {error && <span role="alert">{error}</span>}
-      <button type="button" className="btn-sm btn-primary" onClick={() => void all((n) => resumeConsole(fetch, n.id))}>
-        Resume all
-      </button>
       <button type="button" className="btn-sm" onClick={() => void all((n) => startFresh(fetch, n))}>
         Start all fresh
+      </button>
+      <button type="button" className="btn-sm btn-primary" onClick={() => void all((n) => resumeConsole(fetch, n.id))}>
+        Resume all
       </button>
       <button type="button" className="btn-sm btn-quiet console-icon-btn" aria-label="Dismiss" onClick={() => setShown(false)}>
         <CloseIcon />

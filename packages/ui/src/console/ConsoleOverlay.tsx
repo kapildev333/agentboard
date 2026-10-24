@@ -15,19 +15,16 @@ export function ConsoleOverlay({ node, onResume, onStartFresh, onRemove }: Conso
     return (
       <div className="console-overlay nodrag">
         <div className="console-stopped">
-          <span className="console-overlay-label">Stopped</span>
-          <p>daemon restarted</p>
-          {node.session && (
-            <p className="console-session">
-              session <code>{short(node.session.id)}</code>
-            </p>
-          )}
+          <p>
+            <span className="console-overlay-label">Stopped</span> <span className="console-session">daemon restarted</span>
+          </p>
+          {node.session && <p className="console-session">session {short(node.session.id)}</p>}
           <div className="console-overlay-actions">
             {/* Named "Resume", not "Resume session": the restart e2e counts one button per node whose name holds "Resume". */}
-            <button type="button" className="btn-primary btn-sm" onClick={onResume}>
+            <button type="button" className="btn-primary" onClick={onResume}>
               Resume
             </button>
-            <button type="button" className="btn-sm" onClick={onStartFresh}>
+            <button type="button" onClick={onStartFresh}>
               Start fresh
             </button>
           </div>
