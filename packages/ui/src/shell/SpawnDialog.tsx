@@ -103,7 +103,7 @@ export function SpawnDialog({
       className="spawn"
       onSubmit={submit}
       onKeyDown={(e) => {
-        if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && canSpawn) submit(e);
+        if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !e.nativeEvent.isComposing && canSpawn) submit(e);
       }}
     >
       <p className="spawn-sub">A real PTY with your login shell's environment. Auto-approve flags stay off.</p>
@@ -178,7 +178,7 @@ export function SpawnDialog({
         <button type="button" onClick={onCancel}>
           Cancel
         </button>
-        <button type="submit" className="btn-primary" aria-keyshortcuts="Meta+Enter" disabled={!canSpawn}>
+        <button type="submit" className="btn-primary" aria-keyshortcuts="Meta+Enter Control+Enter"disabled={!canSpawn}>
           Spawn <kbd aria-hidden="true">⌘↵</kbd>
         </button>
       </div>
