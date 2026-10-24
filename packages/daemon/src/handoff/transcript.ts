@@ -8,6 +8,9 @@ export type TranscriptDeps = { home: string; replay: (consoleId: string) => stri
 
 type Block = { type?: string; text?: string; name?: string; input?: Record<string, unknown>; content?: unknown };
 
+// CSI and OSC sequences and the two-byte escapes, so the brief reads as plain text.
+// eslint-disable-next-line no-control-regex
+const ANSI = /\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-_]/g;
 const EDITS = new Set(["Edit", "Write", "MultiEdit"]);
 const textOf = (c: unknown): string =>
   typeof c === "string" ? c : Array.isArray(c) ? c.map((b: Block) => (typeof b === "string" ? b : (b.text ?? ""))).join("\n") : "";
@@ -65,5 +68,12 @@ export async function readTranscript(node: ConsoleNode, deps: TranscriptDeps): P
     const turns = await read(node, node.session!.id, deps.home).then((t) => parseJsonl(t, node.cwd, deps.home), () => []);
     if (turns.length) return turns;
   }
-  return [];
+  let out = "";
+  try {
+    out = deps.replay(node.id);
+  } catch {
+    // no PTY for a stopped console: nothing to read
+  }
+  const lines = out.replace(ANSI, "").split(/\r?\n/).map((l) => l.replace(/\r/g, "")).slice(-50);
+  return lines.join("").trim() ? [{ role: "assistant", text: lines.join("\n") }] : [];
 }
