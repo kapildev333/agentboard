@@ -2,7 +2,7 @@
 import process from "node:process";
 
 if (process.env.FAKE_TRANSCRIBER_FAIL) {
-  console.error("fake failure");
+  process.stderr.write("fake failure\n");
   process.exit(1);
 }
-console.log(process.env.FAKE_TRANSCRIPT ?? "close the two idle consoles and resume the docs pass");
+process.stdout.write((process.env.FAKE_TRANSCRIPT ?? "close the two idle consoles and resume the docs pass") + "\n");

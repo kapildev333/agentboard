@@ -17,7 +17,7 @@ async function start() {
   const root = mkdtempSync(join(tmpdir(), "agentboard-voice-route-"));
   const d = await startDaemon({ repoPath: root, home: root });
   cleanup.push(() => d.close(), () => rmSync(root, { recursive: true, force: true }));
-  const post = (type: string, body: BodyInit = "x") =>
+  const post = (type: string, body: string | Buffer = "x") =>
     fetch(`${d.origin}/api/voice/transcribe`, { method: "POST", headers: { "x-agentboard-token": d.token, "content-type": type }, body });
   const configure = () =>
     fetch(`${d.origin}/api/settings`, {
