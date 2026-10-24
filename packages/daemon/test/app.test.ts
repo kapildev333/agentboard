@@ -381,6 +381,12 @@ test("POST /api/consoles/:id/input reaches a running console's pty; an unknown i
   expect(await d.call("POST", `/api/consoles/${node.id}/input`, { data: "studio\r" })).toEqual({ status: 200, body: { ok: true } });
   await until(() => sock.output(node.id).includes("you said: studio"));
   expect((await d.call("POST", "/api/consoles/nope/input", { data: "x" })).status).toBe(404);
+  // Input through the route answers a question like typed input does: needs_you gives way to working.
+  const statusOf = async () => ((await d.call("GET", "/api/status")).body as { consoles: ConsoleNode[] }).consoles.find((c) => c.id === node.id)?.status;
+  await d.call("POST", `/api/consoles/${node.id}/input`, { data: "ask\r" });
+  await until(async () => (await statusOf()) === "needs_you");
+  await d.call("POST", `/api/consoles/${node.id}/input`, { data: "y\r" });
+  await until(async () => (await statusOf()) === "working");
 });
 
 test("the file handler stubs answer 501 until L61 builds them", async () => {
