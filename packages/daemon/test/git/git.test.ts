@@ -224,6 +224,17 @@ test("worktreeRemove treats a local commit with an origin but no upstream as unp
   git(path, "add", ".");
   git(path, "commit", "-m", "never pushed");
   await expect(svc().worktreeRemove(path, { force: false })).rejects.toMatchObject({ code: "unpushed" });
+  expect((await svc().status(path)).unpushed).toBe(1);
+  expect((await svc().status(repo)).unpushed).toBe(0);
+});
+
+test("status counts no unpushed commits when there is no remote to push to", async () => {
+  const repo = makeRepo();
+  const { path } = await svc().worktreeAdd(repo, "feat-l", "main");
+  writeFileSync(join(path, "l.txt"), "l\n");
+  git(path, "add", ".");
+  git(path, "commit", "-m", "local");
+  expect((await svc().status(path)).unpushed).toBe(0);
 });
 
 test("commit throws when there is nothing to commit", async () => {
