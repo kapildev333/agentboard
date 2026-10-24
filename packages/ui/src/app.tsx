@@ -76,11 +76,15 @@ export function mergeDaemonBoard(daemon: BoardData, closed: Set<string>): void {
     workspaces = workspaces.map((w) => (w === target ? { ...w, nodes: [...w.nodes, t] } : w));
     changed = true;
   }
+  // Studio state (pins, last document and diagram) is the page's only while it has changed it since it last synced.
+  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  const studio = same(board.studio, loaded.studio) ? daemon.studio : board.studio;
+  if (!same(studio, board.studio)) changed = true;
   const rev = Math.max(board.rev ?? 0, daemon.rev ?? 0);
   if (!changed && rev === board.rev) return;
-  const next = { ...board, workspaces, rev };
+  const next = { ...board, workspaces, rev, studio };
   // What the daemon holds is what the page has now synced to, so the next merge reads removals against it.
-  useBoard.setState(board === loaded ? { board: next, loaded: next } : { board: next, loaded: { ...loaded, workspaces: daemon.workspaces } });
+  useBoard.setState(board === loaded ? { board: next, loaded: next } : { board: next, loaded: { ...loaded, workspaces: daemon.workspaces, studio: daemon.studio } });
 }
 
 function ConsoleView(props: NodeProps) {
@@ -168,9 +172,9 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
         const n = ConsoleNodeSchema.parse(await post("/api/consoles", { agent: opts.agent ?? "claude", customId: opts.customId, cwd: repo, prompt }));
         const node = opts.title ? { ...n, title: opts.title } : n;
         const { board: b, addNode } = useBoard.getState();
-        if (consoles(b).some((c) => c.id === n.id))
+        if (!consoles(b).some((c) => c.id === n.id)) addNode(node);
+        else if (opts.title)
           useBoard.setState({ board: { ...b, workspaces: b.workspaces.map((w) => ({ ...w, nodes: w.nodes.map((x) => (x.id === n.id ? { ...x, title: node.title } : x)) })) } });
-        else addNode(node);
         return node;
       },
     };
