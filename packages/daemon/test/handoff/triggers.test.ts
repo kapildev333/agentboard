@@ -28,3 +28,16 @@ it("a builder that needs you, or a team without handoffOnIdle, gets nothing", as
     expect(deps.write).not.toHaveBeenCalled();
   }
 });
+
+it("a stopped builder with startStopped is resumed and briefed once it settles idle; without it, left alone", async () => {
+  for (const startStopped of [true, false]) {
+    const status: Record<string, ConsoleStatus> = { a: "working", b: "stopped" };
+    const { deps, service } = setup(status, { handoffOnIdle: true, startStopped });
+    deps.resume.mockImplementation(async () => void setTimeout(() => deps.tracker.emit("b", "idle"), 5));
+    new TeamTriggers({ tracker: deps.tracker, console: deps.console, service });
+    deps.tracker.emit("a", "idle");
+    await new Promise((r) => setTimeout(r, 100));
+    expect(deps.resume).toHaveBeenCalledTimes(startStopped ? 1 : 0);
+    expect(deps.write.mock.calls.map((c) => c[0])).toEqual(startStopped ? ["b"] : []);
+  }
+});
