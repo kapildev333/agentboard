@@ -8,7 +8,6 @@ import WebSocket from "ws";
 import type { Board, ConsoleNode, DaemonMessage } from "@agentboard/shared";
 import { startDaemon } from "../src/app.js";
 import { createFileHandlers } from "../src/files/index.js";
-import { createVaultHandlers } from "../src/vault/index.js";
 
 const fakeAgent = fileURLToPath(new URL("../../e2e/fake-agent/index.mjs", import.meta.url));
 const cleanup: (() => Promise<void> | void)[] = [];
@@ -386,9 +385,4 @@ test("POST /api/consoles/:id/input reaches a running console's pty; an unknown i
 test("the file handler stubs answer 501 until L61 builds them", async () => {
   const h = createFileHandlers({ repoOf: async (r) => r, git: async () => "" });
   await expect(h["GET /api/files"]({ repo: "/r" }, {})).rejects.toMatchObject({ status: 501 });
-});
-
-test("the vault handler stubs answer 501 until L63 builds them", async () => {
-  const h = createVaultHandlers({ repoOf: async (r) => r });
-  await expect(h["GET /api/vault/notes"]({ repo: "/r" }, {})).rejects.toMatchObject({ status: 501 });
 });

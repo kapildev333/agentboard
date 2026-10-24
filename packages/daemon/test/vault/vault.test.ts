@@ -17,8 +17,8 @@ function setup(notes: Record<string, string>) {
     mkdirSync(dirname(join(repo, "docs/vault", p)), { recursive: true });
     writeFileSync(join(repo, "docs/vault", p), text);
   }
-  const h = createVaultHandlers({ repoOf: (r) => r });
-  return { repo, h, notes: () => h["GET /api/vault/notes"]!({ repo }) as Promise<Json> };
+  const h = createVaultHandlers({ repoOf: async (r) => r });
+  return { repo, h, notes: () => h["GET /api/vault/notes"]({ repo }, {}, undefined as never) as Promise<Json> };
 }
 
 test("three notes with links produce the expected links and backlinks", async () => {
