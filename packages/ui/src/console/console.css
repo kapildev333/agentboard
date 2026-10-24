@@ -1,0 +1,75 @@
+/* Console card, after the AgentBoard Screens canvas (Console-States, Main, Foundations "Console card anatomy"). */
+
+.console {
+  position: relative;
+}
+
+.console .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---- header: the drag handle (D29) ---- */
+.console .console-header {
+  gap: var(--space-1);
+  height: 36px;
+  padding: 0 var(--space-1) 0 10px;
+}
+
+/* The mark (base.css) follows the title in the DOM, so the header's text starts with the title; it draws first. */
+.console .console-header .mark {
+  order: -1;
+}
+
+.console .console-title {
+  flex: 0 1 auto;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.console .console-spacer {
+  flex: 1;
+}
+
+.console .console-branch {
+  flex: 0 1 auto;
+  min-width: 0;
+  border-color: var(--color-border);
+  font-size: 11px;
+}
+
+.console .console-branch svg {
+  margin-right: 3px;
+  vertical-align: -1px;
+}
+
+.console .console-elapsed {
+  flex: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.console .console-pill {
+  flex: none;
+  height: 22px;
+  padding: 0 var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.console .console-pill[data-status="needs_you"] {
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3px var(--status-needs-you-bg);
+}
+
+/* ---- terminal ---- */
+.console .console-term {
+  margin: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--term-bg);
+  transition: opacity 120ms;
+}

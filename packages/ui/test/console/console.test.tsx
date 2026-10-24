@@ -288,9 +288,9 @@ describe("console card", () => {
     const node = { id: "c1", title: "Claude: feature-a", agent: "claude", status: "working", lastActiveAt: new Date(Date.now() - 5 * 60_000).toISOString(), worktree: { path: "/r/.wt/a", branch: "feature-a", base: "main" } };
     const { container } = mount({ data: { node } });
     const header = container.querySelector("header")!;
-    const mark = header.querySelector(".agent-mark")!;
-    expect(mark.textContent).toBe("C");
-    expect(mark.getAttribute("aria-hidden")).toBe("true");
+    expect(header.querySelector(".mark")!.textContent).toBe("C");
+    // The mark draws first but follows the title in the DOM: the e2e finds nodes by a header text starting with the title.
+    expect(header.textContent).toMatch(/^Claude: feature-a/);
     expect(header.querySelector(".console-branch")!.textContent).toBe("feature-a");
     expect(header.querySelector(".console-elapsed")!.textContent).toBe("5m");
     const pill = header.querySelector("[data-status]")!;

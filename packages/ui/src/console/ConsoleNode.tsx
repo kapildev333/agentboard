@@ -1,28 +1,32 @@
 import "@xterm/xterm/css/xterm.css";
+import "./console.css";
 import { FitAddon } from "@xterm/addon-fit";
 import { useReactFlow } from "@xyflow/react";
 import { Terminal } from "@xterm/xterm";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { AgentId } from "@agentboard/shared";
+import type { AgentId, ConsoleStatus } from "@agentboard/shared";
+import { AgentMark, BranchIcon, Elapsed, StatusPill } from "./chrome";
 import { CONSOLE_DRAG_HANDLE } from "./dragHandle";
 import { unscaleMouse } from "./zoomMouse";
 import { useConsoleSocket, type SocketFactory } from "./useConsoleSocket";
 
 // xterm's theme keys for the 16 ANSI colours; brightBlack reads --term-ansi-bright-black.
-const MARK: Record<AgentId, string> = { claude: "C", codex: "X", gemini: "G", opencode: "O", custom: "?" };
 const ANSI = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"].flatMap((c) => [c, `bright${c[0]!.toUpperCase()}${c.slice(1)}`]);
 
 export interface ConsoleNodeProps {
-  data: { node: { id: string; title: string; agent?: AgentId } };
+  data: { node: { id: string; title: string; agent?: AgentId; status?: ConsoleStatus; lastActiveAt?: string; worktree?: { branch: string } } };
   socketFactory?: SocketFactory;
   fontSize?: number;
+  /** Replaces the status pill the header draws from data.node.status. */
   statusBadge?: ReactNode;
+  onExit?: (code: number | null) => void;
 }
 
-export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }: ConsoleNodeProps) {
+export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge, onExit }: ConsoleNodeProps) {
+  const { node } = data;
   const el = useRef<HTMLDivElement>(null);
   const term = useRef<Terminal | null>(null);
-  const { sendInput, sendResize, exited } = useConsoleSocket(data.node.id, socketFactory, (d) => term.current?.write(d));
+  const { sendInput, sendResize, exited, exitCode } = useConsoleSocket(node.id, socketFactory, (d) => term.current?.write(d));
   const io = useRef({ sendInput, sendResize });
   io.current = { sendInput, sendResize };
   const { getZoom } = useReactFlow();
@@ -37,7 +41,7 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
     const token = (name: string) => css.getPropertyValue(name).trim() || undefined;
     const ansi = Object.fromEntries(ANSI.map((name) => [name, token(`--term-ansi-${name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`)]));
     const theme = { background: token("--term-bg"), foreground: token("--term-fg"), cursor: token("--term-fg"), selectionBackground: token("--term-selection"), ...ansi };
-    const t = new Terminal({ fontFamily: '"JetBrains Mono Variable", Menlo, monospace', fontSize, scrollback: 10000, cursorBlink: false, allowProposedApi: false, theme });
+    const t = new Terminal({ fontFamily: token("--font-mono") ?? '"JetBrains Mono Variable", Menlo, monospace', fontSize, scrollback: 10000, cursorBlink: false, allowProposedApi: false, theme });
     const f = new FitAddon();
     t.loadAddon(f);
     t.open(el.current!);
@@ -71,17 +75,30 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
     fit.current?.fit();
   }, [fontSize]);
 
+  const exitCb = useRef(onExit);
+  exitCb.current = onExit;
+  useEffect(() => {
+    if (exited) exitCb.current?.(exitCode ?? null);
+  }, [exited, exitCode]);
+
   // One renderer (xterm's DOM) at every zoom. No zoom refit: fit() measures layout pixels, which a React Flow zoom never changes.
 
   return (
     <div className="console">
       <header className={`${CONSOLE_DRAG_HANDLE.slice(1)} console-header`}>
-        {data.node.agent && (
-          <span className={`mark mark-${data.node.agent}`} role="img" aria-label={data.node.agent}>
-            {MARK[data.node.agent]}
+        <span className="console-title" title={node.title}>
+          {node.title}
+        </span>
+        {node.agent && <AgentMark agent={node.agent} name={node.title} />}
+        {node.worktree && (
+          <span className="chip console-branch" title={`branch ${node.worktree.branch}`}>
+            <BranchIcon />
+            {node.worktree.branch}
           </span>
         )}
-        <span className="console-title">{data.node.title}</span> {statusBadge}
+        <span className="console-spacer" />
+        {node.lastActiveAt && <Elapsed since={node.lastActiveAt} />}
+        {statusBadge ?? (node.status && <StatusPill status={node.status} code={exitCode} />)}
       </header>
       <div
         ref={el}
@@ -89,7 +106,11 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
       />
-      {exited && <footer className="console-exited">[exited]</footer>}
+      {exited && (
+        <span role="status" className="visually-hidden">
+          {node.title} exited{exitCode != null && ` with code ${exitCode}`}
+        </span>
+      )}
     </div>
   );
 }

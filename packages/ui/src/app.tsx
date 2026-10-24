@@ -6,7 +6,8 @@ import { ConsoleNode, type SocketLike } from "./console";
 import { GitCard } from "./git";
 import { OpenInButtons } from "./open/OpenInButtons";
 import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
-import { MissionMap, StatusBadge, useNotifications } from "./status";
+import { MissionMap, useNotifications } from "./status";
+import { StatusPill } from "./console/chrome";
 
 type Fetch = typeof globalThis.fetch;
 const Api = createContext<{ fetch: Fetch; fontSize: number }>({ fetch: globalThis.fetch, fontSize: 13 });
@@ -83,6 +84,7 @@ function ConsoleView(props: NodeProps) {
   const { fetch, fontSize } = useContext(Api);
   const [git, setGit] = useState(false);
   const [error, setError] = useState<string>();
+  const [exitCode, setExitCode] = useState<number | null>();
   const resume = async () => {
     setError(undefined);
     const res = await fetch(`/api/consoles/${encodeURIComponent(node.id)}/resume`, { method: "POST" }).catch(() => null);
@@ -95,12 +97,8 @@ function ConsoleView(props: NodeProps) {
         <ConsoleNode
           data={{ node }}
           fontSize={fontSize}
-          statusBadge={
-            <span className="console-meta">
-              {node.worktree && <span className="chip" title={node.worktree.branch}>{node.worktree.branch}</span>}
-              <StatusBadge status={node.status} />
-            </span>
-          }
+          onExit={setExitCode}
+          statusBadge={<StatusPill status={node.status} code={exitCode} />}
         />
       </div>
       <div className="console-footer nodrag">
