@@ -1,9 +1,11 @@
 import http from "node:http";
 import type { AddressInfo } from "node:net";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test } from "vitest";
+import { PreviewInfoSchema } from "@agentboard/shared";
+import { startDaemon } from "../src/app.js";
 import { createServer } from "../src/server/index.js";
 import { previewHandler, previewKey } from "../src/preview/index.js";
 
@@ -134,6 +136,22 @@ test("the proxy's CSP comes ahead of the target's, which stays in force, and the
   const t = await startTarget(), board = await startBoard();
   const csp = (await via(board, `${t.origin}/strict`)).headers.get("content-security-policy");
   expect(csp).toBe(`connect-src ${t.origin} ws://${t.origin.slice(7)}; frame-ancestors ${board.origin}; sandbox allow-scripts allow-forms, default-src 'none'`);
+});
+
+test("the daemon answers GET /api/preview with the key and serves the proxy under it", async () => {
+  const root = mkdtempSync(join(tmpdir(), "agentboard-preview-"));
+  open.push({ close: async () => rmSync(root, { recursive: true, force: true }) });
+  const d = await startDaemon({ repoPath: root, home: join(root, "home"), agentPath: join(root, "bin") });
+  open.push(d);
+  const res = await fetch(`${d.origin}/api/preview`, { headers: { "x-agentboard-token": d.token } });
+  const body = PreviewInfoSchema.parse(await res.json());
+  expect(body.key).toBe(previewKey(d.token));
+  expect(body.key).not.toContain(d.token);
+  expect((await fetch(`${d.origin}/api/preview`)).status).toBe(401);
+  const t = await startTarget();
+  const page = await fetch(`${d.origin}/preview/${body.key}/${encodeURIComponent(`${t.origin}/style.css`)}`, { headers: { "x-agentboard-token": d.token } });
+  expect(page.status).toBe(200);
+  expect((await fetch(`${d.origin}/preview/${body.key}/${encodeURIComponent(`${t.origin}/style.css`)}`)).status).toBe(401);
 });
 
 test("an html page with no head gets the tags at the top", async () => {
