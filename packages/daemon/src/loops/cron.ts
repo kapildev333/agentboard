@@ -34,6 +34,7 @@ function matches({ fields: [min, hour, dom, month, dow], anyDay, anyWeekday }: C
 }
 
 /** The first minute strictly after `after` that the spec matches, in local time. */
+// ponytail: scans local minutes, so a slot in the repeated hour fires twice on the fall-back night and one in the skipped hour not at all on spring-forward (accepted under P4-D48)
 export function nextRun(spec: CronSpec, after: Date): Date {
   const d = new Date(after);
   d.setSeconds(0, 0);

@@ -243,7 +243,13 @@ export class LoopEngine {
     if (l.trigger.kind === "idle") {
       if (this.deps.status(l.consoleId) === "idle" && live.since === undefined) live.timer = this.clock.setTimeout(() => this.fire(l), l.trigger.delaySec * 1000);
     } else if (l.trigger.kind === "schedule") {
-      const due = nextRun(parseCron(l.trigger.cron), new Date(this.clock.now())).getTime();
+      let due: number;
+      try {
+        due = nextRun(parseCron(l.trigger.cron), new Date(this.clock.now())).getTime();
+      } catch (e) {
+        // a cron that ran at create can run out (0 0 29 2 *); retire it rather than throw from a timer or the daemon's start
+        return this.retire(l, (e as Error).message);
+      }
       const wake = () => {
         // a timer caps at about 24 days, so a later run wakes early and waits again
         if (this.clock.now() < due) return void (live.timer = this.clock.setTimeout(wake, Math.min(due - this.clock.now(), MAX_DELAY)));
@@ -286,6 +292,7 @@ function validate(req: LoopRequest): void {
   const patterns = [req.trigger.kind === "output" && req.trigger.pattern, req.stop.goal?.pattern].filter((p): p is string => typeof p === "string");
   try {
     for (const p of patterns) new RegExp(p);
+    if (req.stop.goal && new RegExp(req.stop.goal.pattern + "|").exec("")!.length < 2) throw new Error("the goal pattern needs a capture group for the number");
     if (req.trigger.kind === "schedule") nextRun(parseCron(req.trigger.cron), new Date());
   } catch (e) {
     throw new LoopError(400, (e as Error).message);
