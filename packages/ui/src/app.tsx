@@ -281,7 +281,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           )}
         </main>
         <div className="rail">
-          <MissionMap onFocus={focusNode} />
+          <MissionMap onFocus={focusNode} fetch={fetch} />
         </div>
         <CommandBar open={panel === "command"} onClose={() => setPanel(null)} fetch={fetch} repo={repo} onFocus={focusNode} onFit={() => void flow.current?.fitView()} />
         {panel === "spawn" && <div className="backdrop" onClick={() => setPanel(null)} />}

@@ -450,13 +450,35 @@
 }
 
 .mission-map {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
+  min-height: 100%;
   padding: var(--space-2);
 }
 
+.mm-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
 .mm-empty {
+  padding: var(--space-2);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
   font-size: var(--text-sm);
+  text-align: center;
+}
+
+/* The daemon card sits at the bottom of the rail. */
+.mm-daemon {
+  display: grid;
+  gap: var(--space-half);
+  margin-top: auto;
+  padding: var(--space-1) var(--space-2);
+  box-shadow: none;
+  background: var(--color-surface-raised);
 }
 
 .mm-group {
@@ -475,11 +497,12 @@
 
 .mm-row {
   display: grid;
-  grid-template-columns: 8px 1fr auto;
+  grid-template-columns: 8px 1fr auto auto;
   align-items: center;
   gap: var(--space-1);
   width: 100%;
   height: 32px;
+  font-weight: 400;
   padding: 0 var(--space-1);
   border-color: transparent;
   background: transparent;
@@ -495,9 +518,13 @@
   text-overflow: ellipsis;
 }
 
-.mm-agent {
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
+.mm-row:focus-visible {
+  outline-offset: -2px;
+}
+
+.mm-ago {
+  min-width: 24px;
+  text-align: right;
 }
 
 .dot {
