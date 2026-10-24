@@ -129,16 +129,11 @@ body {
   color: var(--color-text-muted);
 }
 
-/* A path reads from its end: monospace, and the overflow is cut on the left. */
+/* A path reads from its end: monospace, scrolled to its end at rest (showPathEnd), so the overflow is cut on the left.
+   direction: rtl would do it in CSS alone but moves a leading "/" to the end. */
 .path-field {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  direction: rtl;
-  text-align: left;
-}
-
-.path-field:focus {
-  direction: ltr;
 }
 
 .chip {
