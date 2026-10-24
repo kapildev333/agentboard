@@ -3,6 +3,7 @@ import type { AddressInfo } from "node:net";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { runInNewContext } from "node:vm";
 import { afterEach, expect, test } from "vitest";
 import { PreviewInfoSchema } from "@agentboard/shared";
 import { startDaemon } from "../src/app.js";
@@ -157,4 +158,28 @@ test("the daemon answers GET /api/preview with the key and serves the proxy unde
 test("an html page with no head gets the tags at the top", async () => {
   const t = await startTarget(), board = await startBoard();
   expect(await (await via(board, `${t.origin}/bare`)).text()).toMatch(new RegExp(`^<base href="${t.origin}/"><script>[^<]*</script><p>no head</p>$`));
+});
+
+test("the capture script posts console lines, errors and fetch summaries to the board's origin", async () => {
+  const t = await startTarget(), board = await startBoard();
+  const script = /<script>([^<]*)<\/script>/.exec(await (await via(board, `${t.origin}/page`)).text())![1]!;
+  const posted: [unknown, string][] = [], listeners: Record<string, (e: unknown) => void> = {};
+  const win: Record<string, unknown> = {
+    parent: { postMessage: (m: unknown, o: string) => posted.push([m, o]) },
+    console: { log() {}, info() {}, warn() {}, error() {}, debug() {} },
+    addEventListener: (type: string, f: (e: unknown) => void) => (listeners[type] = f),
+    performance: { now: () => 0 },
+    fetch: async () => ({ status: 201 }),
+    XMLHttpRequest: function () {},
+  };
+  win.window = win;
+  runInNewContext(script, win);
+  runInNewContext(`console.error("boom", {a: 1}); fetch("/api/x", {method: "post"})`, win);
+  listeners.error!({ message: "bad thing" });
+  await new Promise((r) => setTimeout(r, 0));
+  expect(posted).toEqual([
+    [{ agentboard: "console", level: "error", text: 'boom {"a":1}' }, board.origin],
+    [{ agentboard: "console", level: "error", text: "bad thing" }, board.origin],
+    [{ agentboard: "network", method: "POST", url: "/api/x", status: 201, ms: 0 }, board.origin],
+  ]);
 });
