@@ -59,8 +59,16 @@ export function InkLayer() {
     return () => window.removeEventListener("keydown", leave);
   }, [mode]);
 
+  // A drag never outlives its overlay: leaving a mode (Done, Escape, Pen to Eraser) drops any half-drawn stroke.
+  useEffect(() => () => void endDrag(), [mode]);
+  const endDrag = () => {
+    drawing.current = false;
+    setDraft(undefined);
+  };
+
   const at = (e: React.PointerEvent): Point => {
-    const { x, y } = screenToFlowPosition({ x: e.clientX, y: e.clientY });    return [x, y];
+    const { x, y } = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+    return [x, y];
   };
   const erase = (p: Point) => {
     const r = Math.max(width, 8);
@@ -96,6 +104,8 @@ export function InkLayer() {
               return d && last && Math.hypot(p[0] - last[0], p[1] - last[1]) >= MIN_STEP ? [...d, p] : d;
             });
           }}
+          onPointerCancel={endDrag}
+          onLostPointerCapture={endDrag}
           onPointerUp={(e) => {
             if (!drawing.current) return;
             drawing.current = false;
