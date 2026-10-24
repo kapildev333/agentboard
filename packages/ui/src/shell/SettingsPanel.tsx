@@ -7,7 +7,7 @@ import {
   type Settings,
   type Signal,
 } from "@agentboard/shared";
-import pkg from "../../package.json";
+import { version } from "../../package.json";
 import type { Fetch } from "./SpawnDialog";
 
 export type { CustomAgent, Settings };
@@ -37,7 +37,7 @@ const SIGNAL_LABEL: Record<AgentInfo["id"], string> = {
   gemini: "hooks",
   opencode: "plugin · events",
   codex: "notify + output",
-  custom: "output",
+  custom: "regex",
 };
 const status = (a: AgentInfo) =>
   !a.available
@@ -46,14 +46,13 @@ const status = (a: AgentInfo) =>
       ? "Ready"
       : "Heuristic";
 
-// ponytail: local copy of the agent marks until L1D's --mark-* tokens and AgentMark land
 function Mark({ agent, name }: { agent: AgentInfo["id"]; name: string }) {
   const letter =
     agent === "custom"
       ? name.trim().charAt(0).toUpperCase() || "?"
       : { claude: "C", codex: "X", gemini: "G", opencode: "O" }[agent];
   return (
-    <span className="sp-mark" data-agent={agent} aria-hidden="true">
+    <span className={`mark mark-${agent}`} aria-hidden="true">
       {letter}
     </span>
   );
@@ -97,19 +96,30 @@ export function SettingsPanel({
   }, [fetch]);
   useEffect(scan, [scan]);
 
-  // The nav marks the last section whose top has scrolled to the top of the pane.
+  // The nav marks the last section whose top has scrolled to the top of the pane, or the last one at the bottom.
+  // A clicked section stays marked while it is in view: a short one near the end never reaches the top.
   const pane = useRef<HTMLDivElement>(null);
-  const [current, setCurrent] = useState<Section>("Terminal");
+  const picked = useRef<Section>(undefined);
+  const [current, setCurrent] = useState<Section>("Agents");
   const onScroll = () => {
     const p = pane.current!;
-    const passed = SECTIONS.filter(
-      (s) =>
-        p.querySelector<HTMLElement>(`[data-section="${s}"]`)!.offsetTop <=
-        p.scrollTop + 8,
-    );
-    setCurrent(passed.at(-1) ?? "Terminal");
+    const els = [...p.querySelectorAll<HTMLElement>("[data-section]")];
+    const inView = els.find((e) => e.dataset.section === picked.current);
+    if (
+      inView &&
+      inView.offsetTop < p.scrollTop + p.clientHeight &&
+      inView.offsetTop + inView.offsetHeight > p.scrollTop
+    )
+      return;
+    picked.current = undefined;
+    const atEnd = p.scrollTop + p.clientHeight >= p.scrollHeight - 1;
+    const el = atEnd
+      ? els.at(-1)!
+      : (els.filter((e) => e.offsetTop <= p.scrollTop + 8).at(-1) ?? els[0]!);
+    setCurrent(el.dataset.section as Section);
   };
   const go = (s: Section) => {
+    picked.current = s;
     setCurrent(s);
     pane.current
       ?.querySelector(`[data-section="${s}"]`)
@@ -135,50 +145,9 @@ export function SettingsPanel({
               {s}
             </button>
           ))}
-          <span className="sp-version">v{pkg.version} · MIT</span>
+          <span className="sp-version">v{version} · MIT</span>
         </nav>
         <div className="sp-content" ref={pane} onScroll={onScroll}>
-          <section
-            data-section="Terminal"
-            className="sp-section"
-            aria-labelledby="sp-terminal"
-          >
-            <h3 id="sp-terminal" className="sp-heading">
-              Terminal
-            </h3>
-            <div className="sp-row">
-              {/* the label text stays "font size" (tests find the field by it); CSS capitalises the first letter */}
-              <label htmlFor="sp-font-size" className="sp-row-label">
-                font size
-              </label>
-              <span className="sp-inline">
-                <input
-                  id="sp-font-size"
-                  className="sp-number"
-                  type="number"
-                  min={10}
-                  max={24}
-                  value={size}
-                  onChange={(e) => setSize(e.target.value)}
-                  onBlur={commitSize}
-                />
-                <span className="sp-caption">px</span>
-              </span>
-            </div>
-            <div className="sp-row">
-              <span className="sp-row-label">Font</span>
-              <span className="sp-control sp-mono" title={fontStack}>
-                {fontStack || "monospace"}
-              </span>
-            </div>
-            <div className="sp-row">
-              <span className="sp-row-label">Scrollback</span>
-              <span className="sp-control sp-caption">
-                10000 lines · not kept across daemon restarts
-              </span>
-            </div>
-          </section>
-
           <section
             data-section="Agents"
             className="sp-section"
@@ -194,8 +163,7 @@ export function SettingsPanel({
             </div>
             <p className="sp-caption">
               Status for each console comes from the CLI&apos;s own hooks.
-              Claude Code gets per-session hooks with no setup; the others are
-              read from their hooks, plugin or output.
+              Agents without them are read from their output.
             </p>
             <table className="sp-table" aria-labelledby="sp-agents">
               <thead>
@@ -339,6 +307,47 @@ export function SettingsPanel({
                 </div>
               </div>
             ))}
+          </section>
+
+          <section
+            data-section="Terminal"
+            className="sp-section"
+            aria-labelledby="sp-terminal"
+          >
+            <h3 id="sp-terminal" className="sp-heading">
+              Terminal
+            </h3>
+            <div className="sp-row">
+              {/* the label text stays "font size" (tests find the field by it); CSS capitalises the first letter */}
+              <label htmlFor="sp-font-size" className="sp-row-label">
+                font size
+              </label>
+              <span className="sp-inline">
+                <input
+                  id="sp-font-size"
+                  className="sp-number"
+                  type="number"
+                  min={10}
+                  max={24}
+                  value={size}
+                  onChange={(e) => setSize(e.target.value)}
+                  onBlur={commitSize}
+                />
+                <span className="sp-caption">px</span>
+              </span>
+            </div>
+            <div className="sp-row">
+              <span className="sp-row-label">Font</span>
+              <span className="sp-control sp-mono" title={fontStack}>
+                {fontStack || "monospace"}
+              </span>
+            </div>
+            <div className="sp-row">
+              <span className="sp-row-label">Scrollback</span>
+              <span className="sp-control sp-caption">
+                10000 lines · not kept across daemon restarts
+              </span>
+            </div>
           </section>
 
           <section
