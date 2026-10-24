@@ -305,6 +305,9 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       return { ok: true };
     },
     "POST /api/open": (body) => handleOpen(body),
+    // ponytail: stubs so this contract typechecks alone; L52 replaces both.
+    "POST /api/command/plan": async () => { throw new HttpError(501, "not implemented until L52"); },
+    "POST /api/command/run": async () => { throw new HttpError(501, "not implemented until L52"); },
     "POST /api/voice/transcribe": async (input) => {
       const command = (await settings()).voice?.transcribeCommand;
       if (!command) throw new HttpError(412, "no transcriber configured: set Settings › Voice › transcribe command (for example whisper-cli -nt -f)");
