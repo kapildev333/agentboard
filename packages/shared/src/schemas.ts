@@ -109,6 +109,8 @@ export const GitStatusSchema = z.object({
   ahead: z.number().int(),
   behind: z.number().int(),
   dirty: z.number().int(),
+  /** Commits on the branch that are on neither its base nor any remote. */
+  unpushed: z.number().int(),
   lastCommit: z.object({ sha: z.string(), subject: z.string() }).nullable(),
 });
 export const GitDiffSchema = z.object({

@@ -45,7 +45,7 @@ export class GitService {
     const g = simpleGit(path);
     if (!opts.force) {
       if ((await g.status()).files.length) throw new GitError("dirty", "worktree has uncommitted changes");
-      if (await this.hasUnpushed(g)) throw new GitError("unpushed", "branch has commits not pushed");
+      if (await this.unpushed(g)) throw new GitError("unpushed", "branch has commits not pushed");
     }
     const common = (await g.raw(["rev-parse", "--path-format=absolute", "--git-common-dir"])).trim();
     await simpleGit(dirname(common)).raw(["worktree", "remove", ...(opts.force ? ["--force"] : []), path]);
@@ -68,6 +68,7 @@ export class GitService {
       ahead: base ? await this.count(g, `${base}..HEAD`) : st.ahead,
       behind: base ? await this.count(g, `HEAD..${base}`) : st.behind,
       dirty: st.files.length,
+      unpushed: await this.unpushed(g),
       lastCommit: sha ? { sha, subject, when } : null,
     };
   }
@@ -119,13 +120,14 @@ export class GitService {
     return Number((await g.raw(["rev-list", "--count", ...a])).trim());
   }
 
-  private async hasUnpushed(g: SimpleGit): Promise<boolean> {
+  private async unpushed(g: SimpleGit): Promise<number> {
+    if (!(await this.hasHead(g))) return 0;
     try {
-      return (await this.count(g, "@{u}..HEAD")) > 0;
+      return await this.count(g, "@{u}..HEAD");
     } catch {
       // No upstream: unpushed means commits no remote and not the base have, but only if a remote exists to push to.
       const base = await this.baseOf(g);
-      return (await g.getRemotes()).length > 0 && (await this.count(g, "HEAD", "--not", "--remotes", ...(base ? [base] : []))) > 0;
+      return (await g.getRemotes()).length > 0 ? await this.count(g, "HEAD", "--not", "--remotes", ...(base ? [base] : [])) : 0;
     }
   }
 }

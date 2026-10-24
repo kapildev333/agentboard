@@ -7,7 +7,7 @@ afterEach(cleanup);
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
-const status = { branch: "feat-x", ahead: 2, behind: 0, dirty: 3, lastCommit: { sha: "abc", subject: "wire the thing" } };
+const status = { branch: "feat-x", ahead: 2, behind: 0, dirty: 3, unpushed: 1, lastCommit: { sha: "abc", subject: "wire the thing" } };
 
 it("the card renders a status fixture", async () => {
   const fetch = async (url: string | URL | Request) => {

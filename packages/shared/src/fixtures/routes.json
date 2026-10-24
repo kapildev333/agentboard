@@ -175,6 +175,7 @@
       "ahead": 2,
       "behind": 0,
       "dirty": 3,
+      "unpushed": 1,
       "lastCommit": {
         "sha": "abc1234",
         "subject": "feat: add x"
@@ -205,6 +206,18 @@
       "path": "/tmp/demo-repo/.worktrees/feat-x",
       "branch": "feat-x",
       "base": "main"
+    }
+  },
+  "DELETE /api/git/worktree": {
+    "request": {
+      "repo": "/tmp/demo-repo",
+      "path": "/tmp/demo-repo/.worktrees/feat-x",
+      "branch": "feat-x",
+      "deleteBranch": true,
+      "force": false
+    },
+    "response": {
+      "ok": true
     }
   },
   "POST /api/git/commit": {
