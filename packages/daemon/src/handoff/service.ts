@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
-import type { AgentId, ConsoleNode, BoardEvent, ConsoleStatus, Handoff, HandoffDraftRequest, Team } from "@agentboard/shared";
+import { mkdir, open, readFile, rename } from "node:fs/promises";
+import { join } from "node:path";
+import { HandoffListSchema, type AgentId, type BoardEvent, type ConsoleNode, type ConsoleStatus, type Handoff, type HandoffDraftRequest, type Team } from "@agentboard/shared";
 import { extractBrief, type DiffStat } from "./extract.js";
 import { renderPrompt } from "./render.js";
 import { readTranscript } from "./transcript.js";
@@ -42,7 +44,8 @@ export function nextRole(team: Team | undefined, consoleId: string) {
 }
 
 export class HandoffService {
-  private items = new Map<string, Handoff>();
+  private loaded?: Promise<Map<string, Handoff>>;
+  private chain: Promise<void> = Promise.resolve();
   private stats = new Map<string, number>(); // diff file counts, for the attachments line on re-render
 
   constructor(private deps: HandoffDeps) {}
@@ -76,12 +79,12 @@ export class HandoffService {
   }
 
   async update(id: string, edited: Handoff): Promise<Handoff> {
-    const old = this.mustGet(id);
+    const old = await this.mustGet(id);
     return this.store({ ...edited, id, fromConsoleId: old.fromConsoleId, createdAt: old.createdAt });
   }
 
   async send(id: string, opts: { startStopped?: boolean } = {}): Promise<{ consoleId: string }> {
-    const h = this.mustGet(id);
+    const h = await this.mustGet(id);
     const { target } = h;
     let consoleId: string;
     let title: string;
@@ -118,19 +121,30 @@ export class HandoffService {
       }
     }
     const from = this.deps.console(h.fromConsoleId)?.node;
-    this.items.set(id, { ...h, sentAt: new Date().toISOString() });
+    await this.save({ ...h, sentAt: new Date().toISOString() });
     this.deps.event({ kind: "handoff", consoleId: h.fromConsoleId, ...(from && { agent: from.agent, title: from.title }), detail: `handed off to ${title}` });
     return { consoleId };
   }
 
-  list(consoleId?: string): Handoff[] {
-    return [...this.items.values()]
+  async list(consoleId?: string): Promise<Handoff[]> {
+    return [...(await this.items()).values()]
       .filter((h) => !consoleId || h.fromConsoleId === consoleId || (h.target.kind === "console" && h.target.consoleId === consoleId))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
-  private mustGet(id: string): Handoff {
-    const h = this.items.get(id);
+  // The index, read from handoffs.json once, so handoffs outlive a daemon restart.
+  private items(): Promise<Map<string, Handoff>> {
+    return (this.loaded ??= readFile(join(this.deps.home(), "handoffs.json"), "utf8").then(
+      (t) => new Map(HandoffListSchema.parse(JSON.parse(t)).map((h) => [h.id, h])),
+      (e: NodeJS.ErrnoException) => {
+        if (e.code === "ENOENT") return new Map();
+        throw e;
+      },
+    ));
+  }
+
+  private async mustGet(id: string): Promise<Handoff> {
+    const h = (await this.items()).get(id);
     if (!h) throw new HttpError(404, `no handoff ${id}`);
     return h;
   }
@@ -145,9 +159,39 @@ export class HandoffService {
     const from = this.deps.console(h.fromConsoleId)?.node.title ?? "a console";
     const t = h.target;
     const toRole = t.kind === "console" ? team?.roles.find((r) => r.consoleId === t.consoleId)?.name : nextRole(team, h.fromConsoleId)?.name;
-    const saved = { ...h, promptText: renderPrompt(h, team, from, toRole, this.stats.get(h.id) ?? 0) };
-    this.items.set(h.id, saved);
+    const brief = { ...h.brief, done: h.brief.done.map(this.scrub), left: h.brief.left.map(this.scrub), decisions: h.brief.decisions.map(this.scrub) };
+    const scrubbed = { ...h, brief };
+    const saved = { ...scrubbed, promptText: this.scrub(renderPrompt(scrubbed, team, from, toRole, this.stats.get(h.id) ?? 0)) };
+    await this.save(saved);
     return saved;
+  }
+
+  // Under the home, any path is shown with ~ so no saved brief carries the user's home.
+  private scrub = (s: string) => (this.deps.userHome ? s.split(this.deps.userHome).join("~") : s);
+
+  // <home>/handoffs/<id>.md and the handoffs.json index, each written to a .tmp, synced and renamed (P4-D49),
+  // one write at a time so the .tmp names never collide.
+  private async save(h: Handoff): Promise<void> {
+    const items = await this.items();
+    items.set(h.id, h);
+    const home = this.deps.home();
+    const write = async (file: string, text: string) => {
+      const fh = await open(`${file}.tmp`, "w", 0o600);
+      try {
+        await fh.writeFile(text);
+        await fh.sync();
+      } finally {
+        await fh.close();
+      }
+      await rename(`${file}.tmp`, file);
+    };
+    const run = this.chain.then(async () => {
+      await mkdir(join(home, "handoffs"), { recursive: true, mode: 0o700 });
+      await write(join(home, "handoffs", `${h.id}.md`), h.promptText);
+      await write(join(home, "handoffs.json"), JSON.stringify([...items.values()], null, 2));
+    });
+    this.chain = run.catch(() => {});
+    return run;
   }
 
   private async diffStat(node: ConsoleNode): Promise<DiffStat | null> {
