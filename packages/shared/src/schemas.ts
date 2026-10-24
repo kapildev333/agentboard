@@ -163,7 +163,7 @@ export const PlanSchema = z.object({
   unknown: z.string().optional(),
 });
 export const PlanRequestSchema = z.object({ text: z.string().min(1), repo: z.string() });
-export const RunRequestSchema = z.object({ plan: PlanSchema, confirmed: z.array(z.string()), skipped: z.array(z.string()) });
+export const RunRequestSchema = z.object({ plan: PlanSchema, confirmed: z.array(z.string()), skipped: z.array(z.string()), repo: z.string().optional() });
 export const StepResultSchema = z.object({ stepId: z.string(), status: z.enum(["done", "skipped", "failed"]), error: z.string().optional(), consoleId: z.string().optional() });
 /** focus and fit are the page's to perform; the daemon only reports them. */
 export const RunResponseSchema = z.object({ results: z.array(StepResultSchema), focus: z.string().optional(), fit: z.boolean().optional() });

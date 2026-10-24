@@ -173,7 +173,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       return { x, y: caller.y };
     }
     if (caller) return { x: caller.x + caller.w + GAP, y: caller.y };
-    const n = ws.nodes.filter((x) => x.type === "console").length;
+    const n = ws.nodes.length;
     return { x: (n % COLUMNS) * (W + GAP), y: Math.floor(n / COLUMNS) * (H + GAP) };
   };
 
@@ -327,10 +327,10 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       const agents = await AgentCatalog.scan({ path: agentPath, custom: set.customAgents });
       return planCommand(text, snapshot(board, agents), set);
     },
-    "POST /api/command/run": async ({ plan, confirmed, skipped }) => {
-      const board = await loadBoard(opts.repoPath);
+    "POST /api/command/run": async ({ plan, confirmed, skipped, repo = opts.repoPath }) => {
+      const board = await loadBoard(repo);
       return runPlan(plan, confirmed, skipped, {
-        spawn: (step) => spawnConsole({ agent: step.agent, customId: step.customId, cwd: find(step.near ?? "")?.board.repoPath ?? opts.repoPath, worktree: step.worktree, prompt: step.prompt }, step.near),
+        spawn: (step) => spawnConsole({ agent: step.agent, customId: step.customId, cwd: find(step.near ?? "")?.board.repoPath ?? repo, worktree: step.worktree, prompt: step.prompt }, step.near),
         close: async (id) => void (await closeConsole(id)),
         resume: resumeConsole,
         note: async (text) => {
@@ -341,8 +341,9 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
         },
         input: async (id, text) => {
           if (!running.has(id)) throw new HttpError(409, `console ${id} is not running`);
-          tracker.markInput(id, text);
-          pty.write(id, `${text}\r`);
+          const data = `${text}\r`;
+          tracker.markInput(id, data);
+          pty.write(id, data);
         },
       });
     },

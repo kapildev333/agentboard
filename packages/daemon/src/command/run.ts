@@ -1,4 +1,4 @@
-import type { ConsoleNode, Plan, PlanStep, RunResponse } from "@agentboard/shared";
+import { stepAsks, type ConsoleNode, type Plan, type PlanStep, type RunResponse } from "@agentboard/shared";
 
 export type RunDeps = {
   spawn(step: Extract<PlanStep, { kind: "spawn" }>): Promise<ConsoleNode>;
@@ -11,7 +11,7 @@ export type RunDeps = {
 /** P5-D48: an asking step runs only when confirmed, is skipped when skipped, else the whole request is refused. */
 export async function runPlan(plan: Plan, confirmed: string[], skipped: string[], deps: RunDeps): Promise<RunResponse> {
   for (const s of plan.steps)
-    if (s.asks && !confirmed.includes(s.id) && !skipped.includes(s.id))
+    if ((s.asks || stepAsks(s.kind)) && !confirmed.includes(s.id) && !skipped.includes(s.id))
       throw Object.assign(new Error(`step ${s.id} (${s.summary}) needs confirmation`), { status: 409 });
   const out: RunResponse = { results: [] };
   let spawned: string | undefined; // focus: the last focus step wins over the last spawn
