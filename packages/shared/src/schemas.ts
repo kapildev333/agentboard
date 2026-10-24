@@ -383,6 +383,8 @@ export const ProfileSchema = z.object({
   name: z.string(),
   env: z.record(z.string(), z.string()),
   args: z.array(z.string()),
+});
+
 // The daemon's call log (F4.4): what it answered and to whom, never a token, header or body (D48).
 export const CallLogEntrySchema = z.object({
   at: z.iso.datetime(),
