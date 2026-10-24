@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { closeSync, openSync, readSync } from "node:fs";
-import { lstat, mkdir, readFile, realpath, rename, stat, writeFile, readdir, rm } from "node:fs/promises";
+import { chmod, lstat, mkdir, readFile, readdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, extname, isAbsolute, join, relative, sep } from "node:path";
 import type { Exec } from "../git/index.js";
 import type { RouteHandlers } from "../server/index.js";
@@ -25,7 +25,7 @@ const LANGUAGES: Record<string, string> = {
 async function resolveIn(repo: string, rel: string): Promise<string> {
   if (rel.includes("\0") || isAbsolute(rel) || /^[a-zA-Z]:/.test(rel)) throw new HttpError(400, "invalid path");
   const parts = rel.split(/[\\/]/).filter((p) => p && p !== ".");
-  if (parts.some((p) => p === ".." || p === ".git")) throw new HttpError(400, "invalid path");
+  if (parts.some((p) => p === ".." || p.toLowerCase() === ".git")) throw new HttpError(400, "invalid path");
   const root = await realpath(repo);
   const abs = join(root, ...parts);
   // The deepest existing ancestor (a symlink counts as existing) must really live inside the repository, outside .git.
@@ -45,7 +45,7 @@ async function resolveIn(repo: string, rel: string): Promise<string> {
     throw new HttpError(400, "invalid path"); // dangling symlink
   }
   const inside = relative(root, real);
-  if (inside.startsWith("..") || isAbsolute(inside) || inside.split(sep)[0] === ".git") throw new HttpError(400, "path leaves the repository");
+  if (inside.startsWith("..") || isAbsolute(inside) || inside.split(sep)[0].toLowerCase() === ".git") throw new HttpError(400, "path leaves the repository");
   return abs;
 }
 
@@ -73,13 +73,21 @@ export function createFileHandlers({ repoOf, git }: FileDeps): FileRoutes {
     const base = file ? await readFile(file, "utf8").then((s) => s.trim(), () => "") : "";
     const rev = (base && (await tryGit(cwd, ["merge-base", base, "HEAD"])).trim()) || "HEAD";
     const out = new Map<string, "M" | "A" | "D" | "?">();
-    for (const line of (await tryGit(cwd, ["diff", "--name-status", rev])).split("\n").filter(Boolean)) {
-      const [code, ...paths] = line.split("\t");
-      out.set(paths[paths.length - 1], code[0] === "A" ? "A" : code[0] === "D" ? "D" : "M");
+    // -z: NUL-separated and unquoted, so spaces survive; a rename or copy carries two paths, the new one last (diff) or first (status).
+    const diff = (await tryGit(cwd, ["diff", "--name-status", "-z", rev])).split("\0");
+    for (let i = 0; i + 1 < diff.length; ) {
+      const code = diff[i][0];
+      const n = code === "R" || code === "C" ? 2 : 1;
+      out.set(diff[i + n], code === "A" ? "A" : code === "D" ? "D" : "M");
+      i += 1 + n;
     }
-    for (const line of (await tryGit(cwd, ["status", "--porcelain", "--untracked-files=all"])).split("\n")) {
-      if (line.startsWith("??")) out.set(line.slice(3), "?");
-      else if (line.startsWith("A ") && !out.has(line.slice(3))) out.set(line.slice(3), "A");
+    const porcelain = (await tryGit(cwd, ["status", "--porcelain", "-z", "--untracked-files=all"])).split("\0");
+    for (let i = 0; i < porcelain.length; i++) {
+      const [x, y] = porcelain[i];
+      const path = porcelain[i].slice(3);
+      if (x === "R" || x === "C" || y === "R" || y === "C") i++; // skip the old path
+      if (x === "?") out.set(path, "?");
+      else if (x === "A" && !out.has(path)) out.set(path, "A");
     }
     return out;
   }
@@ -92,9 +100,9 @@ export function createFileHandlers({ repoOf, git }: FileDeps): FileRoutes {
       const [names, changed, ignoredOut] = await Promise.all([
         readdir(abs, { withFileTypes: true }).catch(notFound),
         changes(cwd),
-        tryGit(cwd, ["ls-files", "--others", "--ignored", "--exclude-standard", "--directory"]),
+        tryGit(cwd, ["ls-files", "--others", "--ignored", "--exclude-standard", "--directory", "-z"]),
       ]);
-      const ignored = new Set(ignoredOut.split("\n").filter(Boolean).map((p) => p.replace(/\/$/, "")));
+      const ignored = new Set(ignoredOut.split("\0").filter(Boolean).map((p) => p.replace(/\/$/, "")));
       const entries = [];
       for (const d of names) {
         const p = dir ? `${dir}/${d.name}` : d.name;
@@ -120,8 +128,11 @@ export function createFileHandlers({ repoOf, git }: FileDeps): FileRoutes {
     },
 
     async "PUT /api/files/write"({ repo, path, text }) {
-      const abs = await resolveIn(await repoOf(repo), path);
-      if (abs === (await realpath(await repoOf(repo)))) throw new HttpError(400, "invalid path");
+      const root = await repoOf(repo);
+      const resolved = await resolveIn(root, path);
+      if (resolved === (await realpath(root))) throw new HttpError(400, "invalid path");
+      // A symlink inside the repository is written through: resolveIn checked that its target stays inside.
+      const abs = await realpath(resolved).catch(() => resolved);
       const info = await stat(abs).catch(() => null);
       if (info && !info.isFile()) throw new HttpError(400, "not a file");
       if (info && sniffBinary(abs)) throw new HttpError(400, "binary file");
@@ -129,6 +140,7 @@ export function createFileHandlers({ repoOf, git }: FileDeps): FileRoutes {
       const tmp = join(dirname(abs), `.${randomBytes(6).toString("hex")}.tmp`);
       try {
         await writeFile(tmp, text);
+        if (info) await chmod(tmp, info.mode & 0o7777);
         await rename(tmp, abs);
       } catch (err) {
         await rm(tmp, { force: true });
