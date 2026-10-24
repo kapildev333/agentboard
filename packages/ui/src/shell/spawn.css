@@ -85,36 +85,12 @@
   color: var(--color-text-muted);
 }
 
-.spawn .agent-mark {
-  flex: none;
-  display: grid;
-  place-items: center;
+/* base.css's .mark at the artboard's card size. */
+.spawn .mark {
   width: 24px;
   height: 24px;
   border-radius: var(--radius-sm);
-  background: var(--mark-custom-bg);
-  color: var(--mark-custom-fg);
-  font: 700 12px/1 var(--font-mono);
-}
-
-.spawn .mark-claude {
-  background: var(--mark-claude-bg);
-  color: var(--mark-claude-fg);
-}
-
-.spawn .mark-codex {
-  background: var(--mark-codex-bg);
-  color: var(--mark-codex-fg);
-}
-
-.spawn .mark-gemini {
-  background: var(--mark-gemini-bg);
-  color: var(--mark-gemini-fg);
-}
-
-.spawn .mark-opencode {
-  background: var(--mark-opencode-bg);
-  color: var(--mark-opencode-fg);
+  font-size: 12px;
 }
 
 .spawn .agent-text {
@@ -293,12 +269,11 @@
   align-items: center;
   height: 18px;
   padding: 0 5px;
-  border: 1px solid var(--kbd-bg);
+  border: 1px solid var(--color-accent-hover);
   border-bottom-width: 2px;
   border-radius: 4px;
-  background: var(--kbd-bg);
+  background: var(--color-accent-hover);
   color: var(--color-on-accent);
   font-size: 10px;
   font-weight: 400;
-  --kbd-bg: color-mix(in srgb, var(--color-accent) 87%, black);
 }

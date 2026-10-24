@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from "react";
 import {
   AgentInfoListSchema,
   ConsoleNodeSchema,
+  GitStatusSchema,
   SpawnConsoleRequestSchema,
   type AgentInfo,
   type ConsoleNode,
@@ -11,21 +12,23 @@ import "./spawn.css";
 export type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 
 // How each agent reports its status, and the letter on its mark (a custom agent's is its name's first letter).
-const SIGNAL: Record<string, string> = { claude: "hooks per session", codex: "notify", gemini: "hooks", opencode: "plugin", custom: "custom · regex needs-you" };
+const SIGNAL: Record<string, string> = { claude: "hooks per session", codex: "notify", gemini: "hooks", opencode: "plugin", custom: "regex needs-you" };
 const MARK: Record<string, string> = { claude: "C", codex: "X", gemini: "G", opencode: "O" };
 // The UI is not told the home directory, so a macOS or Linux home prefix stands in for it.
 const tilde = (p: string) => p.replace(/^\/(Users|home)\/[^/]+(?=\/|$)/, "~");
+// The submit hint names the key this keyboard has; both work.
+const mac = () => /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
 export function SpawnDialog({
   fetch,
   cwd,
-  branch: base,
+  base: given,
   onSpawned,
   onCancel,
 }: {
   fetch: Fetch;
   cwd: string;
-  branch?: string;
+  base?: string;
   onSpawned: (n: ConsoleNode) => void;
   onCancel?: () => void;
 }) {
@@ -41,6 +44,16 @@ export function SpawnDialog({
   const name = branch.trim();
   const canSpawn = !!choice && !busy && !(useWorktree && !name);
   const id = useId();
+  // The branch a new worktree starts from: the daemon branches from the repo's current one.
+  const [current, setCurrent] = useState<string>();
+  const base = given ?? current;
+
+  useEffect(() => {
+    // Unknown until git answers; a cwd outside a repo just shows no branch.
+    fetch(`/api/git/status?path=${encodeURIComponent(cwd)}`)
+      .then(async (r) => r.ok && setCurrent(GitStatusSchema.parse(await r.json()).branch))
+      .catch(() => {});
+  }, [fetch, cwd]);
 
   useEffect(() => {
     fetch("/api/agents")
@@ -87,7 +100,7 @@ export function SpawnDialog({
   const row = (a: AgentInfo) => (
     <label key={keyOf(a)} className="agent-card">
       <input type="radio" name="agent" autoFocus={a === first} disabled={!a.available} checked={keyOf(choice) === keyOf(a)} onChange={() => setChoice(a)} />
-      <span className={`agent-mark mark-${a.id}`} aria-hidden="true">
+      <span className={`mark mark-${a.id}`} aria-hidden="true">
         {MARK[a.id] ?? (a.name ?? a.id).charAt(0).toUpperCase()}
       </span>
       <span className="agent-text">
@@ -99,7 +112,7 @@ export function SpawnDialog({
               {" · "}
             </>
           )}
-          {[a.available && a.version, SIGNAL[a.id]].filter(Boolean).join(" · ")}
+          {[a.available && a.version, a.customId && "custom", SIGNAL[a.id]].filter(Boolean).join(" · ")}
         </span>
       </span>
       {/* A custom agent has no readiness to report beyond being on PATH, so only a missing one gets a dot. */}
@@ -131,7 +144,7 @@ export function SpawnDialog({
           <input type="radio" name="where" id={`${id}-root`} aria-describedby={`${id}-root-d`} checked={!useWorktree} onChange={() => setUseWorktree(false)} />
           <div className="where-text">
             <label htmlFor={`${id}-root`}>Repo root</label>
-            <span id={`${id}-root-d`} className="where-path">
+            <span id={`${id}-root-d`} className="where-path" title={cwd}>
               {tilde(cwd)}
               {base && ` · ${base}`}
             </span>
@@ -153,11 +166,15 @@ export function SpawnDialog({
               <label htmlFor={`${id}-wt`}>
                 <span id={`${id}-wt-n`} className="where-name">
                   new worktree
-                </span>{" "}
-                from{" "}
-                <span id={`${id}-wt-b`} className="chip">
-                  {base ?? "main"}
                 </span>
+                {base && (
+                  <>
+                    {" from "}
+                    <span id={`${id}-wt-b`} className="chip">
+                      {base}
+                    </span>
+                  </>
+                )}
               </label>
               <span id={`${id}-wt-d`} className="where-caption">
                 so two agents never edit the same files
@@ -192,8 +209,8 @@ export function SpawnDialog({
         <button type="button" onClick={onCancel}>
           Cancel
         </button>
-        <button type="submit" className="btn-primary" aria-keyshortcuts="Meta+Enter Control+Enter"disabled={!canSpawn}>
-          Spawn <kbd aria-hidden="true">⌘↵</kbd>
+        <button type="submit" className="btn-primary" aria-keyshortcuts={mac() ? "Meta+Enter" : "Control+Enter"} disabled={!canSpawn}>
+          Spawn <kbd aria-hidden="true">{mac() ? "⌘↵" : "Ctrl↵"}</kbd>
         </button>
       </div>
     </form>
