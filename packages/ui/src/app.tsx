@@ -88,6 +88,7 @@ function ConsoleView(props: NodeProps) {
   const { fetch, fontSize } = useContext(Api);
   const repo = useBoard((s) => s.board.repoPath);
   const [git, setGit] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [dirty, setDirty] = useState(0);
   const [error, setError] = useState<string>();
   const [exitCode, setExitCode] = useState<number | null>();
@@ -112,7 +113,12 @@ function ConsoleView(props: NodeProps) {
   const close = () => useBoard.getState().removeNode(node.id);
   const cwd = node.cwd === repo ? "." : node.cwd.startsWith(`${repo}/`) ? node.cwd.slice(repo.length + 1) : node.cwd;
   return (
-    <div className={`card console-card is-${node.status}${node.status === "needs_you" ? " needs-you" : ""}`}>
+    <div
+      className={`card console-card is-${node.status}${node.status === "needs_you" ? " needs-you" : ""}${focused ? " is-focused" : ""}`}
+      // A class, not a :has(.console-term:focus-within) rule, which the browser re-checks on every row xterm writes.
+      onFocus={(e) => setFocused(!!(e.target as Element).closest(".console-term"))}
+      onBlur={() => setFocused(false)}
+    >
       <div className="console-body">
         <ConsoleNode data={{ node }} fontSize={fontSize} onExit={setExitCode} statusBadge={<StatusPill status={node.status} code={exitCode} />} />
         <ConsoleOverlay node={node} onResume={resume} onStartFresh={() => run(startFresh(fetch, node))} onRemove={close} />

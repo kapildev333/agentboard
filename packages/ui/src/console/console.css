@@ -148,7 +148,7 @@
   box-shadow: 0 0 0 2px var(--status-needs-you-bg), 0 0 24px 2px color-mix(in srgb, var(--status-needs-you-bg) 35%, transparent), var(--shadow-card);
 }
 
-.console-card:has(.console-term:focus-within) {
+.console-card.is-focused {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 2px var(--color-accent), var(--shadow-card);
 }
