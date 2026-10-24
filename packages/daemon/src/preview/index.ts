@@ -45,7 +45,11 @@ export function previewHandler(key: string) {
       }
       const type = up.headers["content-type"];
       const html = req.method === "GET" && /^text\/html\b/i.test(type ?? "") && !up.headers["content-encoding"];
-      res.setHeader("content-security-policy", `connect-src ${target.origin} ws://${target.host}; frame-ancestors ${board}`);
+      // Two policies are both enforced, so the target's own can only tighten ours. The sandbox (as the web
+      // tile's iframe has it) keeps the page off the board's origin even when it is opened on its own.
+      const own = `connect-src ${target.origin} ws://${target.host}; frame-ancestors ${board}; sandbox allow-scripts allow-forms`;
+      const theirs = up.headers["content-security-policy"];
+      res.setHeader("content-security-policy", theirs ? [own, theirs] : own);
       res.setHeader("cache-control", "no-store");
       res.setHeader("x-content-type-options", "nosniff");
       if (type) res.setHeader("content-type", type);
