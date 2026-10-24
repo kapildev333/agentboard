@@ -13,14 +13,14 @@ prev="$(git describe --tags --abbrev=0 origin/main 2>/dev/null || true)"
 since="$([ -n "$prev" ] && git log -1 --format=%cI "$prev" || echo 2000-01-01)"
 prs="$(gh pr list --state merged --limit 200 --search "merged:>=$since" --json number,title -q '.[] | "- #\(.number) \(.title)"' | sort -t'#' -k2 -n)"
 full="$(mktemp)"; { cat "$notes"; echo; echo "### Merged pull requests"; echo; echo "$prs"; } > "$full"
-wt="$(mktemp -d "${TMPDIR:-/tmp}/agentboard-release-XXXXXX")"
+wt="$(mktemp -d "${TMPDIR:-/tmp}/agentboard-release-XXXXXX")"; wt="$(cd "$wt" && pwd -P)"   # a normalised path, or worktree remove fails
 git worktree add -q "$wt" -b "release-$tag" origin/main
 (
   cd "$wt"
   node -e '
 const fs=require("fs");const v=process.argv[1];
 const files=["package.json",...fs.readdirSync("packages").map(p=>`packages/${p}/package.json`),"packages/plugins/opencode/package.json"].filter(f=>fs.existsSync(f));
-for(const f of files){const j=JSON.parse(fs.readFileSync(f,"utf8"));j.version=v;fs.writeFileSync(f,JSON.stringify(j,null,2)+"\n");}
+for(const f of files){const j=JSON.parse(fs.readFileSync(f,"utf8"));j.version=v;for(const k of ["dependencies","devDependencies","peerDependencies"]){for(const d of Object.keys(j[k]||{})){if(d.startsWith("@agentboard/"))j[k][d]=v;}}fs.writeFileSync(f,JSON.stringify(j,null,2)+"\n");}
 console.log("bumped "+files.length+" manifests");' "$v"
   npm install --ignore-scripts >/dev/null 2>&1
   # keep the "# Changelog" header on top; the "## Unreleased" heading becomes this version, its lines stay under it
@@ -41,7 +41,7 @@ pr="$(gh pr create --head "release-$tag" --title "chore: release $tag" --body "V
 scripts/merge.sh "$pr" > /tmp/release-gate.log 2>&1 || { tail -5 /tmp/release-gate.log; echo "release: gate failed, PR #$pr left open"; exit 1; }
 head="$(gh pr view "$pr" --json headRefOid -q .headRefOid)"
 gh pr merge "$pr" --rebase --delete-branch --match-head-commit "$head" >/dev/null
-git worktree remove --force "$wt"; git branch -D "release-$tag" >/dev/null 2>&1 || true
+git worktree remove --force "$wt" 2>/dev/null || git worktree prune; git branch -D "release-$tag" >/dev/null 2>&1 || true
 git fetch -q origin
 sha="$(git rev-parse origin/main)"
 gh release create "$tag" --target "$sha" --title "AgentBoard $tag" --notes-file "$full" >/dev/null
