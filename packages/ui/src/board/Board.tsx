@@ -51,14 +51,14 @@ const toFlow = (nodes: BoardNode[], selected: Set<string>): Node<Data>[] =>
     data: { node: n },
   }));
 
-export function Board({ nodeTypes }: { nodeTypes: NodeTypes }) {
+export function Board({ nodeTypes, onInit }: { nodeTypes: NodeTypes; onInit?: (rf: { fitView: () => unknown }) => void }) {
   const ws = useBoard((s) => s.board.workspaces.find((w) => w.id === s.board.activeWorkspaceId));
   const types = useMemo(() => Object.fromEntries(Object.entries(nodeTypes).map(([k, v]) => [k, withFrame(v)])), [nodeTypes]);
   // Keyed so a workspace switch remounts the canvas and its node state together.
-  return ws && <Canvas key={ws.id} ws={ws} nodeTypes={types} />;
+  return ws && <Canvas key={ws.id} ws={ws} nodeTypes={types} onInit={onInit} />;
 }
 
-function Canvas({ ws, nodeTypes }: { ws: Workspace; nodeTypes: NodeTypes }) {
+function Canvas({ ws, nodeTypes, onInit }: { ws: Workspace; nodeTypes: NodeTypes; onInit?: (rf: { fitView: () => unknown }) => void }) {
   const { moveNode, removeNode, setViewport } = useBoard.getState();
   // React Flow owns selection and in-flight drag state; the store is the source of truth at rest.
   const [nodes, setNodes] = useState(() => toFlow(ws.nodes, new Set()));
@@ -72,6 +72,7 @@ function Canvas({ ws, nodeTypes }: { ws: Workspace; nodeTypes: NodeTypes }) {
       maxZoom={2}
       nodes={nodes}
       nodeTypes={nodeTypes}
+      onInit={onInit}
       onNodesChange={(changes) => {
         setNodes((ns) => applyNodeChanges(changes, ns));
         // Every drag ends, and keyboard moves arrive, as a change with dragging: false; resizer ticks (absent) save on resize end.
