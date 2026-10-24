@@ -28,6 +28,7 @@ function loopback(raw: string, base?: URL): URL | null {
 
 export function previewHandler(key: string) {
   return (req: http.IncomingMessage, res: http.ServerResponse): void => {
+    if (req.method !== "GET" && req.method !== "HEAD") return void res.writeHead(405, { allow: "GET, HEAD" }).end();
     const m = /^\/preview\/([^/]*)\/(.*)$/s.exec(req.url ?? "");
     const given = Buffer.from(m?.[1] ?? ""), want = Buffer.from(key);
     if (given.length !== want.length || !timingSafeEqual(given, want)) return void res.writeHead(404).end();
