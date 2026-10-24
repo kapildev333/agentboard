@@ -146,6 +146,25 @@ test("a schedule loop fires at the next cron minute", () => {
   expect(engine.get(loop.id)!.state).toBe("scheduled");
 });
 
+test("a schedule tick skips a busy console and never opens a second run", () => {
+  const { engine, loop, writes, set } = setup({ trigger: { kind: "schedule", cron: "* * * * *" } });
+  vi.advanceTimersByTime(60_000);
+  expect(writes).toEqual([]);
+  expect(engine.get(loop.id)!.state).toBe("scheduled");
+  set("idle");
+  vi.advanceTimersByTime(60_000);
+  expect(writes).toHaveLength(1);
+  expect(() => engine.runNow(loop.id)).toThrow(expect.objectContaining({ status: 409 }));
+  vi.advanceTimersByTime(60_000);
+  expect(writes).toHaveLength(1);
+});
+
+test("a loaded schedule that never runs again retires instead of failing the daemon", () => {
+  const loop: Loop = { id: "l1", consoleId: "c1", name: "feb", trigger: { kind: "schedule", cron: "0 0 31 2 *" }, stop: {}, prompt: "go", state: "scheduled", runs: [], createdAt: new Date().toISOString() };
+  const engine = new LoopEngine({ write: () => {}, status: () => "idle", save: () => {}, event: () => {} }, [loop]);
+  expect(engine.get("l1")!.state).toBe("retired");
+});
+
 test("pause, run now and a bad pattern answer with a status", () => {
   const { engine, loop, writes, set } = setup();
   expect(() => engine.runNow(loop.id)).toThrow(expect.objectContaining({ status: 409 }));
@@ -159,6 +178,7 @@ test("pause, run now and a bad pattern answer with a status", () => {
   expect(writes).toHaveLength(1);
   expect(() => engine.create({ ...loop, trigger: { kind: "output", pattern: "(" } })).toThrow(expect.objectContaining({ status: 400 }));
   expect(() => engine.create({ ...loop, trigger: { kind: "schedule", cron: "nope" } })).toThrow(expect.objectContaining({ status: 400 }));
+  expect(() => engine.create({ ...loop, stop: { goal: { pattern: "p95 \\d+ms", op: "lte", value: 12 } } })).toThrow(expect.objectContaining({ status: 400 }));
   expect(() => engine.pause("missing")).toThrow(expect.objectContaining({ status: 404 }));
   engine.remove(loop.id);
   expect(engine.list()).toEqual([]);

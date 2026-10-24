@@ -11,5 +11,6 @@ test("*/15 and 1-5 parse and an unknown token throws", () => {
   expect(nextRun(spec, new Date(2026, 9, 24, 9, 20))).toEqual(new Date(2026, 9, 26, 9, 0));
   expect(nextRun(spec, new Date(2026, 9, 26, 9, 0))).toEqual(new Date(2026, 9, 26, 9, 15));
   expect(nextRun(parseCron("1-30/10,45 * * * *"), new Date(2026, 9, 24, 9, 31))).toEqual(new Date(2026, 9, 24, 9, 45));
+  expect(() => nextRun(parseCron("0 0 31 2 *"), new Date(2026, 9, 24))).toThrow();
   for (const bad of ["@daily", "* * * *", "61 * * * *", "*/0 * * * *", "x * * * *", "5-1 * * * *"]) expect(() => parseCron(bad)).toThrow();
 });
