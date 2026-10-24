@@ -1,7 +1,69 @@
-import { expect, test } from "vitest";
+import http from "node:http";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, expect, test } from "vitest";
 import { CallLog, type Call } from "../src/integrations/index.js";
+import { createServer } from "../src/server/index.js";
 
 const call = (over: Partial<Call> = {}): Call => ({ route: "GET /api/status", status: 200, board: false, params: {}, ...over });
+
+const token = "test-token-0123456789abcdef0123456789abcdef";
+const open: { close(): Promise<void> }[] = [];
+afterEach(async () => { await Promise.all(open.splice(0).map((s) => s.close())); });
+
+async function serve() {
+  const calls: Call[] = [];
+  const s = await createServer({
+    port: 0, token, staticDir: mkdtempSync(join(tmpdir(), "agentboard-static-")),
+    routes: { "GET /api/status": async () => ({ consoles: [] }) },
+    onCall: (c) => calls.push(c),
+  });
+  open.push(s);
+  // Logged once the answer is written, which can land just after the client reads it.
+  const next = async (n: number) => {
+    for (let i = 0; i < 100 && calls.length < n; i++) await new Promise((r) => setTimeout(r, 10));
+    return calls;
+  };
+  return { ...s, next };
+}
+
+// fetch will not send a foreign Host, so this goes through http.request.
+const raw = (port: number, path: string, headers: Record<string, string>) =>
+  new Promise<number>((resolve, reject) => {
+    http.get({ host: "127.0.0.1", port, path, headers }, (res) => (res.resume(), resolve(res.statusCode!))).on("error", reject);
+  });
+
+test("the server reports each accepted call after it answers, with its route pattern and client", async () => {
+  const s = await serve();
+  const res = await fetch(`${s.origin}/api/status`, { headers: { "x-agentboard-token": token, "x-agentboard-client": "cli" } });
+  expect(res.status).toBe(200);
+  expect(await s.next(1)).toEqual([{ route: "GET /api/status", status: 200, client: "cli", board: false, params: {} }]);
+});
+
+test("a refused request is logged with its reason and Origin, and never the token", async () => {
+  const s = await serve();
+  const res = await fetch(`${s.origin}/hook/c1`, {
+    method: "POST",
+    headers: { "x-agentboard-token": token, origin: "https://evil.example", "content-type": "application/json" },
+    body: JSON.stringify({ agent: "claude", event: "Stop" }),
+  });
+  expect(res.status).toBe(403);
+  expect(await raw(s.port, "/api/status", { host: "evil.example:80", "x-agentboard-token": token })).toBe(403);
+  expect(await raw(s.port, "/api/status", { host: `127.0.0.1:${s.port}` })).toBe(401);
+  expect(await raw(s.port, "/api/status", { host: `127.0.0.1:${s.port}`, "x-agentboard-token": "wrong" })).toBe(401);
+  const calls = await s.next(4);
+  expect(calls.map(({ route, status, reason, origin }) => ({ route, status, reason, origin }))).toEqual([
+    { route: "POST /hook/:consoleId", status: 403, reason: "bad Origin", origin: "https://evil.example" },
+    { route: "GET /api/status", status: 403, reason: "bad Host", origin: "evil.example:80" },
+    { route: "GET /api/status", status: 401, reason: "no token", origin: undefined },
+    { route: "GET /api/status", status: 401, reason: "bad token", origin: undefined },
+  ]);
+  const log = new CallLog();
+  calls.forEach((c) => log.record(c));
+  expect(JSON.stringify(log.read())).not.toContain(token);
+  expect(log.read().log[3]).toMatchObject({ route: "POST /hook/:consoleId", result: "403 bad Origin", origin: "https://evil.example", source: "unknown" });
+});
 
 test("keeps the last 100 calls and drops the oldest", () => {
   const log = new CallLog();
