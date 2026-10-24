@@ -10,6 +10,7 @@ import { OpenInButtons } from "./open/OpenInButtons";
 import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
 import { MissionMap, StatusBadge, useNotifications } from "./status";
 import { AddMenu, ChecklistView, NoteView, TextView, noteAdds } from "./notes";
+import { VoiceDialog, useVoice, type VoiceDeps } from "./voice";
 import { WebTileView, webtileAdds } from "./webtile";
 
 type Fetch = typeof globalThis.fetch;
@@ -138,7 +139,7 @@ const focusNode = (id: string) => {
 // Stable, so effects keyed on fetch (the spawn dialog's agent list, the git card) run once.
 const browserFetch: Fetch = (input, init) => globalThis.fetch(input, init);
 
-export function App({ fetch = browserFetch, search = location.search, connect = defaultConnect }: { fetch?: Fetch; search?: string; connect?: (client: string) => SocketLike }) {
+export function App({ fetch = browserFetch, search = location.search, connect = defaultConnect, voice: voiceDeps }: { fetch?: Fetch; search?: string; connect?: (client: string) => SocketLike; voice?: VoiceDeps }) {
   const repo = new URLSearchParams(search).get("repo");
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();
@@ -147,6 +148,18 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
   const flow = useRef<{ fitView: () => unknown }>(undefined);
   const empty = useBoard((s) => !s.board.workspaces.find((w) => w.id === s.board.activeWorkspaceId)?.nodes.length);
   useNotifications({ onFocus: focusNode });
+  const voice = useVoice({ fetch, repo: repo ?? "", onFocus: focusNode, onFit: () => void flow.current?.fitView(), deps: voiceDeps });
+  // "Type instead" hands the transcript to the command bar, which has no prop for it, through its input.
+  const [prefill, setPrefill] = useState<string>();
+  useEffect(() => {
+    if (panel !== "command" || prefill === undefined) return;
+    const input = document.querySelector<HTMLInputElement>('[role="dialog"][aria-label="Command bar"] input');
+    if (input) {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, prefill);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    setPrefill(undefined);
+  }, [panel, prefill]);
   // Escape closes the spawn modal; its backdrop keeps every terminal from seeing the key first.
   useEffect(() => {
     if (panel !== "spawn") return;
@@ -261,6 +274,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           {ready && <WorkspaceTabs />}
           <span className="topbar-spacer" />
           {ready && <LayoutMenu />}
+          <span aria-live="polite" className={voice.state === "listening" ? "chip chip-listening" : undefined}>{voice.state === "listening" ? "listening" : ""}</span>
           <button type="button" className="btn-primary" aria-expanded={panel === "spawn"} onClick={() => setPanel(panel === "spawn" ? null : "spawn")}>
             Spawn console
           </button>
@@ -284,6 +298,18 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           <MissionMap onFocus={focusNode} />
         </div>
         <CommandBar open={panel === "command"} onClose={() => setPanel(null)} fetch={fetch} repo={repo} onFocus={focusNode} onFit={() => void flow.current?.fitView()} />
+        <VoiceDialog
+          voice={voice}
+          onOpenSettings={() => {
+            voice.cancel();
+            setPanel("settings");
+          }}
+          onTypeInstead={(text) => {
+            voice.cancel();
+            setPrefill(text);
+            setPanel("command");
+          }}
+        />
         {panel === "spawn" && <div className="backdrop" onClick={() => setPanel(null)} />}
         {(panel === "spawn" || panel === "settings") && (
           <div role="dialog" aria-label={panel === "spawn" ? "Spawn console" : "Settings"} className={panel === "spawn" ? "modal" : "drawer"}>

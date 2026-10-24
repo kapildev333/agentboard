@@ -898,3 +898,114 @@ kbd {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
+
+.chip-listening {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--status-starting-bg);
+  color: var(--status-starting-fg);
+  font-size: var(--text-xs);
+}
+
+.voice {
+  position: fixed;
+  z-index: 21;
+  bottom: var(--space-3);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 820px;
+  max-width: calc(100% - 32px);
+  max-height: calc(100vh - 96px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-overlay);
+  overflow: auto;
+}
+
+.voice-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.voice-mic {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.voice-mic-live {
+  animation: voice-pulse 1.2s ease-out infinite;
+}
+
+@keyframes voice-pulse {
+  from { box-shadow: 0 0 0 0 var(--color-accent); }
+  to { box-shadow: 0 0 0 14px transparent; }
+}
+
+.voice-wave {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+}
+
+.voice-wave i {
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-text-muted);
+}
+
+.voice-wave-live i {
+  background: var(--color-accent);
+  animation: voice-bar 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes voice-bar {
+  from { transform: scaleY(0.4); }
+  to { transform: scaleY(1.3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-mic-live,
+  .voice-wave-live i {
+    animation: none;
+  }
+}
+
+.voice-transcript {
+  flex: 1;
+  font-size: var(--text-lg);
+}
+
+.voice-body {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: var(--space-2);
+}
+
+.voice-asking {
+  border-color: var(--color-danger);
+}
+
+.voice-status {
+  display: grid;
+  gap: var(--space-half);
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  list-style: none;
+}
+
+.voice button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
