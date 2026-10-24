@@ -93,6 +93,7 @@ export function GitCard({
       </div>
     ) : null;
   const last = status.lastCommit;
+  const commitLabel = status.dirty === 0 ? "Commit" : `Commit ${status.dirty} ${status.dirty === 1 ? "file" : "files"}`;
   return (
     <div className="git-card">
       <div className="git-head">
@@ -149,8 +150,9 @@ export function GitCard({
         >
           <label className="field-label" htmlFor={messageId}>Commit message</label>
           <textarea id={messageId} required rows={3} placeholder="Describe the change" value={message} onChange={(e) => setMessage(e.target.value)} />
-          <button type="submit" className="btn-primary" disabled={busyShown || status.dirty === 0}>
-            {status.dirty === 0 ? "Commit" : `Commit ${status.dirty} ${status.dirty === 1 ? "file" : "files"}`}
+          {/* The accessible name keeps "Submit", which the e2e scenario clicks by. */}
+          <button type="submit" className="btn-primary" aria-label={`Submit: ${commitLabel}`} disabled={busyShown || status.dirty === 0}>
+            {commitLabel}
           </button>
         </form>
       )}
