@@ -187,7 +187,10 @@ export function SettingsPanel({
                       </td>
                       <td className="sp-mono">{a.version ?? "—"}</td>
                       <td>
-                        <span className="chip">
+                        <span
+                          className="chip"
+                          title={SIGNAL_LABEL[a.customId ? "custom" : a.id]}
+                        >
                           {SIGNAL_LABEL[a.customId ? "custom" : a.id]}
                         </span>
                       </td>

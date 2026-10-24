@@ -144,11 +144,28 @@
 
 .settings-panel .sp-table {
   width: 100%;
+  /* the artboard's 1.4 : 0.7 : 1 : 1.1 columns; a long signal chip is cut with an ellipsis */
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
+}
+
+.settings-panel .sp-table th:nth-child(1) { width: 33%; }
+.settings-panel .sp-table th:nth-child(2) { width: 17%; }
+.settings-panel .sp-table th:nth-child(3) { width: 24%; }
+
+.settings-panel .sp-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "Not installed" wraps in a narrow drawer rather than being cut */
+.settings-panel .sp-table td:nth-child(4) {
+  white-space: normal;
 }
 
 .settings-panel .sp-table thead {
@@ -160,6 +177,7 @@
   line-height: 18px;
   border-color: var(--color-border);
   background: var(--color-surface-raised);
+  max-width: 100%;
   font-size: var(--text-2xs);
 }
 
@@ -182,7 +200,6 @@
 .settings-panel .sp-agent,
 .settings-panel .sp-status {
   display: inline-flex;
-  white-space: nowrap;
   align-items: center;
   gap: var(--space-1);
 }
@@ -246,6 +263,7 @@
   background: var(--status-idle-bg);
   color: var(--status-idle-fg);
   font-family: var(--font-mono);
+  max-width: 100%;
   font-size: var(--text-2xs);
 }
 
