@@ -46,7 +46,6 @@ export function nextRole(team: Team | undefined, consoleId: string) {
 export class HandoffService {
   private loaded?: Promise<Map<string, Handoff>>;
   private chain: Promise<void> = Promise.resolve();
-  private stats = new Map<string, number>(); // diff file counts, for the attachments line on re-render
 
   constructor(private deps: HandoffDeps) {}
 
@@ -74,13 +73,15 @@ export class HandoffService {
       createdAt: new Date().toISOString(),
       promptText: "",
     };
-    this.stats.set(handoff.id, stat?.files ?? 0);
-    return this.store(handoff);
+    return this.store(handoff, stat);
   }
 
   async update(id: string, edited: Handoff): Promise<Handoff> {
     const old = await this.mustGet(id);
-    return this.store({ ...edited, id, fromConsoleId: old.fromConsoleId, createdAt: old.createdAt });
+    // The diff is read again, so the count is current and survives a daemon restart.
+    const node = this.deps.console(old.fromConsoleId)?.node;
+    const stat = edited.attachments.diff && node ? await this.diffStat(node) : null;
+    return this.store({ ...edited, id, fromConsoleId: old.fromConsoleId, createdAt: old.createdAt }, stat);
   }
 
   async send(id: string, opts: { startStopped?: boolean } = {}): Promise<{ consoleId: string }> {
@@ -96,8 +97,15 @@ export class HandoffService {
       // P4-D45: a prompt goes into a PTY only while its console is idle or freshly started, never into a question.
       let status = this.deps.tracker.get(consoleId);
       if (opts.startStopped && (status === "stopped" || status === "exited")) {
-        await this.deps.resume(consoleId);
-        status = await this.settle(consoleId);
+        // Watching before the resume, so a console that settles while it starts is not missed.
+        const settled = this.watchSettle();
+        try {
+          await this.deps.resume(consoleId);
+        } catch (e) {
+          settled.off();
+          throw e;
+        }
+        status = await settled.wait(consoleId);
       }
       if (status === "needs_you") throw new HttpError(409, `${title} needs you; a handoff never answers a prompt`);
       if (status !== "idle") throw new HttpError(409, `${title} is ${status}; a handoff waits until it is idle`);
@@ -105,7 +113,10 @@ export class HandoffService {
     } else {
       title = target.title;
       const role = nextRole(this.teamOf(h), h.fromConsoleId);
-      consoleId = await this.deps.spawn({
+      // A custom agent takes no prompt at launch: it gets the brief once it first settles idle, watched from before
+      // the spawn so an early idle is not missed.
+      const settled = target.agent === "custom" ? this.watchSettle() : undefined;
+      const spawning = this.deps.spawn({
         agent: target.agent,
         ...(target.customId && { customId: target.customId }),
         ...(target.worktree && { worktree: target.worktree }),
@@ -114,8 +125,17 @@ export class HandoffService {
         ...(role && { role: role.name }),
         fromConsoleId: h.fromConsoleId,
       });
-      // A custom agent takes no prompt at launch: it gets the brief once it first settles idle.
-      if (target.agent === "custom") void this.settle(consoleId).then((s) => s === "idle" && this.deps.write(consoleId, h.promptText + "\r"));
+      try {
+        consoleId = await spawning;
+      } catch (e) {
+        settled?.off();
+        throw e;
+      }
+      const id = consoleId;
+      void settled
+        ?.wait(id)
+        .then((s) => s === "idle" && this.deps.write(id, h.promptText + "\r"))
+        .catch((e: Error) => console.error(`agentboard: handoff brief for ${id} not written:`, e.message));
       // The new console takes the role it was started for.
       if (role && !role.consoleId) {
         role.consoleId = consoleId;
@@ -156,20 +176,24 @@ export class HandoffService {
   }
 
   // Renders the prompt from the brief and keeps the handoff.
-  private async store(h: Handoff): Promise<Handoff> {
+  private async store(h: Handoff, stat: DiffStat | null): Promise<Handoff> {
     const team = this.teamOf(h);
     const from = this.deps.console(h.fromConsoleId)?.node.title ?? "a console";
     const t = h.target;
     const toRole = t.kind === "console" ? team?.roles.find((r) => r.consoleId === t.consoleId)?.name : nextRole(team, h.fromConsoleId)?.name;
     const brief = { ...h.brief, done: h.brief.done.map(this.scrub), left: h.brief.left.map(this.scrub), decisions: h.brief.decisions.map(this.scrub) };
     const scrubbed = { ...h, brief };
-    const saved = { ...scrubbed, promptText: this.scrub(renderPrompt(scrubbed, team, from, toRole, this.stats.get(h.id) ?? 0)) };
+    const saved = { ...scrubbed, promptText: this.scrub(renderPrompt(scrubbed, team, from, toRole, stat?.files ?? 0)) };
     await this.save(saved);
     return saved;
   }
 
   // Under the home, any path is shown with ~ so no saved brief carries the user's home.
-  private scrub = (s: string) => (this.deps.userHome ? s.split(this.deps.userHome).join("~") : s);
+  // Only where the home ends at a separator or the end, so a longer name such as <home>2 stays as it is.
+  private scrub = (s: string) => {
+    const home = this.deps.userHome;
+    return home ? s.replace(new RegExp(`${home.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=[\\\\/]|$)`, "gm"), "~") : s;
+  };
 
   // <home>/handoffs/<id>.md and the handoffs.json index, each written to a .tmp, synced and renamed (P4-D49),
   // one write at a time so the .tmp names never collide.
@@ -210,18 +234,30 @@ export class HandoffService {
     }
   }
 
-  // The first settled status after a start: idle, needs_you, or exited; anything else after SETTLE_MS.
-  private settle(consoleId: string): Promise<ConsoleStatus> {
-    return new Promise((resolve) => {
-      const done = (s: ConsoleStatus) => {
-        clearTimeout(timer);
-        off();
-        resolve(s);
-      };
-      const timer = setTimeout(() => done(this.deps.tracker.get(consoleId)), SETTLE_MS);
-      const off = this.deps.tracker.onChange((id, s) => {
-        if (id === consoleId && (s === "idle" || s === "needs_you" || s === "exited")) done(s);
-      });
+  // The first settled status (idle, needs_you or exited) of a console about to start, or its status after SETTLE_MS.
+  // It listens from the call on and keeps what arrives before wait() names the console.
+  private watchSettle(): { wait(consoleId: string): Promise<ConsoleStatus>; off(): void } {
+    const seen = new Map<string, ConsoleStatus>();
+    let waiting: { id: string; done(s: ConsoleStatus): void } | undefined;
+    const off = this.deps.tracker.onChange((id, s) => {
+      if (s !== "idle" && s !== "needs_you" && s !== "exited") return;
+      if (waiting?.id === id) waiting.done(s);
+      else if (!seen.has(id)) seen.set(id, s);
     });
+    return {
+      off,
+      wait: (consoleId) =>
+        new Promise((resolve) => {
+          const done = (s: ConsoleStatus) => {
+            clearTimeout(timer);
+            off();
+            resolve(s);
+          };
+          const timer = setTimeout(() => done(this.deps.tracker.get(consoleId)), SETTLE_MS);
+          const early = seen.get(consoleId);
+          if (early) done(early);
+          else waiting = { id: consoleId, done };
+        }),
+    };
   }
 }
