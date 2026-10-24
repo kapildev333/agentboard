@@ -1,0 +1,278 @@
+/* The Integrations page: a full-width overlay under the top bar, so the board stays mounted beneath it. Only tokens from tokens.css. */
+.integrations {
+  position: fixed;
+  inset: var(--topbar-height) 0 0 0;
+  z-index: 10;
+  overflow: auto;
+  background: var(--color-bg);
+}
+
+.int-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: var(--space-2) var(--space-4) var(--space-4);
+}
+
+.int-back {
+  align-self: flex-start;
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.int-intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.int-intro h1 {
+  margin: 0 0 var(--space-half);
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+.int-intro p {
+  margin: 0;
+}
+
+.int-summary {
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.int-summary > span {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.int-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.int-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.int-card.wide {
+  grid-column: 1 / -1;
+}
+
+.int-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.int-card-head > :first-child {
+  flex: 1;
+}
+
+.int-card-head .mark + strong {
+  flex: 1;
+}
+
+.int-card h2 {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.int-note {
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+.integrations code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.int-note code + code {
+  margin-left: var(--space-half);
+}
+
+.int-commands {
+  margin: 0;
+}
+
+.int-commands > div {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: var(--space-1);
+  align-items: baseline;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.int-commands > div:last-child {
+  border-bottom: 0;
+}
+
+.int-commands dt {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.int-commands dd {
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+.int-code {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--term-bg);
+  color: var(--term-fg);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.int-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-half);
+}
+
+.int-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-half);
+  height: 28px;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.int-tab .mark {
+  width: 16px;
+  height: 16px;
+  font-size: 9px;
+}
+
+.int-tab.on {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+  color: var(--color-text);
+}
+
+.int-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.int-copied {
+  color: var(--status-idle-fg);
+  font-size: var(--text-xs);
+}
+
+.int-seen {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-half);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.int-seen.on {
+  color: var(--status-idle-fg);
+}
+
+.int-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+}
+
+.int-seen.on .int-dot {
+  background: var(--status-idle-fg);
+}
+
+.int-plugin {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+}
+
+.int-meta {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.int-error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--text-xs);
+}
+
+.int-log {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.int-log th {
+  color: var(--color-text-muted);
+  font-weight: 400;
+  text-align: left;
+}
+
+.int-log th,
+.int-log td {
+  padding: 6px var(--space-1) 6px 0;
+  border-bottom: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
+}
+
+.int-log tr:last-child td {
+  border-bottom: 0;
+}
+
+.int-log th:first-child {
+  width: 72px;
+}
+
+.int-log th:nth-child(2) {
+  width: 200px;
+}
+
+.int-log th:last-child {
+  width: 180px;
+}
+
+.int-log tr.refused td {
+  color: var(--color-danger);
+}

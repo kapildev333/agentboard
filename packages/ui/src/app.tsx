@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { NodeProps } from "@xyflow/react";
 import { BoardSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type Settings } from "@agentboard/shared";
 import { Board, WorkspaceTabs, autosaveBoard, useBoard } from "./board";
@@ -6,6 +6,7 @@ import { CommandBar } from "./command";
 import { ConsoleNode, type SocketLike } from "./console";
 import { GitCard } from "./git";
 import { LayoutMenu } from "./layout";
+import { IntegrationsPage } from "./integrations";
 import { OpenInButtons } from "./open/OpenInButtons";
 import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
 import { MissionMap, StatusBadge, useNotifications } from "./status";
@@ -145,6 +146,9 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
   const [settings, setSettings] = useState<Settings>({ fontSize: 13, customAgents: [] });
   const [panel, setPanel] = useState<"spawn" | "settings" | "command" | null>(null);
   const flow = useRef<{ fitView: () => unknown }>(undefined);
+  // An overlay, so the board and its terminals stay mounted underneath.
+  const [integrations, setIntegrations] = useState(false);
+  const closeIntegrations = useCallback(() => setIntegrations(false), []);
   const empty = useBoard((s) => !s.board.workspaces.find((w) => w.id === s.board.activeWorkspaceId)?.nodes.length);
   useNotifications({ onFocus: focusNode });
   // Escape closes the spawn modal; its backdrop keeps every terminal from seeing the key first.
@@ -268,10 +272,14 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           <button type="button" aria-label="Command" aria-keyshortcuts="Meta+K Control+K" aria-expanded={panel === "command"} onClick={() => setPanel(panel === "command" ? null : "command")}>
             Command <kbd>⌘K</kbd>
           </button>
+          <button type="button" aria-pressed={integrations} onClick={() => setIntegrations(!integrations)}>
+            Integrations
+          </button>
           <button type="button" aria-expanded={panel === "settings"} onClick={() => setPanel(panel === "settings" ? null : "settings")}>
             Settings
           </button>
         </header>
+        {integrations && <IntegrationsPage fetch={fetch} onBack={closeIntegrations} />}
         <main className="board">
           {ready ? <Board nodeTypes={nodeTypes} onInit={(rf) => (flow.current = rf)} /> : <p className="app-message muted">Loading the board…</p>}
           {ready && empty && (
