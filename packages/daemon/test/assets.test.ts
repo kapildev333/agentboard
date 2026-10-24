@@ -35,7 +35,7 @@ test("a PNG posted comes back by id with its width and height and the same bytes
   const bytes = png(640, 480);
   const post = await call("/api/assets", { method: "POST", headers: { "content-type": "image/png" }, body: bytes });
   expect(post.status).toBe(201);
-  const { id, width, height } = await post.json();
+  const { id, width, height } = await post.json() as { id: string; width: number; height: number };
   expect([width, height]).toEqual([640, 480]);
   expect(id).toMatch(/^[0-9a-f]{64}$/);
   const get = await call(`/api/assets/${id}`);
@@ -48,7 +48,7 @@ test("a PNG posted comes back by id with its width and height and the same bytes
 test("posting the same bytes twice stores one file", async () => {
   const { root, call } = await boot();
   const send = () => call("/api/assets", { method: "POST", headers: { "content-type": "image/png" }, body: png(2, 3) });
-  const a = await (await send()).json(), b = await (await send()).json();
+  const a = (await (await send()).json()) as { id: string }, b = (await (await send()).json()) as { id: string };
   expect(a.id).toBe(b.id);
   expect(readdirSync(join(root, "home", "assets"))).toEqual([`${a.id}.png`]);
 });

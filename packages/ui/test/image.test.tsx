@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, createEvent, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useRef } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { NodeProps } from "@xyflow/react";
@@ -28,6 +28,12 @@ const setup = (fetch: typeof globalThis.fetch, zoom = 1) => {
   return render(<Pane />);
 };
 const nodes = () => useBoard.getState().board.workspaces[0]!.nodes;
+// jsdom has no DragEvent, so the coordinates are set on the event after it is made.
+const drop = (clientX: number, clientY: number) => {
+  const e = createEvent.drop(screen.getByTestId("pane"), { dataTransfer: { files: [png()], types: ["Files"] } });
+  Object.assign(e, { clientX, clientY });
+  fireEvent(screen.getByTestId("pane"), e);
+};
 const png = () => new File([new Uint8Array([1, 2, 3])], "shot.png", { type: "image/png" });
 
 afterEach(cleanup);
@@ -35,7 +41,7 @@ afterEach(cleanup);
 it("a dropped file posts to /api/assets and adds a node at the drop position", async () => {
   const fetch = reply(960, 480);
   setup(fetch);
-  fireEvent.drop(screen.getByTestId("pane"), { clientX: 120, clientY: 80, dataTransfer: { files: [png()], types: ["Files"] } });
+  drop(120, 80);
   await waitFor(() => expect(nodes()).toHaveLength(1));
   const [url, init] = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
   expect(url).toBe("/api/assets");
@@ -47,7 +53,7 @@ it("a dropped file posts to /api/assets and adds a node at the drop position", a
 
 it("the drop position follows the viewport zoom", async () => {
   setup(reply(100, 50), 2);
-  fireEvent.drop(screen.getByTestId("pane"), { clientX: 200, clientY: 100, dataTransfer: { files: [png()], types: ["Files"] } });
+  drop(200, 100);
   await waitFor(() => expect(nodes()).toHaveLength(1));
   expect(nodes()[0]).toMatchObject({ x: 100, y: 50, w: 100, h: 50 });
 });

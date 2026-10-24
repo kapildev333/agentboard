@@ -5,13 +5,14 @@ import { Board, WorkspaceTabs, autosaveBoard, useBoard } from "./board";
 import { CommandBar } from "./command";
 import { ConsoleNode, type SocketLike } from "./console";
 import { GitCard } from "./git";
+import { ImageView, useImages } from "./image";
 import { OpenInButtons } from "./open/OpenInButtons";
 import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
 import { MissionMap, StatusBadge, useNotifications } from "./status";
 import { WebTileView } from "./webtile";
 
 type Fetch = typeof globalThis.fetch;
-const Api = createContext<{ fetch: Fetch; fontSize: number }>({ fetch: globalThis.fetch, fontSize: 13 });
+const Api = createContext<{ fetch: Fetch; fontSize: number; imageAdds?: { label: string; create: () => void }[] }>({ fetch: globalThis.fetch, fontSize: 13 });
 
 const RECENT = "agentboard.recent";
 const consoles = (b: BoardData) => b.workspaces.flatMap((w) => w.nodes).filter((n): n is ConsoleData => n.type === "console");
@@ -129,7 +130,7 @@ function NoteView(props: NodeProps) {
 }
 
 // Module-level so React Flow never remounts the nodes (and their terminals) on a render.
-const nodeTypes = { console: ConsoleView, note: NoteView, webtile: WebTileView };
+const nodeTypes = { console: ConsoleView, note: NoteView, webtile: WebTileView, image: ImageView };
 
 const focusNode = (id: string) => {
   const el = document.querySelector<HTMLElement>(`[data-testid="node-${CSS.escape(id)}"]`);
@@ -149,6 +150,9 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
   const flow = useRef<{ fitView: () => unknown }>(undefined);
   const empty = useBoard((s) => !s.board.workspaces.find((w) => w.id === s.board.activeWorkspaceId)?.nodes.length);
   useNotifications({ onFocus: focusNode });
+  const pane = useRef<HTMLElement>(null);
+  // Drop and paste an image on the board. imageAdds is the "Image" entry L33's Add menu takes (Api context).
+  const { adds: imageAdds, input: imageInput } = useImages(fetch, pane);
   // Escape closes the spawn modal; its backdrop keeps every terminal from seeing the key first.
   useEffect(() => {
     if (panel !== "spawn") return;
@@ -256,7 +260,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
     void fetch("/api/settings", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(s) });
   };
   return (
-    <Api.Provider value={{ fetch, fontSize: settings.fontSize }}>
+    <Api.Provider value={{ fetch, fontSize: settings.fontSize, imageAdds }}>
       <div className="app">
         <header className="topbar">
           <strong className="topbar-repo" title={repo}>{repo.split("/").pop()}</strong>
@@ -272,7 +276,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
             Settings
           </button>
         </header>
-        <main className="board">
+        <main className="board" ref={pane}>
           {ready ? <Board nodeTypes={nodeTypes} onInit={(rf) => (flow.current = rf)} /> : <p className="app-message muted">Loading the board…</p>}
           {ready && empty && (
             <p className="empty-hint">
@@ -280,6 +284,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
             </p>
           )}
         </main>
+        {imageInput}
         <div className="rail">
           <MissionMap onFocus={focusNode} />
         </div>
