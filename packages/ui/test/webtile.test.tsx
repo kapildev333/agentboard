@@ -66,7 +66,11 @@ it("network messages fill the Network tab and Clear empties it", () => {
 it("keeps the last 200 console lines", () => {
   setup();
   fireEvent.click(screen.getByRole("button", { name: /Inspector/ }));
-  for (let i = 0; i < 205; i++) post({ agentboard: "console", level: "log", text: `line${i}` });
+  const source = frame().contentWindow as MessageEventSource;
+  act(() => {
+    for (let i = 0; i < 205; i++)
+      window.dispatchEvent(new MessageEvent("message", { data: { agentboard: "console", level: "log", text: `line${i}` }, origin: location.origin, source }));
+  });
   expect(screen.queryByText("line4")).toBeNull();
   expect(screen.getByText("line5")).toBeTruthy();
 });
