@@ -91,6 +91,12 @@ test("entity-encoded script schemes are neutralised in links and images", () => 
   expect(targets).toEqual(["#", "#", "#", "#", "#"]);
 });
 
+test("an entity-encoded tab or newline inside the scheme word does not hide a script scheme", () => {
+  const html = renderMarkdown("[a](java&#9;script:alert(1)) [b](java&#10;script:alert(1))");
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  expect([...doc.querySelectorAll("a")].map((e) => e.getAttribute("href"))).toEqual(["#", "#"]);
+});
+
 test("safe link targets are kept", () => {
   const html = renderMarkdown("[a](https://x.dev/?a=1&b=2) [b](mailto:me@x.dev) [c](#top) [d](/docs/a.md) [e](./b.md) [f](notes/c.md) ![g](img/p.png)");
   const doc = new DOMParser().parseFromString(html, "text/html");
