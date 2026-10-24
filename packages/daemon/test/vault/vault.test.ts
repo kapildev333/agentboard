@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { VaultIndex, VaultNote } from "@agentboard/shared";
@@ -95,4 +95,55 @@ test("a symlinked folder leaving the repo refuses a new note, and nothing is wri
   await expect(call(h, "PUT /api/vault/note", { repo, path: "link/new.md", text: "x" })).rejects.toMatchObject({ status: 400 });
   await expect(call(h, "POST /api/vault/append", { repo, path: "link/new.md", text: "x", author: "a" })).rejects.toMatchObject({ status: 400 });
   expect(existsSync(join(outside, "new.md"))).toBe(false);
+});
+
+test("two concurrent appends both land", async () => {
+  const { repo, h } = setup({});
+  await Promise.all(["one", "two", "three", "four"].map((text, i) => call(h, "POST /api/vault/append", { repo, path: "n.md", text, author: `a${i}` })));
+  const n: VaultNote = await call(h, "GET /api/vault/note", { repo, path: "n.md" });
+  for (const t of ["one", "two", "three", "four"]) expect(n.text).toContain(`\n${t}\n`);
+  expect(n.text.match(/agentboard: by/g)).toHaveLength(4);
+});
+
+test.each(["./a.md", "sub//a.md", "sub/./a.md", "docs/vault/sub/a.md"])("%s names the same note as its canonical path", async (path) => {
+  const { repo, h } = setup({ "sub/a.md": "# A\n" });
+  const canonical = "sub/a.md";
+  const probe = path === "./a.md" ? "a.md" : canonical;
+  if (probe === "a.md") await call(h, "PUT /api/vault/note", { repo, path: "a.md", text: "# A\n" });
+  const n: VaultNote = await call(h, "GET /api/vault/note", { repo, path });
+  expect(n.path).toBe(probe);
+  const w: VaultNote = await call(h, "PUT /api/vault/note", { repo, path, text: "# A\nw\n" });
+  expect(w.path).toBe(probe);
+  const p: VaultNote = await call(h, "POST /api/vault/append", { repo, path, text: "x", author: "me" });
+  expect(p.path).toBe(probe);
+  expect(existsSync(join(repo, "docs/vault/docs"))).toBe(false);
+});
+
+test("two heading-less notes with the same file name are an ambiguous title and stay unmatched", async () => {
+  const { repo, h, notes } = setup({ "x/README.md": "text\n", "y/README.md": "text\n", "z.md": "# Z\n[[readme]]\n" });
+  const idx = await notes();
+  const z = idx.notes.find((n) => n.path === "z.md")!;
+  expect(z.links).toEqual(["readme"]);
+  expect(idx.notes.flatMap((n) => n.backlinks)).toEqual([]);
+  const n: VaultNote = await call(h, "GET /api/vault/note", { repo, path: "x/README.md" });
+  expect(n.backlinks).toEqual([]);
+});
+
+test("a path below a note, as in a.md/b.md, is a 400", async () => {
+  const { repo, h } = setup({ "a.md": "# A\n" });
+  await expect(call(h, "PUT /api/vault/note", { repo, path: "a.md/b.md", text: "x" })).rejects.toMatchObject({ status: 400 });
+  await expect(call(h, "POST /api/vault/append", { repo, path: "a.md/b.md", text: "x", author: "a" })).rejects.toMatchObject({ status: 400 });
+});
+
+test("a failed write leaves no .tmp file behind", async () => {
+  const { repo, h } = setup({ "d.md/keep": "" });
+  // d.md is a directory: the rename onto it fails after the temp file was written.
+  await expect(call(h, "PUT /api/vault/note", { repo, path: "d.md", text: "x" })).rejects.toBeTruthy();
+  expect(readdirSync(join(repo, "docs/vault"))).toEqual(["d.md"]);
+});
+
+test("a # line inside a fenced block is not the title", async () => {
+  const { notes } = setup({ "f.md": "```sh\n# not a title\n```\n# Real\n", "g.md": "~~~\n# nope\n~~~\n" });
+  const idx = await notes();
+  expect(idx.notes.map((n) => n.title)).toEqual(["Real", "g"]);
 });
