@@ -143,7 +143,7 @@ export function SettingsPanel({
               <label htmlFor="sp-font-size" className="sp-row-label">
                 font size
               </label>
-              <span className="sp-control">
+              <span className="sp-inline">
                 <input
                   id="sp-font-size"
                   className="sp-number"
