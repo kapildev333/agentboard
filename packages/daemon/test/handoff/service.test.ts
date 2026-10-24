@@ -28,7 +28,7 @@ export function setup(status: Record<string, ConsoleStatus> = {}) {
     userHome: "/home/someone",
     console: (id: string) => (id in nodes ? { node: nodes[id as "a" | "b"], teams } : undefined),
     tracker: { get: (id: string) => status[id] ?? "idle", onChange: () => () => {} },
-    replay: () => "Edited /home/someone/notes.md\r\nWhat's left:\r\n- tidy up\r\n",
+    replay: () => "I decided to keep /home/someone/notes.md as it is.\r\nWhat's left:\r\n- tidy up\r\n",
     write: vi.fn(),
     diff: vi.fn(async () => ({ files: [], patch: "" })),
     spawn: vi.fn(async () => "new"),
