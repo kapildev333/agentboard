@@ -162,6 +162,17 @@ describe("App", () => {
     await waitFor(() => expect(api.calls.some((c) => c.url === "/api/consoles/c1/resume" && c.method === "POST")).toBe(true));
   });
 
+  it("Integrations opens over the board, which stays mounted, and Back returns to it", async () => {
+    render(<App fetch={fakeApi(boardWith(consoleNode("c1"))).fetch} search="?repo=%2Fr" connect={fakeSocket} />);
+    const node = await screen.findByTestId("node-c1");
+    fireEvent.click(screen.getByRole("button", { name: "Integrations" }));
+    expect(screen.getByRole("heading", { name: "Integrations" })).toBeTruthy();
+    expect(node.isConnected).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "← Back to board" }));
+    expect(screen.queryByRole("heading", { name: "Integrations" })).toBeNull();
+    expect(screen.getByTestId("node-c1")).toBe(node);
+  });
+
   it("without a repo in the URL the repo picker shows", async () => {
     const api = fakeApi(boardWith());
     render(<App fetch={api.fetch} search="" connect={fakeSocket} />);

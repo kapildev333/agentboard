@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { IntegrationsPage } from "../../src/integrations";
+import routes from "../../../shared/src/fixtures/routes.json";
 
 // The reply the shared route table's example gives, so the page and the daemon agree on the shape.
-const reply = JSON.parse(readFileSync(new URL("../../../shared/src/fixtures/routes.json", import.meta.url), "utf8"))["GET /api/integrations"].response;
+const reply = routes["GET /api/integrations"].response;
 // Two and a half minutes after the fixture's MCP call, the same evening as its refused one.
 const now = () => new Date("2026-10-23T22:04:30.000Z");
 
