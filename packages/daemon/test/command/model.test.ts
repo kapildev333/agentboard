@@ -10,12 +10,12 @@ const snapshot = BoardSnapshotSchema.parse(
 const planner = { url: "http://127.0.0.1:11434", model: "qwen3:4b" };
 const withPlanner: Settings = { fontSize: 13, customAgents: [], planner };
 const answer = (content: string) =>
-  vi.fn(async (_url: string | URL | Request, _init?: RequestInit) => Response.json({ message: { role: "assistant", content } }));
+  vi.fn<typeof fetch>(async () => Response.json({ message: { role: "assistant", content } }));
 
 test("a fake model's valid steps are used; ids, asks and summaries are regenerated", async () => {
   const fetch = answer(JSON.stringify({ steps: [{ kind: "close", id: "s1", consoleIds: ["c-ci"], asks: false, summary: "x" }, { kind: "fit" }] }));
   const plan = await planCommand("tidy up", snapshot, withPlanner, { fetch: fetch as never });
-  expect(PlanSchema.parse(plan)).toBe(plan);
+  expect(PlanSchema.parse(plan)).toEqual(plan);
   expect(plan.plannedBy).toEqual({ model: "qwen3:4b", url: "http://127.0.0.1:11434" });
   expect(plan.steps).toMatchObject([{ kind: "close", consoleIds: ["c-ci"], asks: true, summary: "Close CI cleanup" }, { kind: "fit", asks: false }]);
   expect(plan.steps[0]!.id).not.toBe("s1");
