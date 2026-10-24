@@ -76,20 +76,24 @@ export function DiffView({ fetch, path }: { fetch: typeof globalThis.fetch; path
     <div className="diff-view">
       <div className="diff-files" role="group" aria-labelledby={titleId}>
         <div id={titleId} className="field-label">Changed files</div>
-        {diff.files.map((f, i) => {
-          const p = patchOf(f.path);
-          return (
-            <button key={f.path} type="button" className="diff-file" aria-pressed={i === selected} onClick={() => setSelected(i)}>
-              <span className="diff-file-status" data-change={f.status[0]}>{f.status}</span>
-              <span className="diff-file-path" title={f.path}>{f.path}</span>
-              {p && (
-                <span className="diff-file-counts">
-                  <span className="diff-count-added">+{count(p.lines, "+")}</span> <span className="diff-count-removed">−{count(p.lines, "-")}</span>
-                </span>
-              )}
-            </button>
-          );
-        })}
+        <ul className="diff-files-list">
+          {diff.files.map((f, i) => {
+            const p = patchOf(f.path);
+            return (
+              <li key={f.path}>
+                <button type="button" className="diff-file" aria-pressed={i === selected} onClick={() => setSelected(i)}>
+                  <span className="diff-file-status" data-change={f.status[0]}>{f.status}</span>
+                  <span className="diff-file-path" title={f.path}>{f.path}</span>
+                  {p && (
+                    <span className="diff-file-counts">
+                      <span className="diff-count-added">+{count(p.lines, "+")}</span> <span className="diff-count-removed">−{count(p.lines, "-")}</span>
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </div>
       <div className="diff-pane">
         {shown && (

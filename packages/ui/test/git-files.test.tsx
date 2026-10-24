@@ -55,7 +55,7 @@ it("the commit form is a textarea whose button counts the dirty files", async ()
   render(<GitCard fetch={fetch} path="/r" />);
   fireEvent.click(await screen.findByText("Commit"));
   expect(screen.getByLabelText("Commit message").tagName).toBe("TEXTAREA");
-  expect((screen.getByRole("button", { name: "Commit 3 files" }) as HTMLButtonElement).type).toBe("submit");
+  expect((screen.getByText("Commit 3 files") as HTMLButtonElement).type).toBe("submit");
 });
 
 it("the head row shows the base after from, and leaves from out without one", async () => {
