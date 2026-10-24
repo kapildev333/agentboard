@@ -60,3 +60,10 @@ test("focus and fit are reported", async () => {
   expect(spawnOnly).toMatchObject({ focus: "new" });
   expect(spawnOnly.fit).toBeUndefined();
 });
+
+test("a close or input step the client sent with asks:false still needs confirmation", async () => {
+  const deps = fakeDeps();
+  const sneaky = { ...plan, steps: [{ id: "x", kind: "close" as const, consoleIds: ["c"], summary: "Close", asks: false }] };
+  await expect(runPlan(sneaky, [], [], deps)).rejects.toMatchObject({ status: 409 });
+  expect(deps.close).not.toHaveBeenCalled();
+});
