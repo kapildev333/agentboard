@@ -22,3 +22,15 @@ it("draft saves markdown without a home path", async () => {
   expect(md).not.toContain("/home/someone");
   expect(HandoffListSchema.parse(JSON.parse(readFileSync(join(home, "handoffs.json"), "utf8")))).toEqual([h]);
 });
+
+it("send to an empty role spawns a console with the prompt and gives it the role", async () => {
+  const { service, deps, teams } = setup();
+  teams[0]!.roles[1]!.consoleId = null;
+  const h = await service.draft({ fromConsoleId: "a" });
+  expect(h.target).toEqual({ kind: "spawn", agent: "custom", title: "Reviewer" });
+  expect(await service.send(h.id)).toEqual({ consoleId: "new" });
+  expect(deps.spawn).toHaveBeenCalledWith({ agent: "custom", prompt: h.promptText, title: "Reviewer", role: "reviewer", fromConsoleId: "a" });
+  expect(teams[0]!.roles[1]!.consoleId).toBe("new");
+  expect(deps.event).toHaveBeenCalledWith({ kind: "handoff", consoleId: "a", agent: "custom", title: "Builder", detail: "handed off to Reviewer" });
+  expect((await service.list("a"))[0]!.sentAt).toBeDefined();
+});
