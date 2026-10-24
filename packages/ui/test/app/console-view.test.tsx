@@ -10,6 +10,7 @@ vi.mock("../../src/console", () => ({
   ConsoleNode: ({ data, statusBadge }: { data: { node: { title: string } }; statusBadge?: unknown }) => (
     <div>
       {data.node.title} {statusBadge as never}
+      <div className="console-term" tabIndex={0} data-testid="term" />
     </div>
   ),
 }));
@@ -115,6 +116,18 @@ describe("ConsoleView", () => {
     expect(node.queryByRole("button", { name: "Zed" })).toBeNull();
     fireEvent.click(node.getByRole("button", { name: "Git" }));
     expect(await node.findByRole("button", { name: "Git 3 dirty" })).toBeTruthy();
+  });
+
+  it("a focused terminal rings its card, without a :has() rule re-run on every row xterm writes", async () => {
+    const api = fakeApi(boardWith(consoleNode("c1")));
+    render(<App fetch={api.fetch} search="?repo=%2Fr" connect={fakeSocket} />);
+    const card = (await screen.findByTestId("node-c1")).querySelector(".console-card")!;
+    fireEvent.focus(screen.getByTestId("term"));
+    expect(card.classList).toContain("is-focused");
+    fireEvent.blur(screen.getByTestId("term"));
+    expect(card.classList).not.toContain("is-focused");
+    fireEvent.focus(within(card as HTMLElement).getByRole("button", { name: "Git" }));
+    expect(card.classList).not.toContain("is-focused");
   });
 
   it("Start fresh spawns the same agent in the same cwd and takes the stopped node's place", async () => {
