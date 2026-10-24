@@ -120,7 +120,8 @@ describe("SpawnDialog", () => {
   it("the first installed agent takes focus when the list arrives", async () => {
     const list = [agents[3], agents[1], agents[0]];
     render(<SpawnDialog fetch={vi.fn(async () => json(list))} cwd="/r" onSpawned={vi.fn()} />);
-    expect(document.activeElement).toBe(await screen.findByLabelText(/codex/));
+    const codex = await screen.findByLabelText(/codex/);
+    await waitFor(() => expect(document.activeElement).toBe(codex));
   });
 
   it("agents sit in a fieldset legend Agent", async () => {
