@@ -71,6 +71,7 @@ export const DaemonMessageSchema = z.discriminatedUnion("t", [
   z.object({ t: z.literal("status"), consoleId: z.string(), status: ConsoleStatusSchema }),
   z.object({ t: z.literal("exit"), consoleId: z.string(), code: z.number().int().nullable() }),
   z.object({ t: z.literal("board"), board: BoardSchema }),
+  z.object({ t: z.literal("event"), event: z.lazy(() => EventSchema) }),
 ]);
 
 // HTTP bodies, queries and responses
@@ -84,6 +85,8 @@ export const SpawnConsoleRequestSchema = z.object({
   prompt: z.string().optional(),
   callerConsoleId: z.string().optional(),
   customId: z.string().optional(),
+  profileId: z.string().optional(),
+  role: z.string().optional(),
 });
 export const AgentInfoSchema = z.object({
   id: AgentIdSchema,
@@ -94,7 +97,11 @@ export const AgentInfoSchema = z.object({
   name: z.string().optional(),
 });
 export const AgentInfoListSchema = z.array(AgentInfoSchema);
-export const StatusResponseSchema = z.object({ consoles: z.array(ConsoleNodeSchema) });
+export const StatusResponseSchema = z.object({
+  consoles: z.array(ConsoleNodeSchema),
+  /** Phase 4; optional until the daemon fills it. */
+  summaries: z.array(z.lazy(() => ConsoleSummarySchema)).optional(),
+});
 export const HookRequestSchema = z.object({ agent: AgentIdSchema, event: z.string(), payload: z.unknown().optional() });
 export const GitPathQuerySchema = z.object({ path: z.string() });
 export const GitStatusSchema = z.object({
