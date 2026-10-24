@@ -230,7 +230,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     changed(f.board);
     if (pty.list().includes(id)) await pty.kill(id);
     tracker.remove(id);
-    return { ok: true };
+    return { ok: true as const };
   };
 
   const resumeConsole = async (id: string) => {
