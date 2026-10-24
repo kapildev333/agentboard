@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Diagram studio</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}
+.canvas{background-color:#0e1014;background-image:radial-gradient(#2c313c 1px,transparent 1.5px);background-size:20px 20px}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.box{position:absolute;box-sizing:border-box;padding:10px 12px;border:1.5px solid #646c80;border-radius:8px;background:#161920;display:flex;flex-direction:column;gap:3px;font-size:12px}
+.box .t{font-weight:600;font-size:13px}
+.box .s{color:#9ba3b4;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px}
+.grp{position:absolute;box-sizing:border-box;border:1.5px dashed #3a4150;border-radius:12px}
+.grp span{position:absolute;left:12px;top:-9px;padding:0 6px;background:#0e1014;color:#9ba3b4;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.ln{position:absolute;background:#8b94a8}
+.h{height:1.5px}.v{width:1.5px}
+.ar{position:absolute;width:0;height:0;border-style:solid}
+.ar.r{border-width:4px 0 4px 7px;border-color:transparent transparent transparent #8b94a8}
+.ar.d{border-width:7px 4px 0 4px;border-color:#8b94a8 transparent transparent transparent}
+.ar.l{border-width:4px 7px 4px 0;border-color:transparent #8b94a8 transparent transparent}
+.lab{position:absolute;padding:1px 6px;border-radius:4px;background:#0e1014;color:#9ba3b4;font-size:10px;font-family:"JetBrains Mono",ui-monospace,monospace;white-space:nowrap}
+.tool{width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:#9ba3b4;display:inline-flex;align-items:center;justify-content:center}
+.tool.on{background:#7b93ff;color:#0b1020}
+.ico{width:16px;height:16px;flex:none}
+.sm{width:14px;height:14px}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:500">agentboard</span><span class="chip">main</span></div>
+    <nav aria-label="Studios" style="display:flex;align-items:center;align-self:stretch;margin-left:8px"><button class="tab">Board</button><button class="tab">Document</button><button class="tab on">Diagram</button><button class="tab">Code</button><button class="tab">Vault</button></nav>
+    <div style="flex:1"></div>
+    <button class="btn btn-sm">Export .excalidraw</button>
+    <button class="btn btn-sm btn-primary">Export PNG</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <main style="flex:1;display:grid;grid-template-columns:minmax(0,1fr) 300px;min-height:856px">
+    <section class="canvas" aria-label="Diagram canvas" style="position:relative;overflow:hidden">
+
+      <div style="position:absolute;left:24px;top:16px;display:flex;align-items:center;gap:10px"><input aria-label="Diagram title" value="AgentBoard process model" style="border:0;background:transparent;color:#e7e9ee;font:inherit;font-size:16px;font-weight:700;outline:none;width:320px"><span class="chip">generated from code · 2 edits by you</span></div>
+
+      <div class="grp" style="left:60px;top:80px;width:300px;height:380px"><span>Browser tab</span></div>
+      <div class="grp" style="left:440px;top:80px;width:420px;height:560px"><span>Daemon · 127.0.0.1</span></div>
+      <div class="grp" style="left:940px;top:80px;width:160px;height:560px"><span>This machine</span></div>
+
+      <div class="box" style="left:90px;top:120px;width:240px"><span class="t">Console node</span><span class="s">xterm.js over WebSocket</span></div>
+      <div class="box" style="left:90px;top:200px;width:240px"><span class="t">Board</span><span class="s">React Flow · pan, zoom, drag</span></div>
+      <div class="box" style="left:90px;top:280px;width:240px"><span class="t">Mission map</span><span class="s">status badges, notifications</span></div>
+      <div class="box" style="left:90px;top:360px;width:240px"><span class="t">Git card · notes</span><span class="s">diff, commit, push, PR</span></div>
+
+      <div class="box" style="left:470px;top:120px;width:170px;border-color:#7b93ff"><span class="t">PTY manager</span><span class="s">node-pty</span></div>
+      <div class="box" style="left:670px;top:120px;width:170px"><span class="t">Local API</span><span class="s">hooks · CLI · MCP</span></div>
+      <div class="box" style="left:470px;top:260px;width:170px"><span class="t">State store</span><span class="s">atomic JSON, debounced</span></div>
+      <div class="box" style="left:670px;top:260px;width:170px"><span class="t">Git service</span><span class="s">simple-git · gh</span></div>
+      <div class="box" style="left:470px;top:400px;width:370px"><span class="t">Agent catalog</span><span class="s">PATH scan · versions · hook strategy per CLI</span></div>
+      <div class="box" style="left:470px;top:520px;width:370px;border-color:#ff8a80"><span class="t" style="color:#ff9a90">Guard</span><span class="s">token · Host · Origin · no CORS</span></div>
+
+      <div class="box" style="left:960px;top:120px;width:120px"><span class="t">Agent CLIs</span><span class="s">claude, codex…</span></div>
+      <div class="box" style="left:960px;top:260px;width:120px"><span class="t">CLI + MCP bridge</span><span class="s">agentboard …</span></div>
+      <div class="box" style="left:960px;top:400px;width:120px"><span class="t">~/.agentboard</span><span class="s">boards/*.json</span></div>
+      <div class="box" style="left:960px;top:520px;width:120px"><span class="t">git · gh</span><span class="s">user's binaries</span></div>
+
+      <!-- console node <-> PTY manager -->
+      <div class="ln h" style="left:330px;top:139px;width:134px"></div><div class="ar r" style="left:463px;top:135px"></div><div class="ar l" style="left:330px;top:135px"></div><span class="lab" style="left:360px;top:122px">bytes</span>
+      <!-- local api -> mission map -->
+      <div class="ln h" style="left:330px;top:299px;width:120px"></div><div class="ln v" style="left:450px;top:160px;height:140px"></div><div class="ln h" style="left:450px;top:160px;width:220px"></div><div class="ar l" style="left:330px;top:295px"></div><span class="lab" style="left:360px;top:282px">status</span>
+      <!-- board -> state store -->
+      <div class="ln h" style="left:330px;top:219px;width:60px"></div><div class="ln v" style="left:390px;top:219px;height:60px"></div><div class="ln h" style="left:390px;top:279px;width:74px"></div><div class="ar r" style="left:463px;top:275px"></div><span class="lab" style="left:396px;top:240px">save</span>
+      <!-- git card <-> git service -->
+      <div class="ln h" style="left:330px;top:379px;width:80px"></div><div class="ln v" style="left:410px;top:300px;height:80px"></div><div class="ln h" style="left:410px;top:300px;width:254px"></div><div class="ar r" style="left:663px;top:296px"></div><div class="ar l" style="left:330px;top:375px"></div>
+      <!-- pty -> agent clis -->
+      <div class="ln h" style="left:640px;top:150px;width:40px"></div>
+      <div class="ln h" style="left:840px;top:139px;width:114px"></div><div class="ar r" style="left:953px;top:135px"></div><span class="lab" style="left:868px;top:122px">spawn</span>
+      <!-- agent clis -> local api (hooks) -->
+      <div class="ln v" style="left:1020px;top:168px;height:40px"></div><div class="ln h" style="left:760px;top:208px;width:260px"></div><div class="ln v" style="left:760px;top:168px;height:40px"></div><div class="ar d" style="left:756px;top:161px;transform:rotate(180deg)"></div><span class="lab" style="left:850px;top:212px">hooks</span>
+      <!-- bridge -> local api -->
+      <div class="ln h" style="left:840px;top:279px;width:120px"></div><div class="ln v" style="left:840px;top:168px;height:111px"></div><div class="ar l" style="left:953px;top:275px;transform:rotate(180deg)"></div><span class="lab" style="left:862px;top:262px">calls</span>
+      <!-- state store -> files -->
+      <div class="ln v" style="left:555px;top:308px;height:112px"></div>
+      <div class="ln h" style="left:840px;top:419px;width:114px"></div><div class="ar r" style="left:953px;top:415px"></div><span class="lab" style="left:870px;top:402px">write</span>
+      <!-- git service -> git/gh -->
+      <div class="ln v" style="left:755px;top:308px;height:231px"></div><div class="ln h" style="left:755px;top:539px;width:199px"></div><div class="ar r" style="left:953px;top:535px"></div>
+
+      <div class="card" role="toolbar" aria-label="Diagram tools" style="position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;padding:4px">
+        <button class="tool on" aria-label="Select"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 8-6 2-3 6z"></path></svg></button>
+        <button class="tool" aria-label="Box"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="2"></rect></svg></button>
+        <button class="tool" aria-label="Group"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"></rect></svg></button>
+        <button class="tool" aria-label="Arrow"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+        <button class="tool" aria-label="Text"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 6h14M12 6v13"></path></svg></button>
+        <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b;margin:0 4px"></span>
+        <button class="tool" aria-label="Auto layout"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="8.5" y="14" width="7" height="7" rx="1"></rect></svg></button>
+      </div>
+    </section>
+
+    <aside style="border-left:1px solid #2b303b;background:#161920;display:flex;flex-direction:column;box-sizing:border-box">
+      <div style="padding:16px 16px 12px;border-bottom:1px solid #2b303b;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px"><span class="mark m-claude">C</span><span style="font-weight:600;flex:1">Architect</span><span class="chip" style="color:#6fdc9a;border-color:#10331f;background:#10331f">idle</span></div>
+        <span class="muted" style="font-size:12px">Drew this from <span class="mono">packages/daemon</span> and <span class="mono">packages/ui</span>. Ask for a change and it edits the diagram, not the code.</span>
+        <textarea rows="3" aria-label="Instruction" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font:inherit;font-size:12px;line-height:1.5;resize:vertical">Add the OpenCode plugin as its own box under Agent CLIs and connect it to Local API with “events”.</textarea>
+        <button class="btn btn-sm btn-primary" style="align-self:flex-end">Send</button>
+      </div>
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1">
+        <span class="label">Selected · Guard</span>
+        <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500">Title</span><input value="Guard" aria-label="Title" style="height:28px;padding:0 8px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font:inherit;font-size:12px"></label>
+        <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500">Subtitle</span><input value="token · Host · Origin · no CORS" aria-label="Subtitle" style="height:28px;padding:0 8px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font:inherit;font-size:12px"></label>
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500">Stroke</span><div style="display:flex;gap:6px"><span style="width:22px;height:22px;border-radius:50%;background:#646c80"></span><span style="width:22px;height:22px;border-radius:50%;background:#7b93ff"></span><span style="width:22px;height:22px;border-radius:50%;background:#ff8a80;outline:2px solid #e7e9ee;outline-offset:2px"></span><span style="width:22px;height:22px;border-radius:50%;background:#6fdc9a"></span><span style="width:22px;height:22px;border-radius:50%;background:#e3c76b"></span></div></div>
+        <div style="height:1px;background:#2b303b;margin:4px 0"></div>
+        <span class="label">Linked to code</span>
+        <ul class="mono" style="margin:0;padding-left:16px;font-size:11px;line-height:1.8;color:#c0c6d1"><li>packages/daemon/src/guard.ts</li><li>packages/daemon/test/guard.test.ts</li></ul>
+        <span class="muted" style="font-size:12px">Boxes keep their source links; <em>Sync from code</em> redraws only what changed.</span>
+        <button class="btn btn-sm" style="align-self:flex-start">Sync from code</button>
+      </div>
+      <div style="padding:12px 16px;border-top:1px solid #2b303b;background:#12151b"><span class="muted" style="font-size:12px">Saved to <span class="mono">docs/architecture.excalidraw</span> · PNG at 2× for the README.</span></div>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
