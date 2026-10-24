@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Mission map, full view</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.input{display:flex;align-items:center;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font-size:13px;box-sizing:border-box}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st-starting{background:#3a2f0b;color:#f5d36b}.st-working{background:#13284d;color:#9dbfff}.st-idle{background:#10331f;color:#6fdc9a}.st-needs{background:#ff6b5e;color:#1f0604;font-weight:700;box-shadow:0 0 0 2px #161920,0 0 0 3px #ff6b5e}.st-stopped{background:#2a2f39;color:#c0c6d1}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}.m-gemini{background:#13284d;color:#9dbfff}.m-opencode{background:#2c1f4a;color:#d2a8ff}.m-custom{background:#2a2f39;color:#c0c6d1}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.tile{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid #2b303b;border-radius:8px;background:#161920}
+.tile .last{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.filt{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;color:#9ba3b4;font-size:12px}
+.filt.on{border-color:#646c80;color:#e7e9ee}
+.ev{display:grid;grid-template-columns:52px 20px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #2b303b;font-size:12px}
+.ev:last-child{border-bottom:0}
+.ico{width:14px;height:14px;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <nav aria-label="Views" style="display:flex;align-items:center;align-self:stretch"><button class="tab">Board</button><button class="tab on">Mission map</button><button class="tab">Teams</button><button class="tab">Loops</button><button class="tab">Usage</button></nav>
+    <div style="flex:1"></div>
+    <button class="input" aria-label="Open command bar" style="width:220px;gap:8px;color:#9ba3b4;justify-content:flex-start"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><span>Command…</span><span class="kbd" style="margin-left:auto">⌘K</span></button>
+    <button class="btn btn-primary">Spawn console</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <main style="flex:1;padding:24px 32px 28px;display:flex;flex-direction:column;gap:18px;box-sizing:border-box">
+
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <h1 style="margin:0 12px 0 0;font-size:20px;font-weight:700;letter-spacing:-.01em">Mission map</h1>
+      <button class="filt on">All repos <span class="mono muted">3</span></button>
+      <button class="filt">Team: any</button>
+      <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b;margin:0 4px"></span>
+      <button class="filt on" style="border-color:#ff6b5e;color:#ff8a80">Needs you <span class="mono">2</span></button>
+      <button class="filt on">Working <span class="mono muted">3</span></button>
+      <button class="filt on">Idle <span class="mono muted">2</span></button>
+      <button class="filt">Stopped <span class="mono muted">1</span></button>
+      <span style="flex:1"></span>
+      <span class="muted" style="font-size:12px">Driven by each CLI's own hooks · updated live</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:20px;flex:1;min-height:0">
+
+      <div style="display:flex;flex-direction:column;gap:18px">
+
+        <section style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px"><span class="pill st-needs">Needs you</span><span class="mono muted" style="font-size:11px">2 · oldest 6m</span><span style="flex:1"></span><button class="btn btn-sm">Focus next <span class="kbd">⌘J</span></button></div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+            <article class="tile" style="box-shadow:0 0 0 2px #ff6b5e">
+              <div style="display:flex;align-items:center;gap:8px"><span class="mark m-codex">X</span><span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Tax rounding fix</span><span class="mono muted" style="font-size:11px">6m</span></div>
+              <div style="display:flex;gap:6px"><span class="chip">acme-storefront</span><span class="chip">fix/tax-rounding</span></div>
+              <span class="last">? Apply this change and run tests? [y/N]</span>
+              <div style="display:flex;gap:6px"><button class="btn btn-sm btn-primary">Focus</button><button class="btn btn-sm">Hand off…</button></div>
+            </article>
+            <article class="tile" style="box-shadow:0 0 0 2px #ff6b5e">
+              <div style="display:flex;align-items:center;gap:8px"><span class="mark m-claude">C</span><span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Rate limiter docs</span><span class="mono muted" style="font-size:11px">1m</span></div>
+              <div style="display:flex;gap:6px"><span class="chip">route-manager</span><span class="chip">docs/limits</span></div>
+              <span class="last">PermissionRequest · Bash: rm -rf dist/</span>
+              <div style="display:flex;gap:6px"><button class="btn btn-sm btn-primary">Focus</button><button class="btn btn-sm">Hand off…</button></div>
+            </article>
+          </div>
+        </section>
+
+        <section style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px"><span class="pill st-working"><span class="dot" style="background:#9dbfff"></span>Working</span><span class="mono muted" style="font-size:11px">3</span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+            <article class="tile">
+              <div style="display:flex;align-items:center;gap:8px"><span class="mark m-claude">C</span><span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Checkout flow</span><span class="mono muted" style="font-size:11px">18m</span></div>
+              <div style="display:flex;gap:6px"><span class="chip">acme-storefront</span><span class="chip">feat/checkout</span><span class="chip" style="color:#d2a8ff">team: checkout</span></div>
+              <span class="last">● Bash npm test -- Form</span>
+            </article>
+            <article class="tile">
+              <div style="display:flex;align-items:center;gap:8px"><span class="mark m-opencode">O</span><span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CI cleanup</span><span class="mono muted" style="font-size:11px">4m</span></div>
+              <div style="display:flex;gap:6px"><span class="chip">acme-storefront</span><span class="chip">chore/ci</span><span class="chip">↳ Checkout flow</span></div>
+              <span class="last">tool.execute.before · edit ci.yml</span>
+            </article>
+            <article class="tile">
+              <div style="display:flex;align-items:center;gap:8px"><span class="mark m-gemini">G</span><span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Gateway perf loop</span><span class="mono muted" style="font-size:11px">52m</span></div>
+              <div style="display:flex;gap:6px"><span class="chip">gatekeeper</span><span class="chip">perf/bench</span><span class="chip" style="color:#9dbfff">loop · run 4/∞</span></div>
+              <span class="last">BeforeAgent · p95 target 12ms, now 14ms</span>
+            </article>
+          </div>
+        </section>
+
+        <section style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px"><span class="pill st-idle"><span class="dot" style="background:#6fdc9a"></span>Idle</span><span class="mono muted" style="font-size:11px">2</span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+            <article class="tile">
+              <div style="display:flex;align-items:center;gap:8px"><span class="mark m-claude">C</span><span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Reviewer</span><span class="mono muted" style="font-size:11px">9m</span></div>
+              <div style="display:flex;gap:6px"><span class="chip">acme-storefront</span><span class="chip">main</span><span class="chip" style="color:#d2a8ff">team: checkout</span></div>
+              <span class="last">Stop · "LGTM with two nits, see PR #214"</span>
+              <div style="display:flex;gap:6px"><button class="btn btn-sm">Prompt…</button><button class="btn btn-sm">Hand off…</button></div>
+            </article>
+            <article class="tile">
+              <div style="display:flex;align-items:center;gap:8px"><span class="mark m-custom">A</span><span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Lint sweep</span><span class="mono muted" style="font-size:11px">31m</span></div>
+              <div style="display:flex;gap:6px"><span class="chip">route-manager</span><span class="chip">chore/lint</span></div>
+              <span class="last">quiet 20 s → idle</span>
+              <div style="display:flex;gap:6px"><button class="btn btn-sm">Prompt…</button><button class="btn btn-sm">Close</button></div>
+            </article>
+          </div>
+        </section>
+
+        <div style="flex:1"></div>
+        <div style="display:flex;gap:24px;padding:12px 16px;border:1px solid #2b303b;border-radius:10px;background:#12151b;flex-wrap:wrap">
+          <span style="display:flex;flex-direction:column;gap:2px"><span class="label">Consoles</span><span style="font-size:18px;font-weight:700">8</span></span>
+          <span style="display:flex;flex-direction:column;gap:2px"><span class="label">Need you</span><span style="font-size:18px;font-weight:700;color:#ff8a80">2</span></span>
+          <span style="display:flex;flex-direction:column;gap:2px"><span class="label">Fleet busy</span><span style="font-size:18px;font-weight:700">62%</span></span>
+          <span style="display:flex;flex-direction:column;gap:2px"><span class="label">Worktrees</span><span style="font-size:18px;font-weight:700">6 <span class="muted" style="font-size:12px;font-weight:400">· 2 dirty</span></span></span>
+          <span style="display:flex;flex-direction:column;gap:2px"><span class="label">Tokens today</span><span style="font-size:18px;font-weight:700">1.2M <span class="muted" style="font-size:12px;font-weight:400">from local logs</span></span></span>
+          <span style="flex:1"></span>
+          <span style="display:flex;flex-direction:column;gap:2px;align-items:flex-end"><span class="label">Daemon</span><span class="mono" style="font-size:12px;color:#c0c6d1">8 PTYs · 690 MB · 1.4% CPU</span></span>
+        </div>
+      </div>
+
+      <aside class="card" aria-label="Event timeline" style="display:flex;flex-direction:column;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid #2b303b"><span class="label">Timeline · last 30 min</span><button class="btn btn-quiet btn-sm">Pause</button></div>
+        <div style="padding:6px 16px;overflow:hidden;flex:1">
+          <div class="ev"><span class="mono muted">22:07:41</span><span class="mark m-claude" style="width:16px;height:16px;font-size:9px">C</span><span><strong style="font-weight:600">Rate limiter docs</strong> · PermissionRequest</span><span class="pill st-needs" style="height:18px;font-size:10px;box-shadow:none">needs you</span></div>
+          <div class="ev"><span class="mono muted">22:06:12</span><span class="mark m-opencode" style="width:16px;height:16px;font-size:9px">O</span><span><strong style="font-weight:600">CI cleanup</strong> · session.status busy</span><span class="pill st-working" style="height:18px;font-size:10px">working</span></div>
+          <div class="ev"><span class="mono muted">22:04:11</span><span class="mark m-claude" style="width:16px;height:16px;font-size:9px">C</span><span><strong style="font-weight:600">Checkout flow</strong> · spawn_console → CI cleanup</span><span class="chip" style="height:18px;font-size:10px">placed</span></div>
+          <div class="ev"><span class="mono muted">22:02:30</span><span class="mark m-codex" style="width:16px;height:16px;font-size:9px">X</span><span><strong style="font-weight:600">Tax rounding fix</strong> · approval prompt matched</span><span class="pill st-needs" style="height:18px;font-size:10px;box-shadow:none">needs you</span></div>
+          <div class="ev"><span class="mono muted">21:59:05</span><span class="mark m-claude" style="width:16px;height:16px;font-size:9px">C</span><span><strong style="font-weight:600">Reviewer</strong> · Stop</span><span class="pill st-idle" style="height:18px;font-size:10px">idle</span></div>
+          <div class="ev"><span class="mono muted">21:58:40</span><span class="mark m-claude" style="width:16px;height:16px;font-size:9px">C</span><span><strong style="font-weight:600">Reviewer</strong> · handoff brief received from Checkout flow</span><span class="chip" style="height:18px;font-size:10px">handoff</span></div>
+          <div class="ev"><span class="mono muted">21:52:17</span><span class="mark m-gemini" style="width:16px;height:16px;font-size:9px">G</span><span><strong style="font-weight:600">Gateway perf loop</strong> · run 4 started (on idle)</span><span class="chip" style="height:18px;font-size:10px;color:#9dbfff">loop</span></div>
+          <div class="ev"><span class="mono muted">21:50:02</span><span class="mark m-gemini" style="width:16px;height:16px;font-size:9px">G</span><span><strong style="font-weight:600">Gateway perf loop</strong> · AfterAgent · goal not met (14ms &gt; 12ms)</span><span class="pill st-idle" style="height:18px;font-size:10px">idle</span></div>
+          <div class="ev"><span class="mono muted">21:41:55</span><span class="mark m-custom" style="width:16px;height:16px;font-size:9px">A</span><span><strong style="font-weight:600">Lint sweep</strong> · quiet 20 s</span><span class="pill st-idle" style="height:18px;font-size:10px">idle</span></div>
+          <div class="ev"><span class="mono muted">21:40:12</span><span class="mark m-custom" style="width:16px;height:16px;font-size:9px;background:#3a1716;color:#ff9a90">!</span><span><strong style="font-weight:600">daemon</strong> · refused POST /spawn from a foreign Origin</span><span class="chip" style="height:18px;font-size:10px;color:#ff8a80">403</span></div>
+        </div>
+        <div style="padding:10px 16px;border-top:1px solid #2b303b;display:flex;align-items:center;justify-content:space-between"><span class="muted" style="font-size:12px">Events are stored locally, 7 days</span><button class="btn btn-quiet btn-sm">Export JSON</button></div>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
