@@ -1,0 +1,28 @@
+.webtile { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.webtile-bar { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-half) var(--space-1); }
+.webtile-address {
+  flex: 1;
+  min-width: 0;
+  font: var(--text-xs) var(--font-mono);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-half) var(--space-1);
+}
+.webtile-frame { flex: 1; min-height: 0; width: 100%; border: 0; background: #fff; }
+.webtile-hint { flex: 1; margin: 0; padding: var(--space-2); font-size: var(--text-sm); }
+.webtile-inspector { border-top: 1px solid var(--color-border); background: var(--color-surface); }
+.webtile-tabs { display: flex; gap: var(--space-half); flex: 1; }
+.webtile-tabs [aria-selected="true"] { background: var(--color-surface-hover); }
+.webtile-badge { color: var(--color-danger); font-weight: 600; }
+.webtile-log {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-half) var(--space-1);
+  max-height: 140px;
+  overflow: auto;
+  font: var(--text-2xs) var(--font-mono);
+}
+.webtile-level { color: var(--color-text-muted); }
+.webtile-error { color: var(--color-danger); }

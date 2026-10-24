@@ -13,7 +13,12 @@ const setup = (n = node, fetch = notFound) => {
     activeWorkspaceId: "a",
     workspaces: [{ id: "a", name: "A", viewport: { x: 0, y: 0, zoom: 1 }, nodes: [n] }],
   } as Board);
-  return render(<WebTileView {...({ data: { node: n } } as never)} fetch={fetch} />);
+  // Like the board, hand the view whatever node the store holds now.
+  const Harness = () => {
+    const live = useBoard((s) => s.board.workspaces[0]!.nodes[0]) as WebTileNode;
+    return <WebTileView {...({ data: { node: live } } as never)} fetch={fetch} />;
+  };
+  return render(<Harness />);
 };
 const frame = () => screen.getByTitle(/localhost|127\.0\.0\.1/) as HTMLIFrameElement;
 const post = (data: unknown, o: { origin?: string; source?: unknown } = {}) =>
