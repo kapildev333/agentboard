@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Project memory</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.input{display:flex;align-items:center;height:30px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font-size:13px;box-sizing:border-box}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st-working{background:#13284d;color:#9dbfff}.st-idle{background:#10331f;color:#6fdc9a}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}.m-opencode{background:#2c1f4a;color:#d2a8ff}
+.term{background:#0b0d11;border-radius:6px;color:#d9dee8;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12px;line-height:1.6;padding:10px 12px;white-space:pre;overflow:hidden;margin:0}
+.t-dim{color:#8b949e}.t-green{color:#7ee787}.t-blue{color:#79a6ff}.t-cyan{color:#76e3ea}.t-magenta{color:#d2a8ff}
+.cursor{display:inline-block;width:7px;height:13px;background:#d9dee8;vertical-align:-2px}
+.canvas{background-color:#0e1014;background-image:radial-gradient(#2c313c 1px,transparent 1.5px);background-size:20px 20px}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.node-head{display:flex;align-items:center;gap:8px;height:36px;padding:0 8px 0 10px;border-bottom:1px solid #2b303b;cursor:grab}
+.mtab{height:32px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.mtab.on{color:#e7e9ee;border-bottom-color:#7b93ff;font-weight:600}
+.mem{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid #2b303b;border-radius:8px;background:#1e222a}
+.mem p{margin:0;font-size:13px;line-height:1.5}
+.menu{display:flex;align-items:center;gap:8px;width:100%;height:30px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:#e7e9ee;text-align:left;font-size:13px}
+.menu:hover{background:#262b35}
+.ico{width:14px;height:14px;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:500">acme-storefront</span><span class="chip">main</span></div>
+    <nav aria-label="Workspaces" style="display:flex;align-items:center;align-self:stretch;margin-left:8px"><button class="tab on">main <span class="kbd">⌘1</span></button><button class="tab">checkout <span class="kbd">⌘2</span></button></nav>
+    <div style="flex:1"></div>
+    <button class="btn btn-sm" aria-pressed="true" style="border-color:#7b93ff">Memory <span class="chip" style="height:16px;padding:0 5px;font-size:10px">7</span></button>
+    <button class="btn btn-primary">Spawn console</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <div style="display:flex;flex:1;min-height:856px">
+    <main class="canvas" aria-label="Board" style="position:relative;flex:1;min-width:0;overflow:hidden">
+
+      <article class="card" aria-label="Console: Checkout flow" style="position:absolute;left:24px;top:24px;width:440px;height:330px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 0 2px #7b93ff,0 4px 16px rgb(0 0 0/.35)">
+        <header class="node-head"><span class="mark m-claude">C</span><span style="font-weight:600">Checkout flow</span><span class="chip">feat/checkout</span><span class="chip" style="color:#9dbfff;border-color:#13284d;background:#13284d">memory pushed · 2m</span><span style="flex:1"></span><span class="pill st-working"><span class="dot" style="background:#9dbfff"></span>Working</span></header>
+        <pre class="term" style="flex:1;margin:8px"><span class="t-dim">› Context from project memory (2 items):</span>
+<span class="t-dim">  • Tax rounding must match Xero: half-even on CAD line items.</span>
+<span class="t-dim">  • Postal autocomplete formats codes itself; validate the raw value.</span>
+
+<span class="t-blue">●</span> Read <span class="t-cyan">src/tax/round.ts</span>
+<span class="t-green">●</span> Edit <span class="t-cyan">src/lib/postal.ts</span> <span class="t-dim">strip spaces before validating</span> <span class="cursor"></span></pre>
+        <footer style="display:flex;align-items:center;gap:4px;height:30px;padding:0 6px 0 10px;border-top:1px solid #2b303b"><span class="mono muted" style="font-size:11px">.worktrees/feat-checkout</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Git</button><button class="btn btn-quiet btn-sm">Open ▾</button></footer>
+      </article>
+
+      <article class="card" aria-label="Console: CI cleanup" style="position:absolute;left:488px;top:24px;width:440px;height:330px;display:flex;flex-direction:column;overflow:hidden">
+        <header class="node-head"><span class="mark m-opencode">O</span><span style="font-weight:600">CI cleanup</span><span class="chip">chore/ci</span><span style="flex:1"></span><span class="pill st-idle"><span class="dot" style="background:#6fdc9a"></span>Idle</span></header>
+        <pre class="term" style="flex:1;margin:8px"><span class="t-green">✓</span> concurrency group added
+<span class="t-dim">Waiting for input.</span> <span class="cursor"></span></pre>
+        <footer style="display:flex;align-items:center;gap:4px;height:30px;padding:0 6px 0 10px;border-top:1px solid #2b303b"><span class="mono muted" style="font-size:11px">.worktrees/chore-ci</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Git</button><button class="btn btn-quiet btn-sm">Open ▾</button></footer>
+      </article>
+    </main>
+
+    <aside aria-label="Project memory" style="width:480px;flex:none;background:#161920;border-left:1px solid #2b303b;display:flex;flex-direction:column;box-sizing:border-box;position:relative">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0">
+        <h1 style="margin:0;font-size:16px;font-weight:700;letter-spacing:-.01em">Memory</h1>
+        <span class="muted" style="font-size:12px">Nothing reaches a console unless you push it.</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;padding:6px 12px 0;border-bottom:1px solid #2b303b" role="tablist">
+        <button class="mtab on" role="tab" aria-selected="true">acme-storefront <span class="mono muted" style="font-size:11px">5</span></button>
+        <button class="mtab" role="tab" aria-selected="false">Global <span class="mono muted" style="font-size:11px">2</span></button>
+        <span style="flex:1"></span>
+        <span class="mono muted" style="font-size:11px;padding-right:8px">~/.agentboard/memory/</span>
+      </div>
+
+      <div style="flex:1;overflow:auto;padding:14px 20px;display:flex;flex-direction:column;gap:10px">
+        <div class="mem" style="border-color:#7b93ff">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600;flex:1">Tax rounding matches Xero</span><span class="chip" style="color:#9dbfff;border-color:#13284d;background:#13284d">pushed · Checkout flow</span></div>
+          <p>Half-even rounding on CAD line items, applied per line, not on the total. Xero rejects totals off by a cent.</p>
+          <div style="display:flex;align-items:center;gap:8px"><span class="muted" style="font-size:11px">from handoff · Reviewer · Oct 21</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Edit</button><button class="btn btn-sm" aria-expanded="true" style="border-color:#7b93ff">Push to… <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></div>
+        </div>
+
+        <div class="card" role="menu" aria-label="Push to console" style="position:absolute;right:20px;top:214px;width:260px;padding:6px;display:flex;flex-direction:column;gap:2px;z-index:2">
+          <span class="label" style="padding:6px 10px 4px">Push as a prompt to</span>
+          <button class="menu" role="menuitem"><span class="mark m-claude">C</span>Checkout flow<span style="flex:1"></span><span class="chip" style="height:16px;font-size:10px">already</span></button>
+          <button class="menu" role="menuitem"><span class="mark m-opencode">O</span>CI cleanup<span style="flex:1"></span><span class="pill st-idle" style="height:16px;font-size:10px">idle</span></button>
+          <button class="menu" role="menuitem"><span class="mark m-codex">X</span>Reviewer<span style="flex:1"></span><span class="muted" style="font-size:11px">stopped</span></button>
+          <div style="height:1px;background:#2b303b;margin:4px 0"></div>
+          <button class="menu" role="menuitem" style="color:#9ba3b4">Every console on this workspace</button>
+          <button class="menu" role="menuitem" style="color:#9ba3b4">Copy as text</button>
+        </div>
+
+        <div class="mem">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600;flex:1">Autocomplete formats postal codes itself</span></div>
+          <p>Validate the raw value and strip spaces first; do not touch <span class="mono">AddressAutocomplete</span>.</p>
+          <div style="display:flex;align-items:center;gap:8px"><span class="muted" style="font-size:11px">from Builder's session · Oct 23</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Edit</button><button class="btn btn-sm">Push to…</button></div>
+        </div>
+
+        <div class="mem">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600;flex:1">Test command</span></div>
+          <p><span class="mono">npm test -- &lt;pattern&gt;</span> is fast; the full suite takes 90 s. Never run <span class="mono">npm run e2e</span> from an agent, it needs the preview server.</p>
+          <div style="display:flex;align-items:center;gap:8px"><span class="muted" style="font-size:11px">you · Oct 19</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Edit</button><button class="btn btn-sm">Push to…</button></div>
+        </div>
+
+        <div class="mem">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600;flex:1">Branch naming</span><span class="chip">pinned to spawn</span></div>
+          <p><span class="mono">feat/</span>, <span class="mono">fix/</span>, <span class="mono">chore/</span>, <span class="mono">docs/</span> — lower case, hyphens. The spawn dialog pre-fills from this.</p>
+          <div style="display:flex;align-items:center;gap:8px"><span class="muted" style="font-size:11px">you · Oct 12</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Edit</button><button class="btn btn-sm">Push to…</button></div>
+        </div>
+
+        <div class="mem" style="opacity:.8">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600;flex:1">Suggested from CI cleanup</span><span class="chip" style="color:#f5d36b;border-color:#3a2f0b;background:#3a2f0b">review</span></div>
+          <p>"The workflow needs <span class="mono">concurrency: ci-${{ github.ref }}</span> or PR runs stack up." — accept to keep, or discard.</p>
+          <div style="display:flex;align-items:center;gap:8px"><span class="muted" style="font-size:11px">proposed by the console · 4m ago</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Discard</button><button class="btn btn-sm">Keep</button></div>
+        </div>
+      </div>
+
+      <div style="padding:12px 20px 16px;border-top:1px solid #2b303b;background:#12151b;display:flex;flex-direction:column;gap:8px">
+        <textarea class="input" rows="2" placeholder="Add a memory for this repo…" style="height:auto;padding:8px 10px;resize:none;font-family:inherit"></textarea>
+        <div style="display:flex;align-items:center;gap:8px"><label style="display:flex;align-items:center;gap:6px;font-size:12px" class="muted"><input type="checkbox" style="accent-color:#7b93ff;margin:0">Offer to new consoles at spawn (never automatic)</label><span style="flex:1"></span><button class="btn btn-sm btn-primary">Save</button></div>
+      </div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

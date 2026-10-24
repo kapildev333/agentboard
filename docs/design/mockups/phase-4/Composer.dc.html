@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Composer</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.input{display:flex;align-items:center;height:28px;padding:0 8px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font-size:12px;box-sizing:border-box;width:100%}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}.m-gemini{background:#13284d;color:#9dbfff}.m-opencode{background:#2c1f4a;color:#d2a8ff}.m-custom{background:#2a2f39;color:#c0c6d1}
+.canvas{background-color:#0e1014;background-image:radial-gradient(#2c313c 1px,transparent 1.5px);background-size:20px 20px}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.slot{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid #2b303b;border-radius:8px;background:#1e222a;min-height:150px;box-sizing:border-box}
+.slot.empty{border-style:dashed;border-color:#646c80;background:transparent;align-items:center;justify-content:center;color:#9ba3b4}
+.tpl{display:flex;flex-direction:column;gap:4px;width:100%;padding:10px 12px;border:1px solid #2b303b;border-radius:8px;background:#161920;color:#e7e9ee;text-align:left}
+.tpl.on{border-color:#7b93ff;box-shadow:0 0 0 1px #7b93ff}
+.sel{display:flex;align-items:center;gap:6px;height:28px;padding:0 8px;border:1px solid #646c80;border-radius:6px;background:#0e1014;font-size:12px;flex:1;min-width:0}
+.ico{width:14px;height:14px;flex:none}
+.cv{width:12px;height:12px;margin-left:auto;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014;position:relative">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:500">acme-storefront</span><span class="chip">main</span></div>
+    <nav aria-label="Workspaces" style="display:flex;align-items:center;align-self:stretch;margin-left:8px"><button class="tab on">main <span class="kbd">⌘1</span></button><button class="tab">checkout <span class="kbd">⌘2</span></button></nav>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary">Spawn console</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <div style="display:flex;flex:1;min-height:856px">
+    <main class="canvas" aria-label="Board" style="position:relative;flex:1;min-width:0;overflow:hidden"></main>
+    <aside aria-hidden="true" style="width:264px;background:#161920;border-left:1px solid #2b303b"></aside>
+  </div>
+
+  <div aria-hidden="true" style="position:absolute;inset:0;background:rgb(4 6 10 / .6)"></div>
+
+  <div role="dialog" aria-labelledby="cmp-title" aria-modal="true" class="card" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:1180px;max-width:calc(100% - 32px);max-height:calc(100% - 40px);display:flex;flex-direction:column;box-shadow:0 12px 40px rgb(0 0 0/.5);overflow:hidden">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:20px 24px 0">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <h1 id="cmp-title" style="margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em">Composer</h1>
+        <p class="muted" style="margin:0">Launch up to 12 consoles at once, each in its own worktree. Pick a template or fill the slots by hand.</p>
+      </div>
+      <button class="btn btn-quiet btn-icon" aria-label="Close"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:260px minmax(0,1fr);gap:0;flex:1;min-height:0">
+      <aside style="padding:18px 20px 20px 24px;border-right:1px solid #2b303b;display:flex;flex-direction:column;gap:8px;overflow:auto">
+        <span class="label">Templates</span>
+        <button class="tpl on"><span style="font-weight:600">Plan → build → review</span><span class="muted" style="font-size:12px">3 slots, roles set, handoff order on</span></button>
+        <button class="tpl"><span style="font-weight:600">Best of 3</span><span class="muted" style="font-size:12px">Same prompt to claude, codex, opencode; compare diffs</span></button>
+        <button class="tpl"><span style="font-weight:600">Fan out by folder</span><span class="muted" style="font-size:12px">One builder per top-level package</span></button>
+        <button class="tpl"><span style="font-weight:600">Weekly chores</span><span class="muted" style="font-size:12px">deps · lint · flaky tests · changelog</span></button>
+        <div style="height:1px;background:#2b303b;margin:6px 0"></div>
+        <span class="label">Shared settings</span>
+        <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500">Base branch</span><span class="sel mono">main<svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span></label>
+        <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500">Place on board</span><span class="sel">Grid, beside the caller<svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span></label>
+        <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:500">Shared prompt <span class="muted" style="font-weight:400">· slots can opt in</span></span><textarea class="input" rows="4" style="height:auto;padding:8px;resize:vertical;font-family:inherit;line-height:1.5">Work only inside your worktree. Keep tests green. Finish by summarising what changed in 3 lines.</textarea></label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:4px"><input type="checkbox" checked style="accent-color:#7b93ff;margin:0">Make them a team</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" style="accent-color:#7b93ff;margin:0">Stagger starts by 10 s</label>
+      </aside>
+
+      <section style="padding:18px 24px 20px;display:flex;flex-direction:column;gap:12px;overflow:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between"><span class="label">Slots · 5 of 12</span><span style="display:flex;gap:6px"><button class="btn btn-quiet btn-sm">Clear all</button><button class="btn btn-sm">Save as template</button></span></div>
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
+
+          <div class="slot">
+            <div style="display:flex;align-items:center;gap:6px"><span class="mono muted" style="font-size:11px">1</span><span class="sel"><span class="mark m-claude" style="width:16px;height:16px;font-size:9px">C</span>claude<svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span><span class="chip" style="color:#d2a8ff">planner</span></div>
+            <input class="input mono" value="plan/postal" aria-label="Worktree">
+            <textarea class="input" rows="3" style="height:auto;padding:6px 8px;resize:none;font-family:inherit;font-size:12px" aria-label="Prompt">Read the issue, write PLAN.md with numbered steps, then stop.</textarea>
+          </div>
+
+          <div class="slot">
+            <div style="display:flex;align-items:center;gap:6px"><span class="mono muted" style="font-size:11px">2</span><span class="sel"><span class="mark m-claude" style="width:16px;height:16px;font-size:9px">C</span>claude<svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span><span class="chip" style="color:#d2a8ff">builder</span></div>
+            <input class="input mono" value="feat/postal" aria-label="Worktree">
+            <textarea class="input" rows="3" style="height:auto;padding:6px 8px;resize:none;font-family:inherit;font-size:12px" aria-label="Prompt">Wait for the planner's brief. Implement step by step; one commit per step.</textarea>
+          </div>
+
+          <div class="slot">
+            <div style="display:flex;align-items:center;gap:6px"><span class="mono muted" style="font-size:11px">3</span><span class="sel"><span class="mark m-codex" style="width:16px;height:16px;font-size:9px">X</span>codex<svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span><span class="chip" style="color:#d2a8ff">reviewer</span></div>
+            <input class="input mono muted" value="(no worktree · read-only)" aria-label="Worktree">
+            <textarea class="input" rows="3" style="height:auto;padding:6px 8px;resize:none;font-family:inherit;font-size:12px" aria-label="Prompt">Review the builder's diff. Comments only; end with approve / changes requested.</textarea>
+          </div>
+
+          <div class="slot">
+            <div style="display:flex;align-items:center;gap:6px"><span class="mono muted" style="font-size:11px">4</span><span class="sel"><span class="mark m-opencode" style="width:16px;height:16px;font-size:9px">O</span>opencode<svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span><span class="chip">ollama</span></div>
+            <input class="input mono" value="chore/deps" aria-label="Worktree">
+            <textarea class="input" rows="3" style="height:auto;padding:6px 8px;resize:none;font-family:inherit;font-size:12px" aria-label="Prompt">Bump patch versions only. Run the suite. Open a PR if green.</textarea>
+          </div>
+
+          <div class="slot">
+            <div style="display:flex;align-items:center;gap:6px"><span class="mono muted" style="font-size:11px">5</span><span class="sel"><span class="mark m-gemini" style="width:16px;height:16px;font-size:9px">G</span>gemini<svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span><label style="display:flex;align-items:center;gap:4px;font-size:11px" class="muted"><input type="checkbox" checked style="accent-color:#7b93ff;margin:0">shared</label></div>
+            <input class="input mono" value="docs/readme" aria-label="Worktree">
+            <textarea class="input" rows="3" style="height:auto;padding:6px 8px;resize:none;font-family:inherit;font-size:12px;color:#9ba3b4" aria-label="Prompt">Uses the shared prompt. Rewrite the README quick start for the new CLI.</textarea>
+          </div>
+
+          <button class="slot empty"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg><span style="font-size:12px">Add slot</span></button>
+          <div class="slot empty" aria-hidden="true" style="opacity:.5"><span class="mono" style="font-size:11px">7</span></div>
+          <div class="slot empty" aria-hidden="true" style="opacity:.5"><span class="mono" style="font-size:11px">8</span></div>
+          <div class="slot empty" aria-hidden="true" style="opacity:.35"><span class="mono" style="font-size:11px">9</span></div>
+          <div class="slot empty" aria-hidden="true" style="opacity:.35"><span class="mono" style="font-size:11px">10</span></div>
+          <div class="slot empty" aria-hidden="true" style="opacity:.35"><span class="mono" style="font-size:11px">11</span></div>
+          <div class="slot empty" aria-hidden="true" style="opacity:.35"><span class="mono" style="font-size:11px">12</span></div>
+        </div>
+      </section>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;padding:14px 24px;border-top:1px solid #2b303b;background:#12151b">
+      <span class="muted" style="font-size:12px">Will create <strong style="color:#e7e9ee;font-weight:600">4 worktrees</strong> from main and <strong style="color:#e7e9ee;font-weight:600">5 PTYs</strong> · about 420 MB · auto-approve off everywhere</span>
+      <span style="flex:1"></span>
+      <button class="btn">Cancel</button>
+      <button class="btn btn-primary">Launch 5 consoles <span class="kbd" style="background:#6a7fe6;border-color:#6a7fe6;color:#0b1020">⌘↵</span></button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

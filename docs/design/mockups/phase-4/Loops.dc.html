@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Loops</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-danger{border-color:#ff8a80;color:#ff8a80;background:transparent}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.input{display:flex;align-items:center;height:30px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font-size:13px;box-sizing:border-box}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st-working{background:#13284d;color:#9dbfff}.st-idle{background:#10331f;color:#6fdc9a}.st-stopped{background:#2a2f39;color:#c0c6d1}.st-starting{background:#3a2f0b;color:#f5d36b}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}.m-gemini{background:#13284d;color:#9dbfff}.m-opencode{background:#2c1f4a;color:#d2a8ff}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.lp{display:flex;flex-direction:column;gap:6px;width:100%;padding:12px 14px;border:1px solid #2b303b;border-radius:8px;background:#161920;color:#e7e9ee;text-align:left}
+.lp.on{border-color:#7b93ff;box-shadow:0 0 0 1px #7b93ff}
+.opt{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid #2b303b;border-radius:8px;background:#1e222a;cursor:pointer}
+.opt.on{border-color:#7b93ff;box-shadow:0 0 0 1px #7b93ff}
+.hrow{display:grid;grid-template-columns:48px 1fr 80px 1fr 90px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #2b303b;font-size:12px}
+.hrow:last-child{border-bottom:0}
+.ico{width:14px;height:14px;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <nav aria-label="Views" style="display:flex;align-items:center;align-self:stretch"><button class="tab">Board</button><button class="tab">Mission map</button><button class="tab">Teams</button><button class="tab on">Loops</button><button class="tab">Usage</button></nav>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary">Spawn console</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <main style="flex:1;display:grid;grid-template-columns:340px minmax(0,1fr);min-height:856px">
+
+    <aside style="border-right:1px solid #2b303b;background:#12151b;display:flex;flex-direction:column;gap:10px;padding:20px 16px;box-sizing:border-box">
+      <div style="display:flex;align-items:center;justify-content:space-between"><h1 style="margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em">Loops</h1><button class="btn btn-sm">New loop</button></div>
+      <p class="muted" style="margin:0 0 6px;font-size:12px;line-height:1.5">A loop re-prompts one console on a trigger and retires itself when a goal is met. It never answers a permission prompt; a console that needs you pauses the loop.</p>
+
+      <button class="lp on">
+        <span style="display:flex;align-items:center;gap:8px"><span class="mark m-gemini">G</span><span style="font-weight:600;flex:1">Gateway perf loop</span><span class="pill st-working" style="height:20px;font-size:11px"><span class="dot" style="background:#9dbfff"></span>Running</span></span>
+        <span style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">gatekeeper · perf/bench</span><span class="chip">on idle</span><span class="chip">run 4</span></span>
+        <span class="muted" style="font-size:12px">Goal: p95 ≤ 12 ms · now 14 ms</span>
+      </button>
+      <button class="lp">
+        <span style="display:flex;align-items:center;gap:8px"><span class="mark m-claude">C</span><span style="font-weight:600;flex:1">Nightly test sweep</span><span class="pill st-starting" style="height:20px;font-size:11px"><span class="dot" style="background:#f5d36b"></span>Scheduled</span></span>
+        <span style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">acme-storefront · main</span><span class="chip">02:00 daily</span><span class="chip">max 1</span></span>
+        <span class="muted" style="font-size:12px">Next run in 3 h 52 m</span>
+      </button>
+      <button class="lp">
+        <span style="display:flex;align-items:center;gap:8px"><span class="mark m-opencode">O</span><span style="font-weight:600;flex:1">Flaky test hunter</span><span class="pill st-stopped" style="height:20px;font-size:11px"><span class="dot" style="background:#646c80"></span>Paused</span></span>
+        <span style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">route-manager · main</span><span class="chip">on output /FAIL/</span><span class="chip">run 7</span></span>
+        <span class="muted" style="font-size:12px">Paused: console needed you at 21:14</span>
+      </button>
+      <button class="lp" style="opacity:.7">
+        <span style="display:flex;align-items:center;gap:8px"><span class="mark m-codex">X</span><span style="font-weight:600;flex:1">Changelog writer</span><span class="pill st-idle" style="height:20px;font-size:11px"><span class="dot" style="background:#6fdc9a"></span>Retired</span></span>
+        <span style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">acme-storefront</span><span class="chip">goal met · 2 runs</span></span>
+      </button>
+    </aside>
+
+    <section style="padding:20px 28px 24px;display:flex;flex-direction:column;gap:18px;overflow:auto">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span class="mark m-gemini" style="width:28px;height:28px;font-size:13px;border-radius:7px">G</span>
+        <input class="input" value="Gateway perf loop" aria-label="Loop name" style="font-weight:600;font-size:15px;width:280px;height:34px">
+        <span class="muted" style="font-size:12px">on console</span><span class="chip" style="height:24px;color:#e7e9ee">Gateway bench · gatekeeper · perf/bench</span>
+        <span style="flex:1"></span>
+        <button class="btn btn-sm">Pause</button><button class="btn btn-sm">Run now</button><button class="btn btn-sm btn-danger">Delete</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px">
+        <fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+          <legend class="label" style="padding:0;margin-bottom:8px">Trigger</legend>
+          <label class="opt"><input type="radio" name="trig" style="accent-color:#7b93ff;margin:3px 0 0"><span style="display:flex;flex-direction:column;gap:4px;flex:1"><span style="font-weight:600">On a schedule</span><span style="display:flex;gap:8px;align-items:center"><span class="input mono muted" style="width:140px">0 2 * * *</span><span class="muted" style="font-size:12px">cron, local time</span></span></span></label>
+          <label class="opt on"><input type="radio" name="trig" checked style="accent-color:#7b93ff;margin:3px 0 0"><span style="display:flex;flex-direction:column;gap:4px;flex:1"><span style="font-weight:600">When the console goes idle</span><span style="display:flex;gap:8px;align-items:center"><span class="muted" style="font-size:12px">wait</span><span class="input mono" style="width:64px">30</span><span class="muted" style="font-size:12px">seconds after idle, then prompt again</span></span></span></label>
+          <label class="opt"><input type="radio" name="trig" style="accent-color:#7b93ff;margin:3px 0 0"><span style="display:flex;flex-direction:column;gap:4px;flex:1"><span style="font-weight:600">When output matches</span><span class="input mono muted" style="width:100%">/FAIL|flaky/i</span></span></label>
+        </fieldset>
+
+        <fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+          <legend class="label" style="padding:0;margin-bottom:8px">Stop when any of these is true</legend>
+          <label class="opt on"><input type="checkbox" checked style="accent-color:#7b93ff;margin:3px 0 0"><span style="display:flex;flex-direction:column;gap:4px;flex:1"><span style="font-weight:600">Goal matched in output</span><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="input mono" style="flex:1;min-width:180px">p95 (\d+)ms</span><span class="muted" style="font-size:12px">capture ≤</span><span class="input mono" style="width:56px">12</span></span></span></label>
+          <label class="opt on"><input type="checkbox" checked style="accent-color:#7b93ff;margin:3px 0 0"><span style="display:flex;gap:8px;align-items:center;flex:1"><span style="font-weight:600">Max runs</span><span class="input mono" style="width:56px">10</span><span class="muted" style="font-size:12px">· 4 used</span></span></label>
+          <label class="opt on"><input type="checkbox" checked style="accent-color:#7b93ff;margin:3px 0 0"><span style="display:flex;gap:8px;align-items:center;flex:1"><span style="font-weight:600">Time box</span><span class="input mono" style="width:56px">2</span><span class="muted" style="font-size:12px">hours · 52 m used</span></span></label>
+        </fieldset>
+      </div>
+
+      <label style="display:flex;flex-direction:column;gap:6px">
+        <span class="label">Prompt sent each run <span style="text-transform:none;letter-spacing:0;font-weight:400">· <span class="mono">{run}</span> <span class="mono">{last_output}</span> <span class="mono">{goal}</span> are filled in</span></span>
+        <textarea class="input" rows="3" style="height:auto;padding:8px 10px;resize:vertical;font-family:inherit;line-height:1.5">Run {run}. Last bench: {last_output}. Target is {goal}. Profile the hot path in internal/limiter, make one focused change, run `make bench`, and report p95 as "p95 NNms" on the last line. Do not touch the public API.</textarea>
+      </label>
+
+      <div style="display:flex;gap:16px;padding:12px 14px;border:1px solid #2b303b;border-radius:8px;background:#12151b;flex-wrap:wrap">
+        <span class="label" style="align-self:center">Guardrails, always on</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#6fdc9a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg>Never answers a permission prompt</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#6fdc9a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg>Pauses while the console needs you</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#6fdc9a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg>Stops if the console exits</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#6fdc9a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg>Each run is one prompt, typed into the PTY</span>
+      </div>
+
+      <section style="display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><span class="label">Runs</span><span class="mono muted" style="font-size:11px">tokens from gemini's local session log</span></div>
+        <div class="hrow muted" style="border-bottom:1px solid #2b303b"><span>run</span><span>started</span><span>took</span><span>outcome</span><span style="text-align:right">tokens</span></div>
+        <div class="hrow"><span class="mono">4</span><span>21:52 · on idle</span><span class="mono">running</span><span style="display:flex;align-items:center;gap:6px"><span class="dot" style="background:#9dbfff"></span>profiling internal/limiter/bucket.go</span><span class="mono" style="text-align:right">—</span></div>
+        <div class="hrow"><span class="mono">3</span><span>21:31</span><span class="mono">19m</span><span style="display:flex;align-items:center;gap:6px"><span class="dot" style="background:#e3c76b"></span>p95 14ms · goal not met</span><span class="mono" style="text-align:right">38.1k</span></div>
+        <div class="hrow"><span class="mono">2</span><span>21:09</span><span class="mono">21m</span><span style="display:flex;align-items:center;gap:6px"><span class="dot" style="background:#e3c76b"></span>p95 17ms · goal not met</span><span class="mono" style="text-align:right">41.6k</span></div>
+        <div class="hrow"><span class="mono">1</span><span>20:46</span><span class="mono">22m</span><span style="display:flex;align-items:center;gap:6px"><span class="dot" style="background:#ff6b5e"></span>paused 4m · needed you (Bash: go install)</span><span class="mono" style="text-align:right">44.0k</span></div>
+      </section>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
