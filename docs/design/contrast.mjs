@@ -1,5 +1,6 @@
 // Prints the WCAG contrast ratio of every text and badge pair in tokens.css, dark and light, as README table rows.
 // node docs/design/contrast.mjs
+/* global URL, console, process */
 import { readFileSync } from "node:fs";
 
 const css = readFileSync(new URL("../../packages/ui/src/styles/tokens.css", import.meta.url), "utf8");

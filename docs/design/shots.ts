@@ -16,8 +16,9 @@ let d: Daemon;
 
 test.beforeAll(async () => {
   const root = realpathSync(mkdtempSync("/tmp/ab-"));
-  const [home, repo, path, bin] = ["home", "demo", "path", "bin"].map((n) => join(root, n)) as [string, string, string, string];
-  for (const dir of [home, repo, path, bin]) mkdirSync(dir);
+  // bin is deep on purpose: the settings drawer shows how a long path truncates from the left.
+  const [home, repo, path, bin] = ["home", "demo", "path", "opt/agentboard/fake-agent/bin"].map((n) => join(root, n)) as [string, string, string, string];
+  for (const dir of [home, repo, path, bin]) mkdirSync(dir, { recursive: true });
   symlinkSync(process.execPath, join(bin, "node"));
   copyFileSync(fake, join(bin, "fake-agent.mjs"));
   const git = (...a: string[]) => execFileSync("git", ["-C", repo, "-c", "user.name=demo", "-c", "user.email=demo@example.com", ...a]);
@@ -70,7 +71,9 @@ test("screenshots", async ({ page }) => {
   await dialog.getByLabel("branch name").fill("feat-login");
   await dialog.getByLabel("first prompt").fill("Add a login page");
   await page.screenshot({ path: out("02-spawn-dialog") });
-  await page.getByRole("button", { name: "Spawn console" }).click();
+  // The unstyled dialog had no Cancel; its toggle in the top bar closed it.
+  const cancel = dialog.getByRole("button", { name: "Cancel" });
+  await ((await cancel.count()) ? cancel : page.getByRole("button", { name: "Spawn console" })).click();
   await expect(dialog).toBeHidden();
 
   await spawn(page);
@@ -87,6 +90,12 @@ test("screenshots", async ({ page }) => {
   await page.mouse.click(700, 820);
   await page.waitForTimeout(300);
   await page.screenshot({ path: out("03-three-consoles") });
+  if (process.env.SHOTS !== "before") {
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: out("06-three-consoles-light") });
+    await page.emulateMedia({ colorScheme: "dark" });
+  }
 
   await page.getByRole("button", { name: "Settings" }).click();
   await expect(page.getByRole("dialog", { name: "Settings" })).toBeVisible();
@@ -94,6 +103,14 @@ test("screenshots", async ({ page }) => {
   await page.screenshot({ path: out("04-settings") });
   await page.getByRole("button", { name: "Settings" }).click();
 
+  // Taller, so the git card and its diff fit under the terminal; the resize handle shows on hover.
+  const handle = nodes.nth(0).locator(".react-flow__resize-control.handle.bottom.right");
+  await nodes.nth(0).hover();
+  const box = (await handle.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 40, box.y + 360, { steps: 8 });
+  await page.mouse.up();
   await nodes.nth(0).getByRole("button", { name: "Git" }).click();
   await nodes.nth(0).getByText("Diff").click();
   await expect(nodes.nth(0).getByText("Now with a second line.")).toBeVisible();
