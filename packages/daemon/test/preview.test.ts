@@ -115,6 +115,20 @@ test("a css target passes through byte for byte", async () => {
   expect(res.headers.get("cache-control")).toBe("no-store");
 });
 
+test("a redirect to a non-loopback host is 403", async () => {
+  const t = await startTarget(), board = await startBoard();
+  const res = await via(board, `${t.origin}/out`);
+  expect(res.status).toBe(403);
+  expect(res.headers.get("location")).toBeNull();
+});
+
+test("a redirect to loopback is rewritten through the proxy", async () => {
+  const t = await startTarget(), board = await startBoard();
+  const res = await via(board, `${t.origin}/in`);
+  expect(res.status).toBe(302);
+  expect(res.headers.get("location")).toBe(`/preview/${key}/${encodeURIComponent(`${t.origin}/style.css`)}`);
+});
+
 test("an html page with no head gets the tags at the top", async () => {
   const t = await startTarget(), board = await startBoard();
   expect(await (await via(board, `${t.origin}/bare`)).text()).toMatch(new RegExp(`^<base href="${t.origin}/"><script>[^<]*</script><p>no head</p>$`));
