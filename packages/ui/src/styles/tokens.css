@@ -10,6 +10,7 @@
   --space-4: 32px;
   --space-6: 48px;
 
+  --radius-xs: 2px;
   --radius-sm: 6px;
   --radius-lg: 10px;
   --radius-pill: 999px;
@@ -31,7 +32,7 @@
   --color-surface-raised: #1e222a;
   --color-surface-hover: #262b35;
   --color-border: #2b303b;
-  --color-border-strong: #404757;
+  --color-border-strong: #646c80;
   --color-text: #e7e9ee;
   --color-text-muted: #9ba3b4;
   --color-accent: #7b93ff;
@@ -46,6 +47,23 @@
   --term-bg: #0b0d11;
   --term-fg: #d9dee8;
   --term-selection: #3a4a7a;
+  /* the 16 ANSI colours, each at least 4.5:1 on --term-bg except black, which programs use as a background */
+  --term-ansi-black: #20242c;
+  --term-ansi-red: #ff7b72;
+  --term-ansi-green: #7ee787;
+  --term-ansi-yellow: #e3c76b;
+  --term-ansi-blue: #79a6ff;
+  --term-ansi-magenta: #d2a8ff;
+  --term-ansi-cyan: #76e3ea;
+  --term-ansi-white: #d9dee8;
+  --term-ansi-bright-black: #8b949e;
+  --term-ansi-bright-red: #ffa198;
+  --term-ansi-bright-green: #a5f0b0;
+  --term-ansi-bright-yellow: #f2d98a;
+  --term-ansi-bright-blue: #a5c4ff;
+  --term-ansi-bright-magenta: #e2c5ff;
+  --term-ansi-bright-cyan: #b3f0f5;
+  --term-ansi-bright-white: #ffffff;
 
   --note-bg: #3b3520;
   --note-fg: #f4e9bf;
@@ -81,7 +99,7 @@
     --color-surface-raised: #f6f7f9;
     --color-surface-hover: #eceef2;
     --color-border: #dcdfe6;
-    --color-border-strong: #b9bfcb;
+    --color-border-strong: #7f8798;
     --color-text: #171a21;
     --color-text-muted: #5b6475;
     --color-accent: #3355dd;

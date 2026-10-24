@@ -7,6 +7,9 @@ import { CONSOLE_DRAG_HANDLE } from "./dragHandle";
 import { unscaleMouse } from "./zoomMouse";
 import { useConsoleSocket, type SocketFactory } from "./useConsoleSocket";
 
+// xterm's theme keys for the 16 ANSI colours; brightBlack reads --term-ansi-bright-black.
+const ANSI = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"].flatMap((c) => [c, `bright${c[0]!.toUpperCase()}${c.slice(1)}`]);
+
 export interface ConsoleNodeProps {
   data: { node: { id: string; title: string } };
   socketFactory?: SocketFactory;
@@ -30,7 +33,8 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
     // The terminal's colours are the --term-* tokens; jsdom has none, so xterm keeps its defaults there.
     const css = getComputedStyle(el.current!);
     const token = (name: string) => css.getPropertyValue(name).trim() || undefined;
-    const theme = { background: token("--term-bg"), foreground: token("--term-fg"), cursor: token("--term-fg"), selectionBackground: token("--term-selection") };
+    const ansi = Object.fromEntries(ANSI.map((name) => [name, token(`--term-ansi-${name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`)]));
+    const theme = { background: token("--term-bg"), foreground: token("--term-fg"), cursor: token("--term-fg"), selectionBackground: token("--term-selection"), ...ansi };
     const t = new Terminal({ fontFamily: "Menlo, monospace", fontSize, scrollback: 10000, cursorBlink: false, allowProposedApi: false, theme });
     const f = new FitAddon();
     t.loadAddon(f);

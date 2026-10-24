@@ -33,11 +33,21 @@ const pairs = [
   ["diff-added-fg", "diff-added-bg"],
   ["diff-removed-fg", "diff-removed-bg"],
   ...["starting", "working", "idle", "needs-you", "stopped", "exited"].map((s) => [`status-${s}-fg`, `status-${s}-bg`]),
+  // ANSI black is left out: programs paint it as a background
+  ...["red", "green", "yellow", "blue", "magenta", "cyan", "white"].flatMap((c) => [`term-ansi-${c}`, `term-ansi-bright-${c}`]).map((t) => [t, "term-bg"]),
+  ["term-ansi-bright-black", "term-bg"],
+];
+// Non-text: control borders need 3:1 (WCAG 1.4.11).
+const borders = [
+  ["color-border-strong", "color-surface"],
+  ["color-border-strong", "color-bg"],
 ];
 let fail = false;
-for (const [a, b] of pairs) {
+const row = (a, b, min) => {
   const [d, l] = [ratio(D[a], D[b]), ratio(L[a], L[b])];
-  fail ||= Math.min(d, l) < 4.5;
+  fail ||= Math.min(d, l) < min;
   console.log(`| \`--${a}\` on \`--${b}\` | ${d.toFixed(1)}:1 | ${l.toFixed(1)}:1 |`);
-}
+};
+for (const [a, b] of pairs) row(a, b, 4.5);
+for (const [a, b] of borders) row(a, b, 3);
 if (fail) process.exitCode = 1;

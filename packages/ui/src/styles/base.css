@@ -101,6 +101,12 @@ body {
   resize: vertical;
 }
 
+/* Chromium's default placeholder grey misses 4.5:1, and some placeholders are a field's only visible label. */
+:where(input, textarea)::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
 :where(input[type="checkbox"], input[type="radio"]) {
   margin: 0;
   width: 16px;
@@ -136,11 +142,13 @@ body {
   font-size: var(--text-xs);
 }
 
+/* inline-block, not flex: text-overflow only cuts a block's own line box */
 .chip {
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
+  vertical-align: middle;
   max-width: 160px;
   height: 20px;
+  line-height: 18px;
   padding: 0 var(--space-1);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-pill);
