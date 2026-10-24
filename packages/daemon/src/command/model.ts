@@ -30,10 +30,7 @@ function systemPrompt(snapshot: BoardSnapshot): string {
   ].join("\n\n");
 }
 
-/** Plans with a local Ollama-compatible model; throws on anything off so planCommand falls back to the rules. */
-export async function planWithModel(text: string, snapshot: BoardSnapshot, planner: PlannerSettings, fetch: typeof globalThis.fetch): Promise<PlanStep[]> {
-  const url = new URL(planner.url);
-  if (!LOOPBACK.has(url.hostname)) throw new Error(`planner URL must be loopback, got ${url.hostname}`);
+async function ask(text: string, snapshot: BoardSnapshot, planner: PlannerSettings, fetch: typeof globalThis.fetch, signal: AbortSignal) {
   const res = await fetch(`${planner.url.replace(/\/+$/, "")}/api/chat`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -46,10 +43,25 @@ export async function planWithModel(text: string, snapshot: BoardSnapshot, plann
         { role: "user", content: text },
       ],
     }),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+    signal,
   });
   if (!res.ok) throw new Error(`planner answered ${res.status}`);
-  const body = (await res.json()) as { message?: { content?: string } };
+  return (await res.json()) as { message?: { content?: string } };
+}
+
+/** Plans with a local Ollama-compatible model; throws on anything off so planCommand falls back to the rules. */
+export async function planWithModel(text: string, snapshot: BoardSnapshot, planner: PlannerSettings, fetch: typeof globalThis.fetch): Promise<PlanStep[]> {
+  const url = new URL(planner.url);
+  if (!LOOPBACK.has(url.hostname)) throw new Error(`planner URL must be loopback, got ${url.hostname}`);
+  // A plain timer rather than AbortSignal.timeout, so the 8 s budget follows the event loop's clock (and fake timers in tests).
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), TIMEOUT_MS);
+  let body: { message?: { content?: string } };
+  try {
+    body = await ask(text, snapshot, planner, fetch, abort.signal);
+  } finally {
+    clearTimeout(timer);
+  }
   const { steps } = JSON.parse(body.message?.content ?? "") as { steps?: unknown };
   if (!Array.isArray(steps)) throw new Error("planner answer has no steps array");
   const ids = new Set(snapshot.consoles.map((c) => c.id));
