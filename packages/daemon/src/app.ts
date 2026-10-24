@@ -4,7 +4,10 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { SettingsSchema, type AgentId, type Board, type ConsoleNode, type CustomAgent, type Settings, type Workspace } from "@agentboard/shared";
+import { SettingsSchema, type AgentId, type Board, type ConsoleNode, type CustomAgent, type Settings, type SpawnConsoleRequest, type Workspace } from "@agentboard/shared";
+import { planCommand } from "./command/plan.js";
+import { runPlan } from "./command/run.js";
+import { snapshot } from "./command/snapshot.js";
 import { AgentCatalog, launchArgs, resumeArgs } from "./agents/index.js";
 import { GitService, createGitHandlers } from "./git/index.js";
 import { handleOpen } from "./open/index.js";
@@ -175,7 +178,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
   };
 
   // The spawn path, shared by POST /api/consoles and the command executor; nearId places beside that console.
-  const spawnConsole = async (req: SpawnRequest, nearId?: string) => {
+  const spawnConsole = async (req: SpawnConsoleRequest, nearId?: string) => {
     const caller = nearId || req.callerConsoleId ? find((nearId ?? req.callerConsoleId)!) : undefined;
     const repo = caller?.board.repoPath ?? repoFor(req.cwd);
     const board = await loadBoard(repo);
@@ -218,6 +221,30 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     return node;
   };
 
+  const closeConsole = async (id: string) => {
+    const f = mustFind(id);
+    // Off the board first, so the exit this kill causes finds no node and a racing PUT cannot bring it back.
+    running.delete(id);
+    adopting.delete(id);
+    f.ws.nodes = f.ws.nodes.filter((n) => n.id !== id);
+    changed(f.board);
+    if (pty.list().includes(id)) await pty.kill(id);
+    tracker.remove(id);
+    return { ok: true };
+  };
+
+  const resumeConsole = async (id: string) => {
+    const f = mustFind(id);
+    if (running.has(id)) throw new HttpError(409, `console ${id} is running`);
+    if (pty.list().includes(id)) await pty.kill(id); // drop the exited entry so the id can spawn again
+    const custom = f.node.agent === "custom" ? await customFor(f.node.customId) : undefined;
+    // A custom agent has no resume, and claude starts a fresh session when it has none: both launch fresh.
+    if (f.node.agent === "claude" && !f.node.session) f.node.session = { provider: "claude", id: randomUUID() };
+    start(f.node, prepare(f.node, custom, f.node.agent !== "custom" && f.node.session !== undefined));
+    changed(f.board);
+    return f.node;
+  };
+
   tracker.onChange((id, status) => {
     const f = find(id);
     if (!f) return;
@@ -257,28 +284,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       return { ok: true, rev: incoming.rev };
     },
     "POST /api/consoles": (req) => spawnConsole(req),
-    "DELETE /api/consoles/:id": async (_, { id }) => {
-      const f = mustFind(id!);
-      // Off the board first, so the exit this kill causes finds no node and a racing PUT cannot bring it back.
-      running.delete(id!);
-      adopting.delete(id!);
-      f.ws.nodes = f.ws.nodes.filter((n) => n.id !== id);
-      changed(f.board);
-      if (pty.list().includes(id!)) await pty.kill(id!);
-      tracker.remove(id!);
-      return { ok: true };
-    },
-    "POST /api/consoles/:id/resume": async (_, { id }) => {
-      const f = mustFind(id!);
-      if (running.has(id!)) throw new HttpError(409, `console ${id} is running`);
-      if (pty.list().includes(id!)) await pty.kill(id!); // drop the exited entry so the id can spawn again
-      const custom = f.node.agent === "custom" ? await customFor(f.node.customId) : undefined;
-      // A custom agent has no resume, and claude starts a fresh session when it has none: both launch fresh.
-      if (f.node.agent === "claude" && !f.node.session) f.node.session = { provider: "claude", id: randomUUID() };
-      start(f.node, prepare(f.node, custom, f.node.agent !== "custom" && f.node.session !== undefined));
-      changed(f.board);
-      return f.node;
-    },
+    "DELETE /api/consoles/:id": async (_, { id }) => closeConsole(id!),
+    "POST /api/consoles/:id/resume": async (_, { id }) => resumeConsole(id!),
     "GET /api/agents": async () => AgentCatalog.scan({ path: agentPath, custom: (await settings()).customAgents }),
     "GET /api/status": async () => ({ consoles: [...boards.values()].flatMap(consoles) }),
     "POST /hook/:consoleId": async (body, { consoleId }) => {
@@ -307,11 +314,36 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     "POST /api/git/pr": (b) => git.pr(b),
     "GET /api/settings": () => settings(),
     "PUT /api/settings": async (s) => {
+      // P5-D45: the planner gets the board's text, so it stays on this machine.
+      if (s.planner && !["localhost", "127.0.0.1", "[::1]"].includes(new URL(s.planner.url).hostname)) throw new HttpError(400, "the planner URL must be localhost, 127.0.0.1 or ::1");
       const file = settingsFile();
       await mkdir(agentboardHome(), { recursive: true, mode: 0o700 });
       await writeFile(`${file}.tmp`, JSON.stringify(s, null, 2));
       await rename(`${file}.tmp`, file);
       return { ok: true };
+    },
+    "POST /api/command/plan": async ({ text, repo }) => {
+      const [board, agents, set] = [await loadBoard(repo), await AgentCatalog.scan({ path: agentPath, custom: (await settings()).customAgents }), await settings()];
+      return planCommand(text, snapshot(board, agents), set);
+    },
+    "POST /api/command/run": async ({ plan, confirmed, skipped }) => {
+      const board = await loadBoard(opts.repoPath);
+      return runPlan(plan, confirmed, skipped, {
+        spawn: (step) => spawnConsole({ agent: step.agent, customId: step.customId, cwd: find(step.near ?? "")?.board.repoPath ?? opts.repoPath, worktree: step.worktree, prompt: step.prompt }, step.near),
+        close: async (id) => void (await closeConsole(id)),
+        resume: resumeConsole,
+        note: async (text) => {
+          const ws = board.workspaces.find((w) => w.id === board.activeWorkspaceId) ?? board.workspaces[0];
+          if (!ws) throw new HttpError(400, "board has no workspace");
+          ws.nodes.push({ id: randomUUID(), type: "note", title: "Note", ...place(ws), w: 240, h: 160, text });
+          changed(board);
+        },
+        input: async (id, text) => {
+          if (!running.has(id)) throw new HttpError(409, `console ${id} is not running`);
+          tracker.markInput(id, text);
+          pty.write(id, `${text}\r`);
+        },
+      });
     },
     "POST /api/open": (body) => handleOpen(body),
     // ponytail: stubs so this contract typechecks alone; L52 replaces both.
