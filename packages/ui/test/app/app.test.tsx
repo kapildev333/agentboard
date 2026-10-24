@@ -121,6 +121,14 @@ describe("App", () => {
     fireEvent.keyDown(window, { key: "N", metaKey: true, shiftKey: true });
     expect(screen.getByRole("dialog", { name: "Spawn console" })).toBeTruthy();
     fireEvent.keyDown(window, { key: "Escape" });
+    // A focused terminal keeps ⌘⇧N.
+    const term = document.body.appendChild(document.createElement("div"));
+    term.className = "xterm";
+    const textarea = term.appendChild(document.createElement("textarea"));
+    textarea.focus();
+    fireEvent.keyDown(textarea, { key: "N", metaKey: true, shiftKey: true });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    term.remove();
     const nodes = () => useBoard.getState().board.workspaces[0]!.nodes;
     fireEvent.click(screen.getByRole("button", { name: "Add a note" }));
     expect(nodes().map((n) => n.type)).toEqual(["note"]);
@@ -150,10 +158,28 @@ describe("App", () => {
     expect(screen.getByRole("dialog", { name: "Spawn console" })).toBeTruthy();
     fireEvent.click(container.querySelector(".backdrop")!);
     expect(screen.queryByRole("dialog")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Spawn console" }));
+    const spawn = screen.getByRole("button", { name: "Spawn console" });
+    spawn.focus();
+    fireEvent.click(spawn);
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(spawn);
     expect(api.calls.some((c) => c.url === "/api/consoles" && c.method === "POST")).toBe(false);
+    // The settings drawer gives focus back to its button too, and ⌘⇧N over it keeps that opener.
+    const settings = screen.getByRole("button", { name: "Settings" });
+    settings.focus();
+    fireEvent.click(settings);
+    expect(screen.getByRole("dialog", { name: "Settings" })).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(settings);
+    settings.focus();
+    fireEvent.click(settings);
+    screen.getByRole("dialog", { name: "Settings" }).querySelector("input")!.focus();
+    fireEvent.keyDown(window, { key: "N", metaKey: true, shiftKey: true });
+    expect(screen.getByRole("dialog", { name: "Spawn console" })).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(document.activeElement).toBe(settings);
   });
 
   it("a board message from the daemon patches a console's status without saving the board", async () => {
