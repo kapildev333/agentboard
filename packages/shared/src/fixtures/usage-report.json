@@ -1,0 +1,21 @@
+{
+  "range": "14d",
+  "totals": { "input": 11900000, "output": 2100000, "cacheRead": 4400000, "sessions": 92, "medianSessionMin": 41, "needsYouWaitSec": 2280 },
+  "byDay": [
+    { "day": "2026-10-22", "byAgent": { "claude": 1200000, "codex": 380000, "gemini": 260000, "opencode": 90000 } },
+    { "day": "2026-10-23", "byAgent": { "claude": 1310000, "codex": 410000, "gemini": 220000 } }
+  ],
+  "groups": [
+    { "key": "claude", "label": "claude", "agent": "claude", "sessions": 51, "input": 7900000, "output": 1300000, "cacheRead": 3600000 },
+    { "key": "codex", "label": "codex", "agent": "codex", "sessions": 18, "input": 2100000, "output": 400000, "cacheRead": 600000 },
+    { "key": "gemini", "label": "gemini", "agent": "gemini", "sessions": 9, "input": 1200000, "output": 200000, "cacheRead": 100000 },
+    { "key": "opencode", "label": "opencode", "agent": "opencode", "sessions": 14, "input": 700000, "output": 200000, "cacheRead": 0 }
+  ],
+  "sources": [
+    { "agent": "claude", "path": "~/.claude/projects/**/*.jsonl", "files": 51 },
+    { "agent": "codex", "path": "~/.codex/sessions/**/*.jsonl", "files": 18 },
+    { "agent": "gemini", "path": "~/.gemini/tmp/**/logs.json", "files": 9 },
+    { "agent": "opencode", "path": "~/.local/share/opencode/storage/", "files": 14 }
+  ],
+  "checkedAt": "2026-10-23T22:00:00.000Z"
+}

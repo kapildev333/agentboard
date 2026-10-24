@@ -1,0 +1,10 @@
+{
+  "id": "mem-tax-rounding",
+  "scope": "repo",
+  "title": "Tax rounding matches Xero",
+  "body": "Half-even rounding on CAD line items, applied per line, not on the total. Xero rejects totals off by a cent.",
+  "source": { "kind": "handoff", "consoleId": "c-reviewer", "label": "from handoff · Reviewer · Oct 21" },
+  "state": "kept",
+  "createdAt": "2026-10-21T16:30:00.000Z",
+  "pushed": [{ "consoleId": "c-builder", "at": "2026-10-23T21:56:00.000Z" }]
+}

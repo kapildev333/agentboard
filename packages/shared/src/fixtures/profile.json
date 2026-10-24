@@ -1,0 +1,7 @@
+{
+  "id": "claude-work",
+  "agent": "claude",
+  "name": "Work",
+  "env": { "CLAUDE_CONFIG_DIR": "/tmp/agentboard-profiles/claude-work" },
+  "args": []
+}

@@ -1,0 +1,26 @@
+{
+  "id": "ho-builder-reviewer",
+  "fromConsoleId": "c-builder",
+  "teamId": "team-checkout",
+  "target": { "kind": "spawn", "agent": "codex", "title": "Reviewer" },
+  "brief": {
+    "done": [
+      "validatePostal(country, code) added in src/lib/postal.ts with rules for CA, UK, NL",
+      "Checkout form shows an inline error with an example format",
+      "18 new tests; the full suite is green (212)"
+    ],
+    "left": [
+      "Copy review on the error text",
+      "Decide whether to normalise spacing (e.g. \"K1P5G1\" → \"K1P 5G1\") before validating"
+    ],
+    "decisions": [
+      "UK rule accepts the GIR 0AA special case",
+      "Did not touch the address autocomplete; it formats postal codes on its own"
+    ],
+    "ask": "Review the diff for correctness and copy. Do not edit files; leave comments as a numbered list and say \"approve\" or \"changes requested\" on the last line."
+  },
+  "attachments": { "diff": true, "teamBrief": true, "lastLines": false, "files": ["PLAN.md"] },
+  "after": { "markHandedOff": true, "focusTarget": true, "addNote": false },
+  "createdAt": "2026-10-23T22:10:00.000Z",
+  "promptText": "You are the reviewer on team \"checkout\". Brief from Builder follows.\n\n## What was done\n- validatePostal(country, code) in src/lib/postal.ts (CA, UK, NL)\n- Inline error with example format in the checkout form\n- 18 new tests, suite green (212)\n\n## What's left\n- Copy review on the error text\n- Normalise spacing before validating?\n\n## Ask\nReview the diff for correctness and copy. Do not edit files…\n\n[attached: diff (3 files), team brief, PLAN.md]"
+}
