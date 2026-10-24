@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { NodeProps } from "@xyflow/react";
-import { BoardSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type NoteNode, type Settings } from "@agentboard/shared";
+import { BoardSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type Settings } from "@agentboard/shared";
 import { Board, WorkspaceTabs, autosaveBoard, useBoard } from "./board";
 import { CommandBar } from "./command";
 import { ConsoleNode, type SocketLike } from "./console";
@@ -8,7 +8,8 @@ import { GitCard } from "./git";
 import { OpenInButtons } from "./open/OpenInButtons";
 import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
 import { MissionMap, StatusBadge, useNotifications } from "./status";
-import { WebTileView } from "./webtile";
+import { AddMenu, ChecklistView, NoteView, TextView, noteAdds } from "./notes";
+import { WebTileView, webtileAdds } from "./webtile";
 
 type Fetch = typeof globalThis.fetch;
 const Api = createContext<{ fetch: Fetch; fontSize: number }>({ fetch: globalThis.fetch, fontSize: 13 });
@@ -123,13 +124,9 @@ function ConsoleView(props: NodeProps) {
   );
 }
 
-function NoteView(props: NodeProps) {
-  const node = (props.data as { node: NoteNode }).node;
-  return <div className="note">{node.text}</div>;
-}
-
 // Module-level so React Flow never remounts the nodes (and their terminals) on a render.
-const nodeTypes = { console: ConsoleView, note: NoteView, webtile: WebTileView };
+const nodeTypes = { console: ConsoleView, note: NoteView, text: TextView, checklist: ChecklistView, webtile: WebTileView };
+const adds = [...noteAdds, ...webtileAdds];
 
 const focusNode = (id: string) => {
   const el = document.querySelector<HTMLElement>(`[data-testid="node-${CSS.escape(id)}"]`);
@@ -265,6 +262,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           <button type="button" className="btn-primary" aria-expanded={panel === "spawn"} onClick={() => setPanel(panel === "spawn" ? null : "spawn")}>
             Spawn console
           </button>
+          {ready && <AddMenu items={adds} />}
           <button type="button" aria-label="Command" aria-keyshortcuts="Meta+K Control+K" aria-expanded={panel === "command"} onClick={() => setPanel(panel === "command" ? null : "command")}>
             Command <kbd>⌘K</kbd>
           </button>
