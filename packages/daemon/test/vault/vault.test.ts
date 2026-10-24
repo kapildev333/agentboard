@@ -4,6 +4,9 @@ import { dirname, join } from "node:path";
 import { afterEach, expect, test } from "vitest";
 import { createVaultHandlers } from "../../src/vault/index.js";
 
+// Handlers are typed by the route table once L60 lands; the tests only read fields off JSON.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Json = any;
 const dirs: string[] = [];
 afterEach(() => { for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
 
@@ -15,7 +18,7 @@ function setup(notes: Record<string, string>) {
     writeFileSync(join(repo, "docs/vault", p), text);
   }
   const h = createVaultHandlers({ repoOf: (r) => r });
-  return { repo, h, notes: () => h["GET /api/vault/notes"]!({ repo }, {}, undefined as never) as Promise<any> };
+  return { repo, h, notes: () => h["GET /api/vault/notes"]!({ repo }) as Promise<Json> };
 }
 
 test("three notes with links produce the expected links and backlinks", async () => {
@@ -26,14 +29,14 @@ test("three notes with links produce the expected links and backlinks", async ()
   });
   const idx = await notes();
   expect(idx.root).toBe("docs/vault");
-  const by = Object.fromEntries(idx.notes.map((n: any) => [n.path, n]));
+  const by = Object.fromEntries(idx.notes.map((n: Json) => [n.path, n]));
   expect(by["a.md"]).toMatchObject({ title: "Alpha", folder: "", links: ["Beta", "Nowhere"] });
   expect(by["a.md"].backlinks).toEqual(["b.md", "sub/c.md"]);
   expect(by["b.md"].backlinks).toEqual(["a.md"]);
   expect(by["sub/c.md"]).toMatchObject({ title: "c", folder: "sub", links: ["Alpha"], backlinks: [] });
 });
 
-const call = (h: any, key: string, arg: object) => h[key](arg, {}, undefined);
+const call = (h: Json, key: string, arg: object) => h[key](arg, {}, undefined);
 
 test("an alias and a heading link resolve, case-insensitively", async () => {
   const { repo, h } = setup({
