@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -16,6 +17,7 @@ import { createServer, type RouteHandlers } from "./server/index.js";
 import { acceptHook, adoptsNextSession, sessionFromHook, sessionIdOf } from "./session.js";
 import { DaemonFile, StateStore, agentboardHome } from "./state/index.js";
 import { StatusTracker } from "./status/index.js";
+import { UsageService, scanRoots, type Roots } from "./usage/index.js";
 import { transcribe } from "./voice/index.js";
 
 export type DaemonOptions = {
@@ -25,6 +27,8 @@ export type DaemonOptions = {
   port?: number;
   /** The PATH agents are found and run from; else AGENTBOARD_AGENT_PATH, else the login shell's PATH. */
   agentPath?: string;
+  /** Where each CLI's session logs are read from; else their documented folders under the user's home plus each profile's. */
+  usageRoots?: Roots;
 };
 export type Daemon = { origin: string; port: number; token: string; close(): Promise<void> };
 
@@ -120,6 +124,11 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       throw e;
     }
   };
+  const usage = new UsageService({
+    file: join(agentboardHome(), "usage.json"),
+    roots: async () => opts.usageRoots ?? scanRoots(homedir(), (await settings()).profiles ?? []),
+    consoles: () => [...boards.values()].flatMap(consoles),
+  });
   const customFor = async (customId: string | undefined) => {
     if (!customId) throw new HttpError(400, "custom agents need a customId");
     const custom = (await settings()).customAgents.find((c) => c.id === customId);
@@ -377,8 +386,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     "POST /api/loops/:id/run": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "POST /api/composer/launch": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "GET /api/composer/templates": async () => { throw new HttpError(501, "phase 4: not built yet"); },
-    "GET /api/usage": async () => { throw new HttpError(501, "phase 4: not built yet"); },
-    "GET /api/usage.csv": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "GET /api/usage": (q) => usage.report(q),
+    "GET /api/usage.csv": (q) => usage.csv(q),
     "GET /api/memory": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "POST /api/memory": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "PUT /api/memory/:id": async () => { throw new HttpError(501, "phase 4: not built yet"); },

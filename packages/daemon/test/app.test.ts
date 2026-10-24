@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync, existsSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
@@ -506,7 +506,8 @@ test("GET /api/usage and /api/usage.csv report the sessions under a fixture root
   const report = r.body as UsageReport;
   expect(report.totals).toMatchObject({ input: 545, output: 450, cacheRead: 1000, sessions: 3 });
   expect(report.groups.map((g) => g.label)).toEqual(["shop", "api"]);
-  expect(report.sources).toEqual([{ agent: "claude", path: claude, files: 3 }]);
+  // Shown with ~ for the home folder, so a report never carries the user name.
+  expect(report.sources).toEqual([{ agent: "claude", path: claude.replace(homedir(), "~"), files: 3 }]);
   expect(existsSync(join(s.home, "usage.json"))).toBe(true);
   const csv = await fetch(`${d.origin}/api/usage.csv?range=all`, { headers: { "x-agentboard-token": d.token } });
   expect(csv.headers.get("content-type")).toBe("text/csv; charset=utf-8");
