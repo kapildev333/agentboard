@@ -101,6 +101,14 @@ describe("App", () => {
     expect(await screen.findByTestId("node-c1")).toBeTruthy();
   });
 
+  it("an empty board shows the spawn hint, which goes once a console is there", async () => {
+    const socket = fakeSocket();
+    render(<App fetch={fakeApi({ ...boardWith(), rev: 1 }).fetch} search="?repo=%2Fr" connect={() => socket} />);
+    expect(await screen.findByText(/Spawn a console or run/)).toBeTruthy();
+    socket.emit({ t: "board", board: { ...boardWith(consoleNode("c1")), rev: 2 } });
+    await waitFor(() => expect(screen.queryByText(/Spawn a console or run/)).toBeNull());
+  });
+
   it("a board message from the daemon patches a console's status without saving the board", async () => {
     const api = fakeApi(boardWith(consoleNode("c1", "idle")));
     const socket = fakeSocket();
