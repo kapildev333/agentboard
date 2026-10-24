@@ -44,6 +44,7 @@ export class LoopEngine {
   private live = new Map<string, Live>();
   private out = new Map<string, { tail: string; partial: string }>();
   private clock: NonNullable<LoopDeps["clock"]>;
+  private ready = false; // no events while loading: app.ts's event sink is not built yet
 
   constructor(private deps: LoopDeps, loops: Loop[] = []) {
     // looked up per call, so vitest's fake timers apply to an engine built before them
@@ -56,6 +57,7 @@ export class LoopEngine {
       if (l.state === "running" || l.state === "scheduled") l.state = between(l);
       this.arm(l);
     }
+    this.ready = true;
   }
 
   list(): Loop[] {
@@ -284,7 +286,7 @@ export class LoopEngine {
 
   private changed(l: Loop, detail: string): void {
     this.deps.save(this.list());
-    this.deps.event({ id: randomUUID(), ts: this.iso(), kind: "loop", consoleId: l.consoleId, title: l.name, detail });
+    if (this.ready) this.deps.event({ id: randomUUID(), ts: this.iso(), kind: "loop", consoleId: l.consoleId, title: l.name, detail });
   }
 }
 
