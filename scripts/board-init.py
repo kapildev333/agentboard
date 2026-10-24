@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Create one GitHub issue per lane from the build plan's two tables, plus the pinned Decisions issue.
-Idempotent: an issue whose title already exists is left alone. Run: python3 -I scripts/board-init.py
+"""Create one GitHub issue per lane from a build plan's two tables, plus the pinned Decisions issue.
+Idempotent: an issue whose title already exists is left alone.
+Run: python3 -I scripts/board-init.py [plan.md] [phase], e.g. docs/superpowers/plans/2026-10-24-phase-6-studios-plan.md 6
 """
 import json, re, subprocess, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PLAN = ROOT / "docs/superpowers/plans/2026-10-23-multi-agent-build-plan.md"
+PLAN = ROOT / (sys.argv[1] if len(sys.argv) > 1 else "docs/superpowers/plans/2026-10-23-multi-agent-build-plan.md")
+PHASE = sys.argv[2] if len(sys.argv) > 2 else None  # phase of every lane in the plan; None derives it from the lane id (L0x, L1x, L2x)
 SPEC = "docs/superpowers/specs/2026-10-23-agentboard-design.md"
 
 
@@ -17,7 +19,7 @@ def gh(*args, inp=None):
 def rows(section_title):
     """Rows of the first pipe table under the given '## ' heading, as lists of cells."""
     text = PLAN.read_text()
-    start = text.index("## " + section_title)
+    start = text.index("\n## " + section_title) + 1  # prefix match: "Work breakdown" finds "Work breakdown for ..."
     end = text.find("\n## ", start + 3)
     out = []
     for line in text[start:end].splitlines():
@@ -26,7 +28,7 @@ def rows(section_title):
     return out
 
 
-lanes = {r[0]: r for r in rows("Work breakdown for the MVP")}
+lanes = {r[0]: r for r in rows("Work breakdown")}
 cards = {r[0]: r for r in rows("Task cards")}
 existing = {i["title"] for i in json.loads(gh("issue", "list", "--state", "all", "--limit", "200", "--json", "title"))}
 
@@ -36,7 +38,7 @@ for lane, (lid, title, owns, after, model) in lanes.items():
     if full in existing:
         continue
     _, produces, first_test, done = cards[lid]
-    phase = lid[1]
+    phase = PHASE or {"0": "0", "1": "1", "2": "2"}[lid[1]]
     body = "\n".join([
         f"Lane {lid} · phase {phase} · model {model}",
         f"Owns: {owns}",

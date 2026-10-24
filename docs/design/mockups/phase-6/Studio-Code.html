@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Code studio</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.tree{display:flex;align-items:center;gap:6px;width:100%;height:24px;padding:0 8px;border:0;border-radius:4px;background:transparent;color:#c0c6d1;text-align:left;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;white-space:nowrap}
+.tree.on{background:#262b35;color:#e7e9ee}
+.tree.d1{padding-left:22px}.tree.d2{padding-left:36px}.tree.d3{padding-left:50px}
+.ftab{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border:0;border-right:1px solid #2b303b;background:transparent;color:#9ba3b4;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px}
+.ftab.on{background:#0b0d11;color:#e7e9ee}
+.code{background:#0b0d11;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;line-height:1.7;color:#d9dee8;white-space:pre;overflow:hidden;margin:0;flex:1}
+.ln{display:grid;grid-template-columns:44px 1fr}
+.ln span:first-child{color:#646c80;text-align:right;padding-right:14px;user-select:none}
+.ln.hl{background:#13284d}
+.k{color:#d2a8ff}.f{color:#79a6ff}.s{color:#a5f0b0}.c{color:#8b949e;font-style:italic}.t{color:#76e3ea}.n{color:#f2d98a}
+.ico{width:14px;height:14px;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:500">acme-storefront</span><span class="chip">feat/checkout</span></div>
+    <nav aria-label="Studios" style="display:flex;align-items:center;align-self:stretch;margin-left:8px"><button class="tab">Board</button><button class="tab">Document</button><button class="tab">Diagram</button><button class="tab on">Code</button><button class="tab">Vault</button></nav>
+    <div style="flex:1"></div>
+    <span class="muted" style="font-size:12px">Read-only. Editing happens in your editor.</span>
+    <button class="btn btn-sm">Open in VS Code</button>
+    <button class="btn btn-sm">Zed</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <main style="flex:1;display:grid;grid-template-columns:260px minmax(0,1fr) 280px;min-height:856px">
+
+    <aside style="border-right:1px solid #2b303b;background:#12151b;padding:12px 8px;display:flex;flex-direction:column;gap:2px;box-sizing:border-box;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:6px;padding:2px 8px 8px"><span class="label" style="flex:1">Worktree · feat-checkout</span><button class="btn btn-quiet btn-sm">Filter</button></div>
+      <button class="tree">▾ src</button>
+      <button class="tree d1">▾ checkout</button>
+      <button class="tree d2" style="color:#e3c76b">Form.tsx <span class="chip" style="height:14px;font-size:9px;margin-left:auto;color:#e3c76b;border-color:#3a2f0b;background:#3a2f0b">M</span></button>
+      <button class="tree d2">Summary.tsx</button>
+      <button class="tree d2">index.ts</button>
+      <button class="tree d1">▾ lib</button>
+      <button class="tree d2 on" style="color:#e3c76b">postal.ts <span class="chip" style="height:14px;font-size:9px;margin-left:auto;color:#e3c76b;border-color:#3a2f0b;background:#3a2f0b">M</span></button>
+      <button class="tree d2" style="color:#6fdc9a">postal.test.ts <span class="chip" style="height:14px;font-size:9px;margin-left:auto;color:#6fdc9a;border-color:#10331f;background:#10331f">A</span></button>
+      <button class="tree d2">money.ts</button>
+      <button class="tree d1">▸ orders</button>
+      <button class="tree d1">▾ tax</button>
+      <button class="tree d2">round.ts</button>
+      <button class="tree d2">rates.ts</button>
+      <button class="tree">▸ tests</button>
+      <button class="tree">▸ .github</button>
+      <button class="tree">package.json</button>
+      <button class="tree">README.md</button>
+      <div style="flex:1"></div>
+      <div style="padding:10px;border:1px solid #2b303b;border-radius:8px;background:#161920;display:flex;flex-direction:column;gap:4px"><span class="label">Legend</span><span class="muted" style="font-size:11px"><span style="color:#e3c76b">M</span> modified · <span style="color:#6fdc9a">A</span> added · <span style="color:#ff9a90">D</span> deleted, vs <span class="mono">main</span></span></div>
+    </aside>
+
+    <section aria-label="File preview" style="display:flex;flex-direction:column;min-width:0;background:#0b0d11">
+      <div style="display:flex;align-items:center;border-bottom:1px solid #2b303b;background:#161920;overflow:hidden">
+        <button class="ftab on">postal.ts <span class="chip" style="height:14px;font-size:9px;color:#f2c98a">pinned</span></button>
+        <button class="ftab">Form.tsx</button>
+        <button class="ftab">postal.test.ts</button>
+        <button class="ftab" style="color:#646c80">round.ts</button>
+        <span style="flex:1"></span>
+        <span class="mono muted" style="font-size:11px;padding:0 12px">src/lib/postal.ts · 96 lines · TypeScript</span>
+      </div>
+      <pre class="code" style="padding:10px 0"><div class="ln"><span>1</span><span><span class="c">// Postal code validation per country. Raw input in, verdict out.</span></span></div><div class="ln"><span>2</span><span><span class="k">export type</span> <span class="t">Country</span> = <span class="s">'CA'</span> | <span class="s">'US'</span> | <span class="s">'GB'</span> | <span class="s">'NL'</span></span></div><div class="ln"><span>3</span><span></span></div><div class="ln"><span>4</span><span><span class="k">export interface</span> <span class="t">PostalVerdict</span> {</span></div><div class="ln"><span>5</span><span>  ok: <span class="t">boolean</span></span></div><div class="ln"><span>6</span><span>  numeric: <span class="t">boolean</span>      <span class="c">// drives inputMode on the field</span></span></div><div class="ln"><span>7</span><span>  message?: <span class="t">string</span>      <span class="c">// plain English, with an example</span></span></div><div class="ln"><span>8</span><span>}</span></div><div class="ln"><span>9</span><span></span></div><div class="ln"><span>10</span><span><span class="k">const</span> RULES: <span class="t">Record</span>&lt;<span class="t">Country</span>, { re: <span class="t">RegExp</span>; numeric: <span class="t">boolean</span>; example: <span class="t">string</span> }&gt; = {</span></div><div class="ln hl"><span>11</span><span>  CA: { re: <span class="n">/^[A-Z]\d[A-Z] ?\d[A-Z]\d$/i</span>, numeric: <span class="k">false</span>, example: <span class="s">'K1P 5G1'</span> },</span></div><div class="ln"><span>12</span><span>  US: { re: <span class="n">/^\d{5}(-\d{4})?$/</span>, numeric: <span class="k">true</span>, example: <span class="s">'94107'</span> },</span></div><div class="ln"><span>13</span><span>  GB: { re: <span class="n">/^(GIR 0AA|[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2})$/i</span>, numeric: <span class="k">false</span>, example: <span class="s">'SW1A 1AA'</span> },</span></div><div class="ln"><span>14</span><span>  NL: { re: <span class="n">/^\d{4} ?[A-Z]{2}$/i</span>, numeric: <span class="k">false</span>, example: <span class="s">'1012 AB'</span> },</span></div><div class="ln"><span>15</span><span>}</span></div><div class="ln"><span>16</span><span></span></div><div class="ln"><span>17</span><span><span class="k">export function</span> <span class="f">validatePostal</span>(country: <span class="t">Country</span>, raw: <span class="t">string</span>): <span class="t">PostalVerdict</span> {</span></div><div class="ln"><span>18</span><span>  <span class="k">const</span> rule = RULES[country]</span></div><div class="ln hl"><span>19</span><span>  <span class="k">const</span> code = raw.<span class="f">trim</span>().<span class="f">replace</span>(<span class="n">/\s+/g</span>, <span class="s">' '</span>)   <span class="c">// autocomplete formats; we validate raw</span></span></div><div class="ln"><span>20</span><span>  <span class="k">if</span> (rule.re.<span class="f">test</span>(code)) <span class="k">return</span> { ok: <span class="k">true</span>, numeric: rule.numeric }</span></div><div class="ln"><span>21</span><span>  <span class="k">return</span> {</span></div><div class="ln"><span>22</span><span>    ok: <span class="k">false</span>,</span></div><div class="ln"><span>23</span><span>    numeric: rule.numeric,</span></div><div class="ln"><span>24</span><span>    message: <span class="s">`Postal codes for ${</span><span class="f">countryName</span>(country)<span class="s">} look like ${rule.example}`</span>,</span></div><div class="ln"><span>25</span><span>  }</span></div><div class="ln"><span>26</span><span>}</span></div><div class="ln"><span>27</span><span></span></div><div class="ln"><span>28</span><span><span class="k">function</span> <span class="f">countryName</span>(c: <span class="t">Country</span>): <span class="t">string</span> {</span></div><div class="ln"><span>29</span><span>  <span class="k">return</span> { CA: <span class="s">'Canada'</span>, US: <span class="s">'the US'</span>, GB: <span class="s">'the UK'</span>, NL: <span class="s">'the Netherlands'</span> }[c]</span></div><div class="ln"><span>30</span><span>}</span></div></pre>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 14px;border-top:1px solid #2b303b;background:#161920" class="muted"><span style="font-size:12px">Highlighted lines were changed by <span class="mark m-claude" style="width:16px;height:16px;font-size:9px;vertical-align:-3px">C</span> Checkout flow · 14 min ago</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Blame</button><button class="btn btn-quiet btn-sm">Diff vs main</button><button class="btn btn-quiet btn-sm">Copy path</button></div>
+    </section>
+
+    <aside style="border-left:1px solid #2b303b;background:#161920;display:flex;flex-direction:column;box-sizing:border-box">
+      <div style="padding:16px 16px 10px;display:flex;flex-direction:column;gap:4px;border-bottom:1px solid #2b303b">
+        <span class="label">Pinned</span>
+        <span class="muted" style="font-size:12px">Files you or a console pinned stay here across sessions.</span>
+      </div>
+      <div style="padding:10px 10px;display:flex;flex-direction:column;gap:2px">
+        <button class="tree on" style="height:30px">postal.ts<span class="chip" style="height:14px;font-size:9px;margin-left:auto">you</span></button>
+        <button class="tree" style="height:30px">Form.tsx<span class="mark m-claude" style="width:14px;height:14px;font-size:8px;margin-left:auto">C</span></button>
+        <button class="tree" style="height:30px">postal.test.ts<span class="mark m-claude" style="width:14px;height:14px;font-size:8px;margin-left:auto">C</span></button>
+        <button class="tree" style="height:30px;color:#9ba3b4">docs/adr/0007-tax-rounding.md<span class="mark m-codex" style="width:14px;height:14px;font-size:8px;margin-left:auto">X</span></button>
+      </div>
+      <div style="padding:10px 16px;display:flex;flex-direction:column;gap:8px;border-top:1px solid #2b303b">
+        <span class="label">Symbols in this file</span>
+        <div class="mono" style="font-size:11px;line-height:1.9;color:#c0c6d1"><div><span class="t">type</span> Country</div><div><span class="t">interface</span> PostalVerdict</div><div><span class="k">const</span> RULES</div><div style="color:#e7e9ee"><span class="f">fn</span> validatePostal</div><div><span class="f">fn</span> countryName</div></div>
+      </div>
+      <div style="flex:1"></div>
+      <div style="padding:12px 16px;border-top:1px solid #2b303b;background:#12151b;display:flex;flex-direction:column;gap:8px">
+        <span class="label">Send to a console</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm"><span class="mark m-claude" style="width:14px;height:14px;font-size:8px">C</span>Explain this file</button><button class="btn btn-sm"><span class="mark m-codex" style="width:14px;height:14px;font-size:8px">X</span>Review lines 11–19</button></div>
+        <span class="muted" style="font-size:12px">Pastes the path and line range into the console's prompt. You press Enter.</span>
+      </div>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

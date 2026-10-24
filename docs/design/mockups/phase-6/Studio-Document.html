@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Document studio</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st-working{background:#13284d;color:#9dbfff}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.ol{display:flex;align-items:center;gap:8px;width:100%;height:28px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:#c0c6d1;text-align:left;font-size:12px}
+.ol.on{background:#262b35;color:#e7e9ee;font-weight:600}
+.ol.sub{padding-left:24px}
+.doc{color:#171a21;background:#ffffff;font-family:Inter,system-ui,sans-serif}
+.doc h1{margin:0 0 8px;font-size:26px;font-weight:700;letter-spacing:-.01em}
+.doc h2{margin:22px 0 8px;font-size:17px;font-weight:600}
+.doc p{margin:0 0 10px;font-size:13px;line-height:1.6;color:#2b2f38}
+.doc code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;background:#f3f4f7;padding:1px 4px;border-radius:3px}
+.doc table{border-collapse:collapse;width:100%;font-size:12px;margin:6px 0 12px}
+.doc th,.doc td{border:1px solid #dcdfe6;padding:6px 8px;text-align:left;vertical-align:top}
+.doc th{background:#f6f7f9;font-weight:600}
+.cursor{display:inline-block;width:2px;height:14px;background:#3355dd;vertical-align:-2px}
+.ico{width:14px;height:14px;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:500">acme-storefront</span><span class="chip">main</span></div>
+    <nav aria-label="Studios" style="display:flex;align-items:center;align-self:stretch;margin-left:8px"><button class="tab">Board</button><button class="tab on">Document</button><button class="tab">Diagram</button><button class="tab">Code</button><button class="tab">Vault</button></nav>
+    <div style="flex:1"></div>
+    <button class="btn btn-sm">Export Markdown</button>
+    <button class="btn btn-sm btn-primary">Export PDF</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <main style="flex:1;display:grid;grid-template-columns:240px minmax(0,1fr) 300px;min-height:856px">
+
+    <aside style="border-right:1px solid #2b303b;background:#12151b;padding:16px 10px;display:flex;flex-direction:column;gap:4px;box-sizing:border-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 10px 8px"><span class="label">Outline</span><span class="mono muted" style="font-size:11px">6 pages</span></div>
+      <button class="ol">1 · Overview</button>
+      <button class="ol">2 · Checkout flow</button>
+      <button class="ol sub">2.1 Address and postal codes</button>
+      <button class="ol sub">2.2 Tax calculation</button>
+      <button class="ol on">3 · Data model</button>
+      <button class="ol sub">3.1 Order</button>
+      <button class="ol sub">3.2 LineItem and TaxLine</button>
+      <button class="ol" style="color:#9ba3b4">4 · Integrations <span class="chip" style="height:16px;font-size:10px;margin-left:auto">writing…</span></button>
+      <button class="ol" style="color:#646c80">5 · Operations</button>
+      <button class="ol" style="color:#646c80">6 · Open questions</button>
+      <div style="flex:1"></div>
+      <div style="padding:10px;border:1px solid #2b303b;border-radius:8px;display:flex;flex-direction:column;gap:6px;background:#161920">
+        <span class="label">Source</span>
+        <span style="font-size:12px">Repo <span class="mono">acme-storefront</span> at <span class="mono">a41f09c</span></span>
+        <span class="muted" style="font-size:12px">Prompt: “Write the architecture handbook for a new engineer.”</span>
+      </div>
+    </aside>
+
+    <section aria-label="Document" style="padding:24px 32px;overflow:hidden;display:flex;justify-content:center;background:#0e1014">
+      <div class="doc" style="width:100%;max-width:720px;min-height:800px;padding:44px 56px;border-radius:4px;box-shadow:0 1px 2px rgb(0 0 0/.5),0 12px 40px rgb(0 0 0/.45);box-sizing:border-box;position:relative">
+        <span style="position:absolute;right:16px;top:12px;font-size:10px;color:#7f8798;font-family:'JetBrains Mono',monospace">page 3 of 6</span>
+        <h1>3 · Data model</h1>
+        <p>Orders are the aggregate root. Everything money-related hangs off a <code>LineItem</code>, and tax is never stored on the order total: it is recomputed from <code>TaxLine</code> rows so that rounding is reproducible per line.</p>
+        <h2>3.1 Order</h2>
+        <p>An <code>Order</code> carries the customer, a shipping <code>Address</code>, a currency and a status. Postal codes are validated by <code>validatePostal(country, code)</code> before the address is accepted, and stored as entered — the autocomplete component formats for display only.</p>
+        <table>
+          <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>ulid</td><td>time-sortable</td></tr>
+            <tr><td><code>currency</code></td><td><code>'CAD' | 'USD' | 'GBP' | 'EUR'</code></td><td>fixed at creation</td></tr>
+            <tr><td><code>address.postal</code></td><td>string</td><td>raw; validated per country</td></tr>
+            <tr><td><code>status</code></td><td>enum</td><td>draft → placed → paid → shipped</td></tr>
+          </tbody>
+        </table>
+        <h2>3.2 LineItem and TaxLine</h2>
+        <p>Each <code>LineItem</code> owns one or more <code>TaxLine</code>s. Amounts are integers in minor units. Rounding is half-even and applied per tax line, because the accounting export (Xero) rejects invoices whose line taxes do not sum to the total.</p>
+        <p>The rule lives in <code>src/tax/round.ts</code> as <code>roundHalfEven(value, 2)</code>, replacing the earlier <code>Math.round</code>, which drifted by a cent on CAD orders with 13% HST<span class="cursor"></span></p>
+      </div>
+    </section>
+
+    <aside style="border-left:1px solid #2b303b;background:#161920;display:flex;flex-direction:column;box-sizing:border-box">
+      <div style="padding:16px 16px 12px;border-bottom:1px solid #2b303b;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px"><span class="mark m-claude">C</span><span style="font-weight:600;flex:1">Handbook writer</span><span class="pill st-working" style="height:20px;font-size:11px"><span class="dot" style="background:#9dbfff"></span>Writing</span></div>
+        <span class="muted" style="font-size:12px">A console on the board. The studio streams its output into pages; you can type to it here or on the board.</span>
+        <div style="display:flex;gap:6px"><button class="btn btn-sm">Pause</button><button class="btn btn-sm">Regenerate 3.2</button><button class="btn btn-sm btn-quiet">Open console</button></div>
+      </div>
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1">
+        <span class="label">Steer the next section</span>
+        <textarea rows="4" aria-label="Instruction" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font:inherit;font-size:12px;line-height:1.5;resize:vertical">For “4 · Integrations”, cover Xero and QuickBooks Online: auth, the invoice mapping, and the retry policy. One table, no prose longer than 5 lines.</textarea>
+        <button class="btn btn-sm btn-primary" style="align-self:flex-end">Send</button>
+        <div style="height:1px;background:#2b303b"></div>
+        <span class="label">Reads so far</span>
+        <ul class="mono" style="margin:0;padding-left:16px;font-size:11px;line-height:1.8;color:#c0c6d1">
+          <li>src/orders/Order.ts</li><li>src/tax/round.ts</li><li>src/lib/postal.ts</li><li>docs/adr/0007-tax-rounding.md</li><li>package.json</li>
+        </ul>
+        <span class="muted" style="font-size:12px">14 files · 38k tokens · 4 min</span>
+      </div>
+      <div style="padding:12px 16px;border-top:1px solid #2b303b;display:flex;flex-direction:column;gap:6px;background:#12151b">
+        <span class="label">Export</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">A4</span><span class="chip">Letter</span><span class="chip" style="color:#e7e9ee;border-color:#646c80">page numbers</span><span class="chip">cover page</span></div>
+        <span class="muted" style="font-size:12px">Saved as <span class="mono">docs/handbook.md</span> in the repo on every change.</span>
+      </div>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

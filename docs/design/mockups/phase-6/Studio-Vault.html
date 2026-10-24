@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Markdown vault</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.note{display:flex;flex-direction:column;gap:2px;width:100%;padding:8px 10px;border:0;border-radius:6px;background:transparent;color:#e7e9ee;text-align:left}
+.note.on{background:#262b35}
+.note .t{font-weight:500;font-size:13px}
+.note .m{color:#9ba3b4;font-size:11px}
+.fold{padding:10px 10px 4px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.md{max-width:720px;margin:0 auto;color:#e7e9ee;font-size:14px;line-height:1.65}
+.md h1{margin:0 0 6px;font-size:26px;font-weight:700;letter-spacing:-.01em}
+.md h2{margin:22px 0 8px;font-size:17px;font-weight:600}
+.md p{margin:0 0 10px}
+.md ul{margin:0 0 10px;padding-left:20px}
+.md code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;background:#1e222a;padding:1px 5px;border-radius:4px}
+.wl{color:#7b93ff;border-bottom:1px dotted #7b93ff}
+.wl.new{color:#9ba3b4;border-bottom-color:#646c80}
+.gnode{position:absolute;display:flex;flex-direction:column;align-items:center;gap:4px;transform:translate(-50%,-50%)}
+.gnode i{display:block;width:12px;height:12px;border-radius:50%;background:#646c80}
+.gnode.me i{width:18px;height:18px;background:#7b93ff;box-shadow:0 0 0 4px rgb(123 147 255/.2)}
+.gnode b{font-weight:500;font-size:10px;color:#c0c6d1;white-space:nowrap}
+.gl{position:absolute;height:1px;background:#3a4150;transform-origin:0 50%}
+.ico{width:14px;height:14px;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:500">acme-storefront</span><span class="chip">docs/vault</span></div>
+    <nav aria-label="Studios" style="display:flex;align-items:center;align-self:stretch;margin-left:8px"><button class="tab">Board</button><button class="tab">Document</button><button class="tab">Diagram</button><button class="tab">Code</button><button class="tab on">Vault</button></nav>
+    <div style="flex:1"></div>
+    <span class="muted" style="font-size:12px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#6fdc9a"></span>saved · plain .md files in the repo</span>
+    <button class="btn btn-sm">New note <span class="kbd">⌘N</span></button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <main style="flex:1;display:grid;grid-template-columns:260px minmax(0,1fr) 320px;min-height:856px">
+
+    <aside style="border-right:1px solid #2b303b;background:#12151b;padding:10px 8px;display:flex;flex-direction:column;gap:2px;box-sizing:border-box;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:8px;height:30px;padding:0 10px;margin:2px 2px 6px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#9ba3b4;font-size:12px"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Search 23 notes</div>
+      <div class="fold">Decisions</div>
+      <button class="note on"><span class="t">Tax rounding</span><span class="m">ADR-0007 · edited 2m ago by Reviewer</span></button>
+      <button class="note"><span class="t">Worktree per console</span><span class="m">ADR-0003 · Oct 12</span></button>
+      <button class="note"><span class="t">No auto-approve, ever</span><span class="m">ADR-0001 · Oct 9</span></button>
+      <div class="fold">Agents</div>
+      <button class="note"><span class="t">Handoff brief format</span><span class="m">Oct 21</span></button>
+      <button class="note"><span class="t">Prompts that work</span><span class="m">Oct 19 · 9 links</span></button>
+      <div class="fold">Runbooks</div>
+      <button class="note"><span class="t">Release checklist</span><span class="m">Oct 18</span></button>
+      <button class="note"><span class="t">Xero export</span><span class="m">Oct 14</span></button>
+      <button class="note"><span class="t">Flaky tests</span><span class="m">Oct 11</span></button>
+      <div class="fold">Daily</div>
+      <button class="note"><span class="t">2026-10-23</span><span class="m">today · 3 consoles mentioned</span></button>
+      <button class="note"><span class="t">2026-10-22</span><span class="m"></span></button>
+      <div style="flex:1"></div>
+      <div style="padding:10px;border:1px solid #2b303b;border-radius:8px;background:#161920;display:flex;flex-direction:column;gap:4px"><span class="label">Vault</span><span class="mono muted" style="font-size:11px">docs/vault/**/*.md</span><span class="muted" style="font-size:11px">Works in Obsidian too. Nothing proprietary.</span></div>
+    </aside>
+
+    <section aria-label="Editor" style="padding:28px 40px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:8px;max-width:720px;margin:0 auto 14px"><span class="chip">Decisions</span><span class="mono muted" style="font-size:11px">docs/vault/decisions/tax-rounding.md</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Preview</button><button class="btn btn-quiet btn-sm">Push to console…</button></div>
+      <article class="md">
+        <h1>Tax rounding</h1>
+        <p class="muted" style="font-size:12px">ADR-0007 · accepted · see <span class="wl">[[Xero export]]</span>, <span class="wl">[[Checkout flow]]</span></p>
+        <h2>Context</h2>
+        <p>CAD orders with 13% HST drifted by a cent between our invoice total and what <span class="wl">[[Xero export]]</span> computed from line taxes. Xero rejects those invoices. The <span class="wl">[[Reviewer]]</span> console found it while reviewing <span class="wl">[[Checkout flow]]</span>'s diff on Oct 21.</p>
+        <h2>Decision</h2>
+        <p>Round half-even, per <code>TaxLine</code>, in minor units. Never round the order total; derive it. Implemented as <code>roundHalfEven(value, 2)</code> in <code>src/tax/round.ts</code>.</p>
+        <h2>Consequences</h2>
+        <ul>
+          <li>Existing orders are unaffected; totals are recomputed on read.</li>
+          <li>Tests assert line-sum equality for every fixture; see <span class="wl">[[Flaky tests]]</span> for the one that depended on the old rounding.</li>
+          <li>Memory entry pushed to new consoles on request: <span class="wl new">[[Project memory · tax]]</span> (not yet written).</li>
+        </ul>
+        <h2>Open</h2>
+        <p>Does <span class="wl">[[QuickBooks Online]]</span> behave the same? <span class="mark m-codex" style="width:16px;height:16px;font-size:9px;vertical-align:-3px">X</span> Reviewer suggested checking the sandbox before release.<span style="display:inline-block;width:2px;height:16px;background:#7b93ff;vertical-align:-3px;margin-left:1px"></span></p>
+      </article>
+    </section>
+
+    <aside style="border-left:1px solid #2b303b;background:#161920;display:flex;flex-direction:column;box-sizing:border-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px"><span class="label">Link graph</span><button class="btn btn-quiet btn-sm">Whole vault</button></div>
+      <div style="position:relative;height:300px;margin:0 12px;border:1px solid #2b303b;border-radius:8px;background:#0e1014;overflow:hidden" aria-label="Links around Tax rounding">
+        <div class="gl" style="left:148px;top:150px;width:86px;transform:rotate(-38deg)"></div>
+        <div class="gl" style="left:148px;top:150px;width:92px;transform:rotate(22deg)"></div>
+        <div class="gl" style="left:148px;top:150px;width:98px;transform:rotate(145deg)"></div>
+        <div class="gl" style="left:148px;top:150px;width:96px;transform:rotate(-125deg)"></div>
+        <div class="gl" style="left:148px;top:150px;width:110px;transform:rotate(78deg)"></div>
+        <div class="gl" style="left:148px;top:150px;width:112px;transform:rotate(-80deg)"></div>
+        <div class="gl" style="left:216px;top:97px;width:60px;transform:rotate(-30deg)"></div>
+        <div class="gl" style="left:68px;top:94px;width:54px;transform:rotate(-120deg)"></div>
+        <div class="gnode me" style="left:148px;top:150px"><i></i><b>Tax rounding</b></div>
+        <div class="gnode" style="left:216px;top:97px"><i></i><b>Xero export</b></div>
+        <div class="gnode" style="left:233px;top:184px"><i></i><b>Checkout flow</b></div>
+        <div class="gnode" style="left:68px;top:206px"><i></i><b>Flaky tests</b></div>
+        <div class="gnode" style="left:93px;top:71px"><i></i><b>Reviewer</b></div>
+        <div class="gnode" style="left:171px;top:258px"><i></i><b>QuickBooks Online</b></div>
+        <div class="gnode" style="left:167px;top:40px"><i style="background:#2a2f39;border:1px dashed #646c80"></i><b style="color:#9ba3b4">Project memory · tax</b></div>
+        <div class="gnode" style="left:268px;top:67px"><i style="width:8px;height:8px"></i><b>Release checklist</b></div>
+        <div class="gnode" style="left:41px;top:48px"><i style="width:8px;height:8px"></i><b>Handoff brief</b></div>
+      </div>
+      <div style="padding:14px 16px 8px;display:flex;flex-direction:column;gap:8px">
+        <span class="label">Backlinks · 4</span>
+        <button class="note" style="padding:6px 8px"><span class="t">Xero export</span><span class="m">“…per-line half-even, see [[Tax rounding]]…”</span></button>
+        <button class="note" style="padding:6px 8px"><span class="t">2026-10-23</span><span class="m">“Reviewer approved [[Tax rounding]] after…”</span></button>
+        <button class="note" style="padding:6px 8px"><span class="t">Release checklist</span><span class="m">“confirm invoices sum per [[Tax rounding]]”</span></button>
+        <button class="note" style="padding:6px 8px"><span class="t">Handoff brief format</span><span class="m">“link ADRs like [[Tax rounding]] instead of…”</span></button>
+      </div>
+      <div style="flex:1"></div>
+      <div style="padding:12px 16px;border-top:1px solid #2b303b;background:#12151b;display:flex;flex-direction:column;gap:6px">
+        <span class="label">Written by consoles</span>
+        <span class="muted" style="font-size:12px">A console can append to a note through <span class="mono">add_note</span>; the edit shows here with its mark, and you can revert it.</span>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px"><span class="mark m-codex">X</span>Reviewer appended “Open” · 2m ago<span style="flex:1"></span><button class="btn btn-quiet btn-sm">Revert</button></div>
+      </div>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
