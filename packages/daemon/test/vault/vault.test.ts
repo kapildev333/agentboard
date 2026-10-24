@@ -90,6 +90,7 @@ test("a symlinked folder leaving the repo refuses a new note, and nothing is wri
   const { repo, h } = setup({});
   const outside = mkdtempSync(join(tmpdir(), "agentboard-outside-"));
   dirs.push(outside);
+  mkdirSync(join(repo, "docs/vault"), { recursive: true });
   symlinkSync(outside, join(repo, "docs/vault/link"), "dir");
   await expect(call(h, "PUT /api/vault/note", { repo, path: "link/new.md", text: "x" })).rejects.toMatchObject({ status: 400 });
   await expect(call(h, "POST /api/vault/append", { repo, path: "link/new.md", text: "x", author: "a" })).rejects.toMatchObject({ status: 400 });

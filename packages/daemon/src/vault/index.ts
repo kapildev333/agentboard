@@ -1,14 +1,13 @@
+import { randomUUID } from "node:crypto";
 import { mkdir, readdir, readFile, realpath, rename, stat, writeFile } from "node:fs/promises";
-import { basename, dirname, join, posix, resolve, sep } from "node:path";
+import { basename, dirname, join, posix, relative, resolve, sep } from "node:path";
+import type { VaultNote } from "@agentboard/shared";
 import { HttpError } from "../files/http-error.js";
 import type { RouteHandlers } from "../server/index.js";
 
 const ROOT = "docs/vault";
 const EXCERPT = 90;
 
-export type VaultNote = { path: string; title: string; folder: string; mtime: number; links: string[]; backlinks: string[] };
-export type VaultBacklink = { path: string; title: string; excerpt: string };
-export type VaultDetail = { path: string; title: string; text: string; mtime: number; links: string[]; backlinks: VaultBacklink[] };
 export type VaultDeps = {
   /** The absolute repository path for a `repo` the daemon has loaded; rejects for an unknown one. */
   repoOf(repo: string): Promise<string>;
@@ -64,12 +63,12 @@ export function createVaultHandlers({ repoOf }: VaultDeps): VaultRoutes {
     return { hits, links: [...new Set(hits.map((h) => h.note?.title ?? h.target))] };
   }
 
-  async function detail(repo: string, path: string): Promise<VaultDetail> {
+  async function detail(repo: string, path: string): Promise<VaultNote> {
     const notes = await load(repo);
     const self = notes.find((n) => n.path === path);
     if (!self) throw new HttpError(404, `no note ${path}`);
     const titles = byTitle(notes);
-    const backlinks: VaultBacklink[] = [];
+    const backlinks: VaultNote["backlinks"] = [];
     for (const n of notes) {
       if (n === self) continue;
       const hit = resolveLinks(n, titles).hits.find((h) => h.note === self);
@@ -88,16 +87,17 @@ export function createVaultHandlers({ repoOf }: VaultDeps): VaultRoutes {
     const root = await rootOf(repo);
     const abs = resolve(root, path);
     if (!abs.startsWith(root + sep)) throw new HttpError(400, `not a vault note path: ${path}`);
-    // A symbolic link that leaves the repository is refused; a path not created yet has nothing to resolve.
-    const real = await realpath(abs).catch(() => undefined);
-    const repoReal = await realpath(await repoOf(repo));
-    if (real && !real.startsWith(repoReal + sep)) throw new HttpError(400, `not a vault note path: ${path}`);
+    // Resolve the nearest existing ancestor, so a symlinked folder is caught before a new note is written under it.
+    let near = abs;
+    while (!(await realpath(near).then(() => true, () => false))) near = dirname(near);
+    const real = join(await realpath(near), relative(near, abs));
+    if (!real.startsWith(join(await realpath(await repoOf(repo)), ROOT) + sep)) throw new HttpError(400, `not a vault note path: ${path}`);
     return abs;
   }
 
   async function save(abs: string, text: string) {
     await mkdir(dirname(abs), { recursive: true });
-    const tmp = `${abs}.${process.pid}.tmp`;
+    const tmp = `${abs}.${randomUUID()}.tmp`;
     await writeFile(tmp, text);
     await rename(tmp, abs);
   }
@@ -114,7 +114,7 @@ export function createVaultHandlers({ repoOf }: VaultDeps): VaultRoutes {
       });
       return {
         root: ROOT,
-        notes: resolved.map(({ n, links }): VaultNote => ({ path: n.path, title: n.title, folder: n.folder, mtime: n.mtime, links, backlinks: back.get(n.path) ?? [] })),
+        notes: resolved.map(({ n, links }) => ({ path: n.path, title: n.title, folder: n.folder, mtime: n.mtime, links, backlinks: back.get(n.path) ?? [] })),
       };
     },
     "GET /api/vault/note": async ({ repo, path }: { repo: string; path: string }) => {
