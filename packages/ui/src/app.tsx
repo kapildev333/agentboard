@@ -7,6 +7,7 @@ import { GitCard } from "./git";
 import { OpenInButtons } from "./open/OpenInButtons";
 import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
 import { MissionMap, StatusBadge, useNotifications } from "./status";
+import { WebTileView } from "./webtile";
 
 type Fetch = typeof globalThis.fetch;
 const Api = createContext<{ fetch: Fetch; fontSize: number }>({ fetch: globalThis.fetch, fontSize: 13 });
@@ -127,7 +128,7 @@ function NoteView(props: NodeProps) {
 }
 
 // Module-level so React Flow never remounts the nodes (and their terminals) on a render.
-const nodeTypes = { console: ConsoleView, note: NoteView };
+const nodeTypes = { console: ConsoleView, note: NoteView, webtile: WebTileView };
 
 const focusNode = (id: string) => {
   const el = document.querySelector<HTMLElement>(`[data-testid="node-${CSS.escape(id)}"]`);
