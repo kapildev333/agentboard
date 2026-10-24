@@ -5,6 +5,7 @@ import { Board, WorkspaceTabs, autosaveBoard, useBoard } from "./board";
 import { CommandBar } from "./command";
 import { ConsoleNode, type SocketLike } from "./console";
 import { GitCard } from "./git";
+import { LayoutMenu } from "./layout";
 import { OpenInButtons } from "./open/OpenInButtons";
 import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
 import { MissionMap, StatusBadge, useNotifications } from "./status";
@@ -262,6 +263,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           <strong className="topbar-repo" title={repo}>{repo.split("/").pop()}</strong>
           {ready && <WorkspaceTabs />}
           <span className="topbar-spacer" />
+          {ready && <LayoutMenu />}
           <button type="button" className="btn-primary" aria-expanded={panel === "spawn"} onClick={() => setPanel(panel === "spawn" ? null : "spawn")}>
             Spawn console
           </button>

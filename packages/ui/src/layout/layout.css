@@ -1,0 +1,35 @@
+.layout-menu {
+  position: relative;
+}
+.layout-pop {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 260px;
+  margin-top: 4px;
+  padding: 4px;
+  background: var(--surface, Canvas);
+  border: 1px solid var(--border, currentColor);
+  border-radius: 6px;
+}
+.layout-pop > button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+}
+.layout-pop form,
+.layout-saved {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.layout-pop input,
+.layout-saved span {
+  flex: 1;
+  min-width: 0;
+}
