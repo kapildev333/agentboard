@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { NodeProps } from "@xyflow/react";
 import { BoardSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type NoteNode, type Settings } from "@agentboard/shared";
 import { Board, WorkspaceTabs, autosaveBoard, useBoard } from "./board";
+import { CommandBar } from "./command";
 import { ConsoleNode, type SocketLike } from "./console";
 import { GitCard } from "./git";
 import { OpenInButtons } from "./open/OpenInButtons";
@@ -143,7 +144,8 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();
   const [settings, setSettings] = useState<Settings>({ fontSize: 13, customAgents: [] });
-  const [panel, setPanel] = useState<"spawn" | "settings" | null>(null);
+  const [panel, setPanel] = useState<"spawn" | "settings" | "command" | null>(null);
+  const flow = useRef<{ fitView: () => unknown }>(undefined);
   const empty = useBoard((s) => !s.board.workspaces.find((w) => w.id === s.board.activeWorkspaceId)?.nodes.length);
   useNotifications({ onFocus: focusNode });
   // Escape closes the spawn modal; its backdrop keeps every terminal from seeing the key first.
@@ -153,6 +155,18 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
   }, [panel]);
+
+  // ⌘K / Ctrl+K opens the command bar; capture phase, so a focused terminal never sees it.
+  useEffect(() => {
+    const open = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== "k" || !(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setPanel((p) => (p === "command" ? null : "command"));
+    };
+    window.addEventListener("keydown", open, true);
+    return () => window.removeEventListener("keydown", open, true);
+  }, []);
 
   useEffect(() => {
     if (!repo) return;
@@ -250,12 +264,15 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           <button type="button" className="btn-primary" aria-expanded={panel === "spawn"} onClick={() => setPanel(panel === "spawn" ? null : "spawn")}>
             Spawn console
           </button>
+          <button type="button" aria-label="Command" aria-keyshortcuts="Meta+K Control+K" aria-expanded={panel === "command"} onClick={() => setPanel(panel === "command" ? null : "command")}>
+            Command <kbd>⌘K</kbd>
+          </button>
           <button type="button" aria-expanded={panel === "settings"} onClick={() => setPanel(panel === "settings" ? null : "settings")}>
             Settings
           </button>
         </header>
         <main className="board">
-          {ready ? <Board nodeTypes={nodeTypes} /> : <p className="app-message muted">Loading the board…</p>}
+          {ready ? <Board nodeTypes={nodeTypes} onInit={(rf) => (flow.current = rf)} /> : <p className="app-message muted">Loading the board…</p>}
           {ready && empty && (
             <p className="empty-hint">
               Spawn a console or run <code>agentboard spawn</code> from any terminal
@@ -265,8 +282,9 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
         <div className="rail">
           <MissionMap onFocus={focusNode} />
         </div>
+        <CommandBar open={panel === "command"} onClose={() => setPanel(null)} fetch={fetch} repo={repo} onFocus={focusNode} onFit={() => void flow.current?.fitView()} />
         {panel === "spawn" && <div className="backdrop" onClick={() => setPanel(null)} />}
-        {panel && (
+        {(panel === "spawn" || panel === "settings") && (
           <div role="dialog" aria-label={panel === "spawn" ? "Spawn console" : "Settings"} className={panel === "spawn" ? "modal" : "drawer"}>
             <h2 className="panel-title">{panel === "spawn" ? "Spawn console" : "Settings"}</h2>
             {panel === "spawn" ? (

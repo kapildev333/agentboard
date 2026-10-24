@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Board, ConsoleNode, Plan } from "@agentboard/shared";
+import type { Board, ConsoleNode, Plan, PlanStep } from "@agentboard/shared";
 import { App } from "../../src/app";
 import { useBoard } from "../../src/board";
 
@@ -10,6 +10,8 @@ vi.mock("../../src/console", () => ({
 }));
 
 beforeAll(() => {
+  globalThis.CSS ??= { escape: (s: string) => s } as never;
+  HTMLElement.prototype.scrollIntoView = () => {};
   globalThis.ResizeObserver ??= class {
     observe() {}
     unobserve() {}
@@ -29,8 +31,8 @@ const boardWith = (...nodes: ConsoleNode[]): Board => ({
   workspaces: [{ id: "main", name: "main", viewport: { x: 0, y: 0, zoom: 1 }, nodes }],
 });
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
-const fitStep = { id: "s1", kind: "fit", summary: "Fit all consoles", asks: false } as const;
-const closeStep = { id: "s2", kind: "close", consoleIds: ["c1"], summary: "Close Title c1", detail: "It is idle.", asks: true } as const;
+const fitStep: PlanStep = { id: "s1", kind: "fit", summary: "Fit all consoles", asks: false };
+const closeStep: PlanStep = { id: "s2", kind: "close", consoleIds: ["c1"], summary: "Close Title c1", detail: "It is idle.", asks: true };
 const plan = (...steps: Plan["steps"]): Plan => ({ id: "p1", text: "t", steps, plannedBy: "rules", ms: 3, reply: "ok" });
 
 function setup(board: Board, planned: Plan, run: unknown = { results: [] }) {
@@ -100,11 +102,12 @@ describe("CommandBar", () => {
 
   it("Run posts confirmed and skipped ids and performs focus and fit", async () => {
     const calls = setup(boardWith(node("c1")), plan(fitStep, closeStep), {
-      results: [{ stepId: "s1", status: "done" }, { stepId: "s2", status: "failed", error: "no such console" }],
+      results: [{ stepId: "s1", status: "done" }, { stepId: "s2", status: "done" }],
       focus: "c1",
       fit: true,
     });
-    const onFocus = vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(() => {});
+    const onFocus = vi.spyOn(HTMLElement.prototype, "scrollIntoView");
+    await screen.findByTestId("node-c1");
     const input = await openBar();
     type(input, "x");
     fireEvent.keyDown(input, { key: "Enter" });
@@ -117,22 +120,23 @@ describe("CommandBar", () => {
     expect(post.method).toBe("POST");
     expect(post.body.confirmed).toEqual(["s2"]);
     expect(post.body.skipped).toEqual([]);
-    expect(await screen.findByText("no such console")).toBeTruthy();
     // focus closes the dialog so the terminal gets the keys
     await waitFor(() => expect(onFocus).toHaveBeenCalled());
+    expect(screen.queryByRole("dialog", { name: "Command bar" })).toBeNull();
     onFocus.mockRestore();
   });
 
   it("Alt+Enter runs without focusing", async () => {
-    const calls = setup(boardWith(node("c1")), plan(fitStep), { results: [{ stepId: "s1", status: "done" }], focus: "c1", fit: true });
-    const scroll = vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(() => {});
+    const calls = setup(boardWith(node("c1")), plan(fitStep), { results: [{ stepId: "s1", status: "failed", error: "no such console" }], focus: "c1", fit: true });
+    await screen.findByTestId("node-c1");
+    const scroll = vi.spyOn(HTMLElement.prototype, "scrollIntoView");
     const input = await openBar();
     type(input, "x");
     fireEvent.keyDown(input, { key: "Enter" });
     await screen.findByText("safe");
     fireEvent.keyDown(input, { key: "Enter", altKey: true });
     await waitFor(() => expect(calls.some((c) => c.url === "/api/command/run")).toBe(true));
-    expect(await screen.findByText("done")).toBeTruthy();
+    expect(await screen.findByText("no such console")).toBeTruthy();
     expect(scroll).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog", { name: "Command bar" })).toBeTruthy();
     scroll.mockRestore();
@@ -158,8 +162,9 @@ describe("CommandBar", () => {
   });
 
   it("the needs-me suggestion focuses that console", async () => {
-    const scroll = vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(() => {});
+    const scroll = vi.spyOn(HTMLElement.prototype, "scrollIntoView");
     setup(boardWith(node("c1", "needs_you")), plan());
+    await screen.findByTestId("node-c1");
     await openBar();
     fireEvent.click(screen.getByRole("button", { name: "Focus the console that needs me · Title c1" }));
     await waitFor(() => expect(scroll).toHaveBeenCalled());
