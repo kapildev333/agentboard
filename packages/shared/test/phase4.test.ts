@@ -40,6 +40,23 @@ test("an old settings file without profiles, composerTemplates and memory parses
   });
 });
 
+test("the status response carries summaries beside consoles, and one without summaries still parses", () => {
+  const summary = fixture("summary");
+  expect(shared.StatusResponseSchema.parse({ consoles: [], summaries: [summary] })).toEqual({ consoles: [], summaries: [summary] });
+  expect(shared.StatusResponseSchema.parse({ consoles: [] })).toEqual({ consoles: [] });
+});
+
+test("a spawn request accepts profileId and role", () => {
+  const req = { agent: "claude", cwd: "/tmp/r", profileId: "claude-work", role: "builder" };
+  expect(shared.SpawnConsoleRequestSchema.parse(req)).toEqual(req);
+});
+
+test("the daemon sends an event message over the socket", () => {
+  const msg = { t: "event", event: fixture("event") };
+  expect(shared.parseDaemonMessage(msg)).toEqual(msg);
+  expect(() => shared.parseDaemonMessage({ t: "event", event: { id: "x" } })).toThrow();
+});
+
 test("a workspace without teams parses, and one with teams keeps them", () => {
   const ws = { id: "ws-main", name: "Main", viewport: { x: 0, y: 0, zoom: 1 }, nodes: [] };
   expect(shared.WorkspaceSchema.parse(ws)).toEqual(ws);
