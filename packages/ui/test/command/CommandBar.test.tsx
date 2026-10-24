@@ -36,7 +36,7 @@ const closeStep: PlanStep = { id: "s2", kind: "close", consoleIds: ["c1"], summa
 const plan = (...steps: Plan["steps"]): Plan => ({ id: "p1", text: "t", steps, plannedBy: "rules", ms: 3, reply: "ok" });
 
 function setup(board: Board, planned: Plan, run: unknown = { results: [] }) {
-  const calls: { url: string; method: string; body?: any }[] = [];
+  const calls: { url: string; method: string; body?: { text: string; confirmed: string[]; skipped: string[] } }[] = [];
   const fetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
     const method = init?.method ?? "GET";
     calls.push({ url: String(url), method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
