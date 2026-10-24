@@ -3,7 +3,7 @@ import { afterEach, beforeAll, beforeEach, expect, it } from "vitest";
 import { ReactFlow, ReactFlowProvider } from "@xyflow/react";
 import type { Board, Stroke } from "@agentboard/shared";
 import { useBoard } from "../src/board";
-import { InkLayer, InkToolbar } from "../src/ink";
+import { InkLayer, InkToolbar, useInk } from "../src/ink";
 
 beforeAll(() => {
   // jsdom has no PointerEvent, so fireEvent would drop clientX and clientY.
@@ -42,7 +42,10 @@ const drag = (pts: [number, number][]) => {
   fireEvent.pointerUp(overlay(), { clientX: pts.at(-1)![0], clientY: pts.at(-1)![1], pointerId: 1 });
 };
 
-beforeEach(() => load());
+beforeEach(() => {
+  load();
+  useInk.setState({ mode: "off", color: "var(--color-accent)", width: 4 });
+});
 afterEach(cleanup);
 
 it("a pointer drag in pen mode adds one stroke with the pointer's flow coordinates", () => {
@@ -59,8 +62,21 @@ it("the eraser removes a stroke it crosses", () => {
   load([stroke("s1", [[0, 0], [100, 0]]), stroke("s2", [[0, 200], [100, 200]])]);
   setup();
   fireEvent.click(screen.getByRole("button", { name: "Eraser" }));
-  drag([[100, 50 + 4], [100, 50 - 4]]); // flow (0,2) to (0,-2): across s1 only
+  drag([[200, 50 + 4], [200, 50 - 4]]); // flow (50,2) to (50,-2): across the middle of s1, far from both its points
   expect(ink().map((s) => s.id)).toEqual(["s2"]);
+});
+
+it.each(["pointerCancel", "lostPointerCapture", "unmount"] as const)("an eraser drag ended by %s does not erase on hover afterwards", (end) => {
+  load([stroke("s1", [[0, 0], [100, 0]])]);
+  setup();
+  fireEvent.click(screen.getByRole("button", { name: "Eraser" }));
+  fireEvent.pointerDown(overlay(), { clientX: 100, clientY: 400, pointerId: 1 }); // off the stroke
+  if (end === "unmount") fireEvent.click(screen.getByRole("button", { name: "Done" }));
+  else fireEvent[end](overlay(), { pointerId: 1 });
+  fireEvent.click(screen.getByRole("button", { name: "Done" }));
+  fireEvent.click(screen.getByRole("button", { name: "Eraser" }));
+  fireEvent.pointerMove(overlay(), { clientX: 200, clientY: 50, pointerId: 1 }); // hover over s1, no button down
+  expect(ink().map((s) => s.id)).toEqual(["s1"]);
 });
 
 it("Escape leaves ink mode unless a terminal has focus", () => {
