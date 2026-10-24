@@ -130,6 +130,8 @@ describe("useVoice", () => {
     expect(screen.getAllByText("reply to close c1 and fit")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Confirm step 2" }));
     expect(speak.mock.calls.filter(([t]) => t === "reply to close c1 and fit")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(speak.mock.calls.at(-1)).toEqual([""]);
   });
 
   it("a second hold saying confirm runs the plan with the asking steps confirmed", async () => {
@@ -153,5 +155,55 @@ describe("useVoice", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open settings" }));
     expect(screen.getByRole("dialog", { name: "Settings" })).toBeTruthy();
     expect(screen.queryByRole("dialog", { name: "Voice command" })).toBeNull();
+  });
+
+  it("the microphone stream is requested once and reused by later holds", async () => {
+    const { getUserMedia } = setup({ transcripts: ["one", "two"] });
+    await hold();
+    await screen.findByText("listening");
+    release();
+    await screen.findByText("Spoken reply");
+    await hold();
+    await waitFor(() => expect(FakeRecorder.started).toBe(2));
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+  });
+
+  it("losing window focus mid-hold stops the recording and posts the audio", async () => {
+    const { calls } = setup();
+    await hold();
+    await screen.findByText("listening");
+    fireEvent.blur(window);
+    await waitFor(() => expect(calls.some((c) => c.url === "/api/voice/transcribe")).toBe(true));
+  });
+
+  it("a tab that turns hidden mid-hold stops the recording and posts the audio", async () => {
+    const { calls } = setup();
+    await hold();
+    await screen.findByText("listening");
+    Object.defineProperty(document, "visibilityState", { configurable: true, value: "hidden" });
+    try {
+      fireEvent(document, new Event("visibilitychange"));
+      await waitFor(() => expect(calls.some((c) => c.url === "/api/voice/transcribe")).toBe(true));
+    } finally {
+      delete (document as { visibilityState?: unknown }).visibilityState;
+    }
+  });
+
+  it("a repeated Alt+Space keydown does not start a second recording", async () => {
+    setup();
+    await hold();
+    await screen.findByText("listening");
+    fireEvent.keyDown(window, { code: "Space", key: " ", altKey: true, repeat: true });
+    expect(FakeRecorder.started).toBe(1);
+  });
+
+  it("Type instead puts the transcript in the Command bar input", async () => {
+    setup();
+    await hold();
+    release();
+    await screen.findByText("Spoken reply");
+    fireEvent.click(screen.getByRole("button", { name: "Type instead" }));
+    const bar = await screen.findByRole("dialog", { name: "Command bar" });
+    await waitFor(() => expect((bar.querySelector("input") as HTMLInputElement).value).toBe("close c1 and fit"));
   });
 });
