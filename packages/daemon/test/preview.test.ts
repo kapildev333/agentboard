@@ -74,3 +74,20 @@ test.each([["a wrong key", "0".repeat(32)], ["a short key", key.slice(0, 31)], [
   expect((await via(board, `${t.origin}/page`, {}, k)).status).toBe(404);
   expect(t.seen).toEqual([]);
 });
+
+test.each(["POST", "PUT", "DELETE", "OPTIONS"])("a %s is 405", async (method) => {
+  const t = await startTarget(), board = await startBoard();
+  const res = await via(board, `${t.origin}/page`, { method, headers: { origin: board.origin } });
+  expect(res.status).toBe(405);
+  expect(res.headers.get("allow")).toBe("GET, HEAD");
+  expect(t.seen).toEqual([]);
+});
+
+test("a HEAD reaches the target as a HEAD and comes back without a body", async () => {
+  const t = await startTarget(), board = await startBoard();
+  const res = await via(board, `${t.origin}/page`, { method: "HEAD", headers: { origin: board.origin } });
+  expect(res.status).toBe(200);
+  expect(res.headers.get("content-type")).toBe("text/html");
+  expect(await res.text()).toBe("");
+  expect(t.seen.map((s) => s.method)).toEqual(["HEAD"]);
+});
