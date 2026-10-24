@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Integrations: command, MCP server, plugins</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}.m-gemini{background:#13284d;color:#9dbfff}.m-opencode{background:#2c1f4a;color:#d2a8ff}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.code{background:#0b0d11;border:1px solid #2b303b;border-radius:6px;padding:10px 12px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;line-height:1.6;color:#d9dee8;white-space:pre;overflow:hidden;margin:0}
+.t-dim{color:#8b949e}.t-green{color:#7ee787}.t-cyan{color:#76e3ea}.t-yellow{color:#e3c76b}.t-blue{color:#79a6ff}.t-magenta{color:#d2a8ff}
+.seg{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid #2b303b;border-radius:6px;background:#1e222a;color:#9ba3b4;font-size:12px}
+.seg.on{border-color:#7b93ff;color:#e7e9ee;box-shadow:0 0 0 1px #7b93ff}
+.cmdrow{display:grid;grid-template-columns:200px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid #2b303b;align-items:baseline}
+.cmdrow:last-child{border-bottom:0}
+.logrow{display:grid;grid-template-columns:56px 150px 1fr 110px;gap:10px;padding:6px 0;border-bottom:1px solid #2b303b;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;align-items:center}
+.logrow:last-child{border-bottom:0}
+.ico{width:14px;height:14px;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:500">acme-storefront</span><span class="chip">main</span></div>
+    <nav aria-label="Workspaces" style="display:flex;align-items:center;align-self:stretch;margin-left:8px"><button class="tab">main <span class="kbd">⌘1</span></button><button class="tab">checkout <span class="kbd">⌘2</span></button></nav>
+    <div style="flex:1"></div>
+    <button class="btn btn-quiet btn-sm">← Back to board</button>
+    <button class="btn btn-primary">Spawn console</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <main style="flex:1;padding:28px 32px 32px;display:flex;flex-direction:column;gap:20px;box-sizing:border-box;max-width:1440px;width:100%;margin:0 auto">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <h1 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em">Integrations</h1>
+        <p class="muted" style="margin:0">Any agent can open the board or spawn a console: a command, an MCP server, or a plugin. All three read the port and token from <span class="mono">~/.agentboard/daemon.json</span>.</p>
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px"><span class="dot" style="background:#6fdc9a"></span>command on PATH</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px"><span class="dot" style="background:#6fdc9a"></span>MCP registered in 3 of 4 CLIs</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px"><span class="dot" style="background:#e3c76b"></span>OpenCode plugin not installed</span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px">
+
+      <section class="card" style="grid-column:span 4;padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><h2 style="margin:0;font-size:14px;font-weight:600">The command</h2><span class="chip" style="color:#6fdc9a;border-color:#10331f;background:#10331f">on PATH · 0.2.0</span></div>
+        <p class="muted" style="margin:0;font-size:12px">Every subcommand starts the daemon if none answers and prints JSON, so shell scripts and agents can parse it.</p>
+        <div>
+          <div class="cmdrow"><span class="mono" style="font-size:12px;color:#d9dee8">agentboard open [path]</span><span class="muted" style="font-size:12px">Open a repo as a board; focuses an existing tab</span></div>
+          <div class="cmdrow"><span class="mono" style="font-size:12px;color:#d9dee8">agentboard spawn &lt;agent&gt;</span><span class="muted" style="font-size:12px"><span class="mono">--worktree name</span> <span class="mono">--prompt text</span> <span class="mono">--title</span></span></div>
+          <div class="cmdrow"><span class="mono" style="font-size:12px;color:#d9dee8">agentboard note &lt;text&gt;</span><span class="muted" style="font-size:12px">Sticky beside the calling console</span></div>
+          <div class="cmdrow"><span class="mono" style="font-size:12px;color:#d9dee8">agentboard status</span><span class="muted" style="font-size:12px">Every console with its state, as JSON</span></div>
+          <div class="cmdrow"><span class="mono" style="font-size:12px;color:#d9dee8">agentboard mcp</span><span class="muted" style="font-size:12px">The MCP server over stdio</span></div>
+        </div>
+        <pre class="code"><span class="t-dim">$</span> agentboard spawn opencode --worktree feat-x --prompt "add tests"
+{
+  <span class="t-cyan">"id"</span>: <span class="t-green">"c_8f2a"</span>,
+  <span class="t-cyan">"worktree"</span>: <span class="t-green">".worktrees/feat-x"</span>,
+  <span class="t-cyan">"branch"</span>: <span class="t-green">"feat-x"</span>,
+  <span class="t-cyan">"placedBeside"</span>: <span class="t-green">"c_41be"</span>   <span class="t-dim">// the caller's console</span>
+}</pre>
+      </section>
+
+      <section class="card" style="grid-column:span 4;padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><h2 style="margin:0;font-size:14px;font-weight:600">MCP server</h2><span class="chip">stdio · 5 tools</span></div>
+        <p class="muted" style="margin:0;font-size:12px">One line registers it. Tools: <span class="mono">open_board</span> <span class="mono">spawn_console</span> <span class="mono">list_consoles</span> <span class="mono">add_note</span> <span class="mono">get_status</span>.</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" role="tablist">
+          <button class="seg on" role="tab" aria-selected="true"><span class="mark m-claude" style="width:16px;height:16px;font-size:9px">C</span>claude <span class="dot" style="background:#6fdc9a"></span></button>
+          <button class="seg" role="tab" aria-selected="false"><span class="mark m-codex" style="width:16px;height:16px;font-size:9px">X</span>codex <span class="dot" style="background:#6fdc9a"></span></button>
+          <button class="seg" role="tab" aria-selected="false"><span class="mark m-gemini" style="width:16px;height:16px;font-size:9px">G</span>gemini <span class="dot" style="background:#6fdc9a"></span></button>
+          <button class="seg" role="tab" aria-selected="false"><span class="mark m-opencode" style="width:16px;height:16px;font-size:9px">O</span>opencode <span class="dot" style="background:#646c80"></span></button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between"><span class="label">Register in Claude Code</span><button class="btn btn-quiet btn-sm">Copy</button></div>
+        <pre class="code"><span class="t-dim">$</span> claude mcp add agentboard -- agentboard mcp</pre>
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid #10331f;border-radius:6px;background:#0f2418;color:#6fdc9a;font-size:12px"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"></path></svg>Registered in <span class="mono">~/.claude.json</span> · last call 2 min ago</div>
+        <div style="display:flex;align-items:center;justify-content:space-between"><span class="label">What the agent sees</span></div>
+        <pre class="code"><span class="t-magenta">spawn_console</span>({ agent: <span class="t-green">"opencode"</span>, worktree: <span class="t-green">"feat-x"</span>,
+                prompt: <span class="t-green">"add tests for postal.ts"</span> })
+<span class="t-dim">→ { id: "c_8f2a", status: "starting" }</span></pre>
+      </section>
+
+      <section class="card" style="grid-column:span 4;padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><h2 style="margin:0;font-size:14px;font-weight:600">Plugins</h2><span class="chip">status without the board launching the CLI</span></div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:12px 14px;border:1px solid #2b303b;border-radius:8px;background:#12151b">
+          <div style="display:flex;align-items:center;gap:8px"><span class="mark m-claude">C</span><span style="font-weight:600;flex:1">Claude Code plugin</span><span style="display:flex;align-items:center;gap:6px;color:#6fdc9a;font-size:12px"><span class="dot" style="background:#6fdc9a"></span>installed</span></div>
+          <span class="muted" style="font-size:12px">Adds <span class="mono">/board</span> and the status hooks, so a plain <span class="mono">claude</span> session in any terminal gets a node and a status.</span>
+          <pre class="code" style="padding:8px 10px"><span class="t-dim">$</span> claude plugin marketplace add [YOUR-ORG]/agentboard
+<span class="t-dim">$</span> claude plugin install agentboard</pre>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:12px 14px;border:1px solid #5a3a14;border-radius:8px;background:#1f1708">
+          <div style="display:flex;align-items:center;gap:8px"><span class="mark m-opencode">O</span><span style="font-weight:600;flex:1">OpenCode plugin</span><span style="display:flex;align-items:center;gap:6px;color:#f5d36b;font-size:12px"><span class="dot" style="background:#e3c76b"></span>not installed</span></div>
+          <span class="muted" style="font-size:12px">One file. Subscribes to <span class="mono">session.status</span>, <span class="mono">session.idle</span>, <span class="mono">permission.asked</span> and exposes a <span class="mono">board</span> tool to the agent.</span>
+          <pre class="code" style="padding:8px 10px"><span class="t-dim">→</span> ~/.config/opencode/plugins/agentboard.ts  <span class="t-dim">(pinned to opencode 1.3)</span></pre>
+          <div style="display:flex;gap:8px"><button class="btn btn-sm">Preview file</button><button class="btn btn-sm btn-primary">Install plugin</button></div>
+        </div>
+      </section>
+
+      <section class="card" style="grid-column:span 12;padding:16px 20px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><h2 style="margin:0;font-size:14px;font-weight:600">Calls received by the daemon</h2><span class="mono muted" style="font-size:11px">127.0.0.1:51823 · token checked · Origin and Host checked · 0 refused today</span></div>
+        <div>
+          <div class="logrow" style="color:#9ba3b4;border-bottom:1px solid #2b303b"><span>time</span><span>from</span><span>call</span><span>result</span></div>
+          <div class="logrow"><span class="muted">22:04:11</span><span style="display:flex;align-items:center;gap:6px"><span class="mark m-claude" style="width:14px;height:14px;font-size:8px">C</span>Checkout flow</span><span><span class="t-magenta">spawn_console</span> opencode --worktree chore-ci</span><span style="color:#6fdc9a">c_8f2a · beside caller</span></div>
+          <div class="logrow"><span class="muted">22:01:48</span><span style="display:flex;align-items:center;gap:6px"><span class="mark m-codex" style="width:14px;height:14px;font-size:8px">X</span>Tax rounding fix</span><span><span class="t-blue">hook</span> notify agent-turn-complete</span><span style="color:#c0c6d1">status → idle</span></div>
+          <div class="logrow"><span class="muted">21:58:02</span><span class="muted">shell</span><span><span class="t-magenta">agentboard note</span> "Review the tax diff before merging"</span><span style="color:#6fdc9a">n_12 placed</span></div>
+          <div class="logrow"><span class="muted">21:57:30</span><span style="display:flex;align-items:center;gap:6px"><span class="mark m-claude" style="width:14px;height:14px;font-size:8px">C</span>Checkout flow</span><span><span class="t-blue">hook</span> PermissionRequest</span><span style="color:#ff6b5e">status → needs you</span></div>
+          <div class="logrow"><span class="muted">21:40:12</span><span class="muted">http://evil.example</span><span>POST /spawn</span><span style="color:#ff8a80">403 · bad Origin</span></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

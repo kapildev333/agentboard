@@ -36,6 +36,7 @@ const pairs = [
   // ANSI black is left out: programs paint it as a background
   ...["red", "green", "yellow", "blue", "magenta", "cyan", "white"].flatMap((c) => [`term-ansi-${c}`, `term-ansi-bright-${c}`]).map((t) => [t, "term-bg"]),
   ["term-ansi-bright-black", "term-bg"],
+  ...["claude", "codex", "gemini", "opencode", "custom"].map((a) => [`mark-${a}-fg`, `mark-${a}-bg`]),
 ];
 // Non-text: control borders need 3:1 (WCAG 1.4.11).
 const borders = [

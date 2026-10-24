@@ -36,7 +36,7 @@ for lane, (lid, title, owns, after, model) in lanes.items():
     if full in existing:
         continue
     _, produces, first_test, done = cards[lid]
-    phase = {"0": "0", "1": "1", "2": "2"}[lid[1]]
+    phase = lid[1]
     body = "\n".join([
         f"Lane {lid} · phase {phase} · model {model}",
         f"Owns: {owns}",

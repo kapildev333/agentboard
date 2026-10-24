@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Console states after a daemon restart</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-danger{border-color:#ff8a80;color:#ff8a80;background:transparent}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st-starting{background:#3a2f0b;color:#f5d36b}.st-working{background:#13284d;color:#9dbfff}.st-idle{background:#10331f;color:#6fdc9a}.st-needs{background:#ff6b5e;color:#1f0604;font-weight:700;box-shadow:0 0 0 2px #161920,0 0 0 3px #ff6b5e}.st-stopped{background:#2a2f39;color:#c0c6d1}.st-exited{background:#22262e;color:#a3abbb}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}.m-gemini{background:#13284d;color:#9dbfff}.m-opencode{background:#2c1f4a;color:#d2a8ff}.m-custom{background:#2a2f39;color:#c0c6d1}
+.term{background:#0b0d11;border-radius:6px;color:#d9dee8;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12px;line-height:1.6;padding:10px 12px;white-space:pre;overflow:hidden;margin:0}
+.t-dim{color:#8b949e}.t-red{color:#ff7b72}.t-green{color:#7ee787}.t-yellow{color:#e3c76b}.t-blue{color:#79a6ff}.t-magenta{color:#d2a8ff}.t-cyan{color:#76e3ea}.t-bold{font-weight:700;color:#ffffff}
+.cursor{display:inline-block;width:7px;height:13px;background:#d9dee8;vertical-align:-2px}
+.canvas{background-color:#0e1014;background-image:radial-gradient(#2c313c 1px,transparent 1.5px);background-size:20px 20px}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.node{position:absolute;width:440px;height:300px;display:flex;flex-direction:column;overflow:hidden}
+.node-head{display:flex;align-items:center;gap:8px;height:36px;padding:0 8px 0 10px;border-bottom:1px solid #2b303b;cursor:grab}
+.node-foot{display:flex;align-items:center;gap:4px;height:30px;padding:0 6px 0 10px;border-top:1px solid #2b303b}
+.cap{position:absolute;width:440px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;line-height:1.5}
+.ico{width:14px;height:14px;flex:none}
+.br{width:11px;height:11px}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;flex-wrap:wrap;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <div style="display:flex;align-items:center;gap:6px"><span style="font-weight:500">acme-storefront</span><span class="chip">main</span></div>
+    <nav aria-label="Workspaces" style="display:flex;align-items:center;align-self:stretch;margin-left:8px">
+      <button class="tab on">main <span class="kbd">⌘1</span></button>
+      <button class="tab">checkout <span class="kbd">⌘2</span></button>
+    </nav>
+    <div style="flex:1"></div>
+    <button class="btn btn-quiet btn-sm mono" aria-label="Zoom level">75%</button>
+    <button class="btn btn-quiet btn-sm">Mission map <span class="chip" style="height:16px;padding:0 5px;font-size:10px;color:#1f0604;background:#ff6b5e;border-color:#ff6b5e">1</span></button>
+    <button class="btn btn-primary">Spawn console</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <main class="canvas" aria-label="Board" style="position:relative;flex:1;min-height:856px;overflow:hidden">
+
+    <div role="status" class="card" style="position:absolute;left:24px;top:16px;right:24px;height:48px;display:flex;align-items:center;gap:12px;padding:0 10px 0 16px;background:#1e222a;box-sizing:border-box">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#f5d36b" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"></path></svg>
+      <span><strong style="font-weight:600">Daemon restarted</strong> <span class="muted">· 4 consoles are back in place as stopped. Scrollback is gone; each CLI's own conversation resumes.</span></span>
+      <span style="flex:1"></span>
+      <button class="btn btn-sm">Start all fresh</button>
+      <button class="btn btn-sm btn-primary">Resume all</button>
+      <button class="btn btn-quiet btn-sm btn-icon" aria-label="Dismiss"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+    </div>
+
+    <!-- Row 1 -->
+    <article class="card node" aria-label="Console: starting" style="left:24px;top:84px">
+      <header class="node-head">
+        <span class="mark m-claude" aria-hidden="true">C</span>
+        <span style="font-weight:600">Postal validation</span>
+        <span class="chip"><svg class="ico br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"></circle><circle cx="6" cy="18" r="2.5"></circle><circle cx="18" cy="8" r="2.5"></circle><path d="M6 8.5v7M18 10.5c0 3-3 4-6 4.5-2 .3-4 1-4 3"></path></svg>feat/postal-validation</span>
+        <span style="flex:1"></span>
+        <span class="mono muted" style="font-size:11px">0s</span>
+        <span class="pill st-starting"><span class="dot" style="background:#f5d36b"></span>Starting</span>
+      </header>
+      <pre class="term" style="flex:1;margin:8px"><span class="t-dim">$ claude --session-id 9c41…e07a --name "Postal validation"</span>
+<span class="t-dim">  --settings '{"hooks":…}'   # per-session, posts to 127.0.0.1:51823</span>
+
+<span class="t-yellow">●</span> <span class="t-dim">waiting for the first hook event or output…</span> <span class="cursor"></span></pre>
+      <footer class="node-foot"><span class="mono muted" style="font-size:11px">.worktrees/feat-postal-validation</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Git</button><button class="btn btn-quiet btn-sm">Open ▾</button><button class="btn btn-quiet btn-sm" aria-label="More">…</button></footer>
+    </article>
+    <p class="cap" style="left:24px;top:392px;margin:0">starting · until the first hook or byte of output · amber tint</p>
+
+    <article class="card node" aria-label="Console: working, focused" style="left:488px;top:84px;box-shadow:0 0 0 2px #7b93ff,0 4px 16px rgb(0 0 0/.35)">
+      <header class="node-head">
+        <span class="mark m-claude" aria-hidden="true">C</span>
+        <span style="font-weight:600">Checkout flow</span>
+        <span class="chip"><svg class="ico br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"></circle><circle cx="6" cy="18" r="2.5"></circle><circle cx="18" cy="8" r="2.5"></circle><path d="M6 8.5v7M18 10.5c0 3-3 4-6 4.5-2 .3-4 1-4 3"></path></svg>feat/checkout</span>
+        <span style="flex:1"></span>
+        <span class="mono muted" style="font-size:11px">12m</span>
+        <span class="pill st-working"><span class="dot" style="background:#9dbfff"></span>Working</span>
+      </header>
+      <pre class="term" style="flex:1;margin:8px"><span class="t-blue">●</span> Read <span class="t-cyan">src/checkout/Form.tsx</span>
+<span class="t-green">●</span> Edit <span class="t-cyan">src/lib/postal.ts</span> <span class="t-green">+42</span> <span class="t-red">−7</span>
+<span class="t-yellow">●</span> Bash <span class="t-dim">npm test -- postal</span>
+  <span class="t-green">✓ 18 passed</span> <span class="t-dim">(1.8s)</span>
+<span class="t-blue">●</span> Edit <span class="t-cyan">src/checkout/Form.tsx</span> <span class="t-dim">writing…</span> <span class="cursor"></span></pre>
+      <footer class="node-foot"><span class="mono muted" style="font-size:11px">.worktrees/feat-checkout</span><span style="flex:1"></span><span class="kbd">Esc leaves</span><button class="btn btn-quiet btn-sm">Git</button><button class="btn btn-quiet btn-sm">Open ▾</button><button class="btn btn-quiet btn-sm" aria-label="More">…</button></footer>
+    </article>
+    <p class="cap" style="left:488px;top:392px;margin:0">working · focused: 2 px accent ring, keys and scroll go to the PTY</p>
+
+    <article class="card node" aria-label="Console: idle" style="left:952px;top:84px">
+      <header class="node-head">
+        <span class="mark m-opencode" aria-hidden="true">O</span>
+        <span style="font-weight:600">CI cleanup</span>
+        <span class="chip"><svg class="ico br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"></circle><circle cx="6" cy="18" r="2.5"></circle><circle cx="18" cy="8" r="2.5"></circle><path d="M6 8.5v7M18 10.5c0 3-3 4-6 4.5-2 .3-4 1-4 3"></path></svg>chore/ci</span>
+        <span style="flex:1"></span>
+        <span class="mono muted" style="font-size:11px">41m</span>
+        <span class="pill st-idle"><span class="dot" style="background:#6fdc9a"></span>Idle</span>
+      </header>
+      <pre class="term" style="flex:1;margin:8px"><span class="t-green">✓</span> .github/workflows/ci.yml <span class="t-dim">updated</span>
+<span class="t-green">✓</span> 3 jobs → 2 jobs, pnpm cache restored
+
+<span class="t-dim">Waiting for input.</span> <span class="cursor"></span></pre>
+      <footer class="node-foot"><span class="mono muted" style="font-size:11px">.worktrees/chore-ci</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Git</button><button class="btn btn-quiet btn-sm">Open ▾</button><button class="btn btn-quiet btn-sm" aria-label="More">…</button></footer>
+    </article>
+    <p class="cap" style="left:952px;top:392px;margin:0">idle · Stop / session.idle / notify, or 20 s quiet for custom CLIs</p>
+
+    <!-- Row 2 -->
+    <article class="card node" aria-label="Console: needs you" style="left:24px;top:442px;box-shadow:0 0 0 2px #ff6b5e,0 4px 16px rgb(255 107 94/.25)">
+      <header class="node-head">
+        <span class="mark m-codex" aria-hidden="true">X</span>
+        <span style="font-weight:600">Tax rounding fix</span>
+        <span class="chip"><svg class="ico br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"></circle><circle cx="6" cy="18" r="2.5"></circle><circle cx="18" cy="8" r="2.5"></circle><path d="M6 8.5v7M18 10.5c0 3-3 4-6 4.5-2 .3-4 1-4 3"></path></svg>fix/tax-rounding</span>
+        <span style="flex:1"></span>
+        <span class="mono muted" style="font-size:11px">3m</span>
+        <span class="pill st-needs">Needs you</span>
+      </header>
+      <pre class="term" style="flex:1;margin:8px">  <span class="t-red">- return Math.round(v * 100) / 100</span>
+  <span class="t-green">+ return roundHalfEven(v, 2)</span>
+
+<span class="t-yellow">?</span> <span class="t-bold">Apply this change and run tests?</span> <span class="t-dim">[y/N]</span> <span class="cursor"></span></pre>
+      <footer class="node-foot"><span class="mono muted" style="font-size:11px">.worktrees/fix-tax-rounding</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Git</button><button class="btn btn-quiet btn-sm">Open ▾</button><button class="btn btn-quiet btn-sm" aria-label="More">…</button></footer>
+    </article>
+    <p class="cap" style="left:24px;top:750px;margin:0">needs you · the only solid fill · 2 px ring · tab title badge + web notification when hidden</p>
+
+    <article class="card node" aria-label="Console: stopped" style="left:488px;top:442px">
+      <header class="node-head">
+        <span class="mark m-gemini" aria-hidden="true">G</span>
+        <span style="font-weight:600">Docs pass</span>
+        <span class="chip"><svg class="ico br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"></circle><circle cx="6" cy="18" r="2.5"></circle><circle cx="18" cy="8" r="2.5"></circle><path d="M6 8.5v7M18 10.5c0 3-3 4-6 4.5-2 .3-4 1-4 3"></path></svg>main</span>
+        <span style="flex:1"></span>
+        <span class="pill st-stopped"><span class="dot" style="background:#646c80"></span>Stopped</span>
+      </header>
+      <div style="position:relative;flex:1;margin:8px;display:flex">
+        <pre class="term" style="flex:1;opacity:.45"><span class="t-green">✓</span> README.md <span class="t-dim">sections 1–3 rewritten</span>
+<span class="t-dim">session ended · daemon restarted</span></pre>
+        <div class="card" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:300px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:#1e222a">
+          <div style="display:flex;align-items:center;gap:8px"><span class="label">Stopped</span><span class="mono muted" style="font-size:11px">daemon restarted 2m ago</span></div>
+          <div class="mono muted" style="font-size:11px">session 7f3a…c21e · <span style="color:#c0c6d1">gemini --resume 7f3a…c21e</span></div>
+          <div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1">Resume session</button><button class="btn" style="flex:1">Start fresh</button></div>
+        </div>
+      </div>
+      <footer class="node-foot"><span class="mono muted" style="font-size:11px">~/code/acme-storefront</span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Git</button><button class="btn btn-quiet btn-sm">Open ▾</button><button class="btn btn-quiet btn-sm" aria-label="More">…</button></footer>
+    </article>
+    <p class="cap" style="left:488px;top:750px;margin:0">stopped · after a daemon restart · Resume runs the CLI's own resume in the same cwd</p>
+
+    <article class="card node" aria-label="Console: exited" style="left:952px;top:442px">
+      <header class="node-head">
+        <span class="mark m-custom" aria-hidden="true">A</span>
+        <span style="font-weight:600">Lint sweep</span>
+        <span class="chip"><svg class="ico br" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"></circle><circle cx="6" cy="18" r="2.5"></circle><circle cx="18" cy="8" r="2.5"></circle><path d="M6 8.5v7M18 10.5c0 3-3 4-6 4.5-2 .3-4 1-4 3"></path></svg>chore/lint</span>
+        <span style="flex:1"></span>
+        <span class="mono muted" style="font-size:11px">1h 02m</span>
+        <span class="pill st-exited"><span class="dot" style="background:#555e6e"></span>Exited 0</span>
+      </header>
+      <div style="position:relative;flex:1;margin:8px;display:flex">
+        <pre class="term" style="flex:1;opacity:.6"><span class="t-green">✓</span> 212 files, 0 errors, 3 warnings
+<span class="t-dim">aider exited with code 0</span></pre>
+        <div style="position:absolute;right:10px;bottom:10px;display:flex;gap:6px"><button class="btn btn-sm">Relaunch</button><button class="btn btn-sm btn-danger">Remove node</button></div>
+      </div>
+      <footer class="node-foot"><span class="mono muted" style="font-size:11px">.worktrees/chore-lint · <span style="color:#6fdc9a">pushed</span></span><span style="flex:1"></span><button class="btn btn-quiet btn-sm">Git</button><button class="btn btn-quiet btn-sm">Open ▾</button><button class="btn btn-quiet btn-sm" aria-label="More">…</button></footer>
+    </article>
+    <p class="cap" style="left:952px;top:750px;margin:0">exited · PTY closed on its own · exit code in the pill · worktree kept until you remove the node</p>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
