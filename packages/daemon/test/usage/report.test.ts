@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import type { ConsoleNode, Event } from "@agentboard/shared";
+import type { BoardEvent as Event, ConsoleNode } from "@agentboard/shared";
 import type { Session } from "../../src/usage/parsers/index.js";
 import { report, toCsv } from "../../src/usage/report.js";
 
