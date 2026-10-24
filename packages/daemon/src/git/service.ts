@@ -2,15 +2,18 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs
 import { dirname, join } from "node:path";
 import { simpleGit, type SimpleGit } from "simple-git";
 
-export type GitErrorCode = "dirty" | "unpushed";
+export type GitErrorCode = "dirty" | "unpushed" | "outside";
 
 export class GitError extends Error {
+  /** The server answers a refusal with this status and the message. */
+  readonly status: number;
   constructor(
     public code: GitErrorCode,
     message: string,
   ) {
     super(message);
     this.name = "GitError";
+    this.status = code === "outside" ? 400 : 409;
   }
 }
 
@@ -46,6 +49,11 @@ export class GitService {
     }
     const common = (await g.raw(["rev-parse", "--path-format=absolute", "--git-common-dir"])).trim();
     await simpleGit(dirname(common)).raw(["worktree", "remove", ...(opts.force ? ["--force"] : []), path]);
+  }
+
+  async branchDelete(repoPath: string, branch: string): Promise<void> {
+    if (branch.startsWith("-")) throw new Error(`"${branch}" must not start with '-'`);
+    await simpleGit(repoPath).raw(["branch", "-D", branch]);
   }
 
   async status(path: string) {

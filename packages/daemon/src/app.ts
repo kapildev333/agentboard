@@ -293,6 +293,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     "GET /api/git/status": (q) => git.status(q),
     "GET /api/git/diff": (q) => git.diff(q),
     "POST /api/git/worktree": (b) => git.worktree(b),
+    "DELETE /api/git/worktree": (b) => git.worktreeRemove(b),
     "POST /api/git/commit": (b) => git.commit(b),
     "POST /api/git/push": (b) => git.push(b),
     "POST /api/git/pr": (b) => git.pr(b),

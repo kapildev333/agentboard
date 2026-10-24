@@ -116,6 +116,7 @@ export const GitDiffSchema = z.object({
   patch: z.string(),
 });
 export const WorktreeRequestSchema = z.object({ repo: z.string(), name: z.string(), base: z.string() });
+export const WorktreeRemoveRequestSchema = z.object({ repo: z.string(), path: z.string(), branch: z.string(), deleteBranch: z.boolean(), force: z.boolean() });
 export const CommitRequestSchema = z.object({ path: z.string(), message: z.string() });
 export const CommitResponseSchema = z.object({ sha: z.string() });
 export const PushRequestSchema = z.object({ path: z.string() });

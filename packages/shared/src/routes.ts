@@ -22,6 +22,7 @@ export const routes = [
   { method: "GET", path: "/api/git/status", request: "GitPathQuerySchema", response: "GitStatusSchema" },
   { method: "GET", path: "/api/git/diff", request: "GitPathQuerySchema", response: "GitDiffSchema" },
   { method: "POST", path: "/api/git/worktree", request: "WorktreeRequestSchema", response: "WorktreeSchema" },
+  { method: "DELETE", path: "/api/git/worktree", request: "WorktreeRemoveRequestSchema", response: "OkSchema" },
   { method: "POST", path: "/api/git/commit", request: "CommitRequestSchema", response: "CommitResponseSchema" },
   { method: "POST", path: "/api/git/push", request: "PushRequestSchema", response: "OkSchema" },
   { method: "POST", path: "/api/git/pr", request: "PrRequestSchema", response: "PrResponseSchema" },
