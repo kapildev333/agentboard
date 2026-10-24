@@ -46,18 +46,18 @@ test("an alias and a heading link resolve, case-insensitively", async () => {
     "a.md": "# Alpha\n[[beta|the second]] and [[BETA#Setup]]\n",
     "b.md": "# Beta\n",
   });
-  const note = await call(h, "GET /api/vault/note", { repo, path: "b.md" });
+  const note: VaultNote = await call(h, "GET /api/vault/note", { repo, path: "b.md" });
   expect(note.backlinks).toHaveLength(1);
   expect(note.backlinks[0]).toMatchObject({ path: "a.md", title: "Alpha" });
   expect(note.backlinks[0].excerpt.length).toBeLessThanOrEqual(90);
   expect(note.backlinks[0].excerpt).toContain("[[beta|the second]]");
-  const a = await call(h, "GET /api/vault/note", { repo, path: "a.md" });
+  const a: VaultNote = await call(h, "GET /api/vault/note", { repo, path: "a.md" });
   expect(a.links).toEqual(["Beta"]);
 });
 
 test("a stale write gets 409; a current mtime saves", async () => {
   const { repo, h } = setup({ "a.md": "# A\n" });
-  const n = await call(h, "GET /api/vault/note", { repo, path: "a.md" });
+  const n: VaultNote = await call(h, "GET /api/vault/note", { repo, path: "a.md" });
   await expect(call(h, "PUT /api/vault/note", { repo, path: "a.md", text: "x", mtime: n.mtime - 1000 })).rejects.toMatchObject({ status: 409 });
   const saved = await call(h, "PUT /api/vault/note", { repo, path: "a.md", text: "# A\nnew\n", mtime: n.mtime });
   expect(saved.text).toBe("# A\nnew\n");
