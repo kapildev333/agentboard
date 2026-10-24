@@ -349,5 +349,150 @@
       "ms": 850,
       "engine": "whisper-cli"
     }
+  },
+  "GET /api/files": {
+    "request": {
+      "repo": "/tmp/demo-repo",
+      "path": "src"
+    },
+    "response": {
+      "path": "src",
+      "entries": [
+        {
+          "name": "lib",
+          "path": "src/lib",
+          "kind": "dir"
+        },
+        {
+          "name": "main.ts",
+          "path": "src/main.ts",
+          "kind": "file",
+          "status": "M"
+        }
+      ]
+    }
+  },
+  "GET /api/files/read": {
+    "request": {
+      "repo": "/tmp/demo-repo",
+      "path": "src/main.ts"
+    },
+    "response": {
+      "path": "src/main.ts",
+      "size": 24,
+      "lines": 2,
+      "text": "export const a = 1;\nlet b;",
+      "language": "ts"
+    }
+  },
+  "PUT /api/files/write": {
+    "request": {
+      "repo": "/tmp/demo-repo",
+      "path": "docs/handbook.md",
+      "text": "# Handbook\n"
+    },
+    "response": {
+      "ok": true
+    }
+  },
+  "POST /api/consoles/:id/input": {
+    "request": {
+      "data": "src/main.ts:3-5 "
+    },
+    "response": {
+      "ok": true
+    }
+  },
+  "GET /api/vault/notes": {
+    "request": {
+      "repo": "/tmp/demo-repo"
+    },
+    "response": {
+      "root": "docs/vault",
+      "notes": [
+        {
+          "path": "design/auth.md",
+          "title": "Auth",
+          "folder": "design",
+          "mtime": 1761200000000,
+          "links": [
+            "sessions.md"
+          ],
+          "backlinks": [
+            "index.md"
+          ]
+        }
+      ]
+    }
+  },
+  "GET /api/vault/note": {
+    "request": {
+      "repo": "/tmp/demo-repo",
+      "path": "design/auth.md"
+    },
+    "response": {
+      "path": "design/auth.md",
+      "title": "Auth",
+      "text": "# Auth\n\nSee [[Sessions]].\n",
+      "mtime": 1761200000000,
+      "links": [
+        "sessions.md"
+      ],
+      "backlinks": [
+        {
+          "path": "index.md",
+          "title": "Index",
+          "excerpt": "start with [[Auth]] then"
+        }
+      ]
+    }
+  },
+  "PUT /api/vault/note": {
+    "request": {
+      "repo": "/tmp/demo-repo",
+      "path": "design/auth.md",
+      "text": "# Auth\n\nSee [[Sessions]].\n",
+      "mtime": 1761200000000
+    },
+    "response": {
+      "path": "design/auth.md",
+      "title": "Auth",
+      "text": "# Auth\n\nSee [[Sessions]].\n",
+      "mtime": 1761200000000,
+      "links": [
+        "sessions.md"
+      ],
+      "backlinks": [
+        {
+          "path": "index.md",
+          "title": "Index",
+          "excerpt": "start with [[Auth]] then"
+        }
+      ]
+    }
+  },
+  "POST /api/vault/append": {
+    "request": {
+      "repo": "/tmp/demo-repo",
+      "path": "design/auth.md",
+      "text": "Tokens rotate daily.",
+      "author": "Claude"
+    },
+    "response": {
+      "path": "design/auth.md",
+      "title": "Auth",
+      "text": "# Auth\n\nSee [[Sessions]].\n",
+      "mtime": 1761200000000,
+      "links": [
+        "sessions.md"
+      ],
+      "backlinks": [
+        {
+          "path": "index.md",
+          "title": "Index",
+          "excerpt": "start with [[Auth]] then"
+        }
+      ]
+    }
   }
 }

@@ -57,6 +57,8 @@ export const BoardSchema = z.object({
   repoPath: z.string(),
   activeWorkspaceId: z.string(),
   workspaces: z.array(WorkspaceSchema),
+  /** Studios (phase 6): pinned file paths, and the document and diagram last opened. */
+  studio: z.object({ pins: z.array(z.string()).default([]), document: z.string().optional(), diagram: z.string().optional() }).optional(),
 });
 
 // WebSocket messages
@@ -166,3 +168,6 @@ export const VoiceSettingsSchema = z.object({ transcribeCommand: z.string(), hol
 // ~/.agentboard/settings.json
 export const SettingsSchema = z.object({ fontSize: z.number(), customAgents: z.array(CustomAgentSchema), planner: PlannerSettingsSchema.optional(), voice: VoiceSettingsSchema.optional() });
 export const OpenRequestSchema = z.object({ editor: z.enum(["code", "zed", "finder"]), path: z.string() });
+
+// Studio routes (phase 6); re-exported here so the route table can name them.
+export * from "./studios.js";
