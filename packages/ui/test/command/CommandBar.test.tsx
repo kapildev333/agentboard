@@ -3,6 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import type { Board, ConsoleNode, Plan, PlanStep } from "@agentboard/shared";
 import { App } from "../../src/app";
 import { useBoard } from "../../src/board";
+import { CommandBar } from "../../src/command";
 
 // xterm does not run in jsdom; the console module is L16's and has its own tests.
 vi.mock("../../src/console", () => ({
@@ -190,3 +191,94 @@ describe("CommandBar", () => {
   });
 });
 void act;
+
+// The component on its own: callbacks are spies, the fetch is scripted per request.
+describe("CommandBar in isolation", () => {
+  type Reply = Response | Promise<Response>;
+  const mount = (reply: (url: string, body: { text: string }) => Reply) => {
+    const posts: { url: string; body: any }[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const fetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      posts.push({ url: String(url), body });
+      return reply(String(url), body);
+    });
+    const onFit = vi.fn();
+    const onFocus = vi.fn();
+    render(<CommandBar open onClose={() => {}} fetch={fetch} repo="/r" onFocus={onFocus} onFit={onFit} />);
+    return { posts, onFit, onFocus, input: screen.getByRole("textbox", { name: "Command" }) };
+  };
+  const planned = (text: string, ...steps: Plan["steps"]) => json({ ...plan(...steps), text });
+  afterEach(() => vi.useRealTimers());
+
+  it("fit after a run that answers fit: true", async () => {
+    const { input, onFit } = mount((url, b) => (url.endsWith("/plan") ? planned(b.text, fitStep) : json({ results: [{ stepId: "s1", status: "done" }], fit: true })));
+    type(input, "fit");
+    fireEvent.keyDown(input, { key: "Enter" });
+    await screen.findByText("safe");
+    expect(onFit).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(onFit).toHaveBeenCalledTimes(1));
+  });
+
+  it("a plan response that arrives after the text changed is dropped", async () => {
+    let late!: (r: Response) => void;
+    const { input } = mount((_, b) => (b.text === "a" ? new Promise<Response>((r) => (late = r)) : planned(b.text, closeStep)));
+    type(input, "a");
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(late).toBeTypeOf("function"));
+    type(input, "ab");
+    fireEvent.keyDown(input, { key: "Enter" });
+    await screen.findByText("Close Title c1");
+    await act(async () => late(planned("a", fitStep)));
+    expect(screen.queryByText("Fit all consoles", { selector: "span" })).toBeNull();
+    expect(screen.getByText("Close Title c1")).toBeTruthy();
+  });
+
+  it("plans 300 ms after the last edit, once", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const { input, posts } = mount((_, b) => planned(b.text, fitStep));
+    type(input, "f");
+    act(() => void vi.advanceTimersByTime(200));
+    type(input, "fi");
+    act(() => void vi.advanceTimersByTime(299));
+    expect(posts).toHaveLength(0);
+    await act(async () => void vi.advanceTimersByTime(1));
+    expect(posts).toHaveLength(1);
+    expect(posts[0]!.body.text).toBe("fi");
+  });
+
+  it("posts the skipped ids", async () => {
+    const { input, posts } = mount((url, b) => (url.endsWith("/plan") ? planned(b.text, fitStep, closeStep) : json({ results: [] })));
+    type(input, "x");
+    fireEvent.keyDown(input, { key: "Enter" });
+    await screen.findByText("asks");
+    fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    fireEvent.click(screen.getByRole("button", { name: "Run 1 step" }));
+    await waitFor(() => expect(posts.some((p) => p.url.endsWith("/run"))).toBe(true));
+    const run = posts.find((p) => p.url.endsWith("/run"))!;
+    expect(run.body.skipped).toEqual(["s2"]);
+    expect(run.body.confirmed).toEqual([]);
+  });
+
+  it("a failed request alerts with the daemon's error", async () => {
+    const { input } = mount(() => json({ error: "planner is down" }, 500));
+    type(input, "x");
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect((await screen.findByRole("alert")).textContent).toBe("planner is down");
+  });
+});
+
+describe("⌘K capture", () => {
+  it("opens even from an element that stops keydown propagation", async () => {
+    setup(boardWith(), plan(fitStep));
+    await screen.findByRole("button", { name: "Command" });
+    const el = document.createElement("input");
+    el.addEventListener("keydown", (e) => e.stopPropagation());
+    document.body.append(el);
+    el.focus();
+    fireEvent.keyDown(el, { key: "k", ctrlKey: true });
+    expect(screen.getByRole("dialog", { name: "Command bar" })).toBeTruthy();
+    el.remove();
+  });
+});
