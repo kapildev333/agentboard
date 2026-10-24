@@ -14,15 +14,26 @@ import http from "node:http";
 export const previewKey = (secret: string) => createHash("sha256").update(secret).digest("hex").slice(0, 32);
 
 const FORWARD = ["accept", "accept-language", "user-agent"];
+const LOOPBACK = ["localhost", "127.0.0.1", "[::1]"];
+
+const decode = (s: string) => { try { return decodeURIComponent(s); } catch { return ""; } };
+
+// Plain http on a loopback host, with no credentials to turn into an Authorization header.
+function loopback(raw: string, base?: URL): URL | null {
+  try {
+    const u = new URL(raw, base);
+    return u.protocol === "http:" && LOOPBACK.includes(u.hostname) && !u.username && !u.password ? u : null;
+  } catch { return null; }
+}
 
 export function previewHandler(key: string) {
   return (req: http.IncomingMessage, res: http.ServerResponse): void => {
     const m = /^\/preview\/([^/]*)\/(.*)$/s.exec(req.url ?? "");
-    let target: URL;
-    try { target = new URL(decodeURIComponent(m![2]!)); } catch { return void res.writeHead(400).end(); }
+    const target = loopback(decode(m?.[2] ?? ""));
+    if (!target) return void res.writeHead(403).end();
     const board = `http://${req.headers.host}`;
     const headers = Object.fromEntries(FORWARD.filter((h) => req.headers[h] !== undefined).map((h) => [h, req.headers[h]!]));
-    const out = http.request({ host: target.hostname, port: target.port || 80, path: target.pathname + target.search, method: req.method, headers }, (up) => {
+    const out = http.request({ host: target.hostname.replace(/^\[|\]$/g, ""), port: target.port || 80, path: target.pathname + target.search, method: req.method, headers }, (up) => {
       const type = up.headers["content-type"];
       const html = req.method === "GET" && /^text\/html\b/i.test(type ?? "") && !up.headers["content-encoding"];
       res.setHeader("content-security-policy", `connect-src ${target.origin} ws://${target.host}; frame-ancestors ${board}`);
