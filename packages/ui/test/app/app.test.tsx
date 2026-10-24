@@ -4,6 +4,7 @@ import type { Board, ConsoleNode } from "@agentboard/shared";
 import { App } from "../../src/app";
 import { useBoard } from "../../src/board";
 import type { SocketLike } from "../../src/console";
+import { version } from "../../package.json";
 
 // xterm does not run in jsdom; the console module is L16's and has its own tests.
 vi.mock("../../src/console", () => ({
@@ -166,6 +167,17 @@ describe("App", () => {
     const api = fakeApi(boardWith());
     render(<App fetch={api.fetch} search="" connect={fakeSocket} />);
     expect(await screen.findByLabelText("repo path")).toBeTruthy();
+  });
+
+  it("the launch page shows the version and its Settings button opens the settings drawer", async () => {
+    const api = fakeApi(boardWith());
+    render(<App fetch={api.fetch} search="" connect={fakeSocket} />);
+    expect(screen.getByText(`v${version}`)).toBeTruthy();
+    const settings = screen.getByRole("button", { name: "Settings" });
+    fireEvent.click(settings);
+    expect(await screen.findByRole("dialog", { name: "Settings" })).toBeTruthy();
+    expect(settings.getAttribute("aria-expanded")).toBe("true");
+    await waitFor(() => expect(api.calls.some((c) => c.url === "/api/settings")).toBe(true));
   });
 
   it("an unauthenticated page says how to log in", async () => {
