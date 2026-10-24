@@ -23,6 +23,7 @@ async function startTarget() {
     if (req.url === "/page") return res.writeHead(200, { "content-type": "text/html", "set-cookie": "a=b" }).end("<!doctype html><html><head><title>t</title></head><body>hi</body></html>");
     if (req.url === "/bare") return res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end("<p>no head</p>");
     if (req.url === "/style.css") return res.writeHead(200, { "content-type": "text/css" }).end(CSS);
+    if (req.url === "/strict") return res.writeHead(200, { "content-type": "text/plain", "content-security-policy": "default-src 'none'" }).end("x");
     if (req.url === "/out") return res.writeHead(302, { location: "http://example.com/x" }).end();
     if (req.url === "/in") return res.writeHead(302, { location: "/style.css" }).end();
     res.writeHead(404).end();
@@ -127,6 +128,12 @@ test("a redirect to loopback is rewritten through the proxy", async () => {
   const res = await via(board, `${t.origin}/in`);
   expect(res.status).toBe(302);
   expect(res.headers.get("location")).toBe(`/preview/${key}/${encodeURIComponent(`${t.origin}/style.css`)}`);
+});
+
+test("the proxy's CSP comes ahead of the target's, which stays in force, and the page is sandboxed", async () => {
+  const t = await startTarget(), board = await startBoard();
+  const csp = (await via(board, `${t.origin}/strict`)).headers.get("content-security-policy");
+  expect(csp).toBe(`connect-src ${t.origin} ws://${t.origin.slice(7)}; frame-ancestors ${board.origin}; sandbox allow-scripts allow-forms, default-src 'none'`);
 });
 
 test("an html page with no head gets the tags at the top", async () => {
