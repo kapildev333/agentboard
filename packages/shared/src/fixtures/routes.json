@@ -245,7 +245,12 @@
           ],
           "needsYou": "approve\\?"
         }
-      ]
+      ],
+      "profiles": [],
+      "composerTemplates": [],
+      "memory": {
+        "offerAtSpawn": false
+      }
     }
   },
   "PUT /api/settings": {
@@ -261,7 +266,12 @@
           ],
           "needsYou": "approve\\?"
         }
-      ]
+      ],
+      "profiles": [],
+      "composerTemplates": [],
+      "memory": {
+        "offerAtSpawn": false
+      }
     },
     "response": {
       "ok": true
