@@ -12,10 +12,10 @@ test("the fixture's totals equal the hand-summed numbers exactly", () => {
     "-work-demo-api/aaaaaaaa-0000-4000-8000-000000000003.jsonl",
   ].flatMap((f) => parseClaude(fixture(f)) ?? []);
   // Input counts cache creation: 10 + 500 + 20 (the repeated msg_a2 line counts once); 5 + 7; 3.
-  expect(sessions.map(({ turns: _, ...s }) => s)).toEqual([
-    { agent: "claude", id: "aaaaaaaa-0000-4000-8000-000000000001", cwd: "/work/demo/shop", start: Date.parse("2026-10-20T08:59:00.000Z"), end: Date.parse("2026-10-20T09:30:00.000Z"), input: 530, output: 300, cacheRead: 1000 },
-    { agent: "claude", id: "aaaaaaaa-0000-4000-8000-000000000002", cwd: "/work/demo/shop", start: Date.parse("2026-10-21T14:00:00.000Z"), end: Date.parse("2026-10-21T14:10:00.000Z"), input: 12, output: 120, cacheRead: 0 },
-    { agent: "claude", id: "aaaaaaaa-0000-4000-8000-000000000003", cwd: "/work/demo/api", start: Date.parse("2026-10-22T08:00:00.000Z"), end: Date.parse("2026-10-22T08:00:00.000Z"), input: 3, output: 30, cacheRead: 0 },
+  expect(sessions.map((s) => ({ ...s, turns: undefined }))).toEqual([
+    { agent: "claude", id: "aaaaaaaa-0000-4000-8000-000000000001", cwd: "/work/demo/shop", start: Date.parse("2026-10-20T08:59:00.000Z"), end: Date.parse("2026-10-20T09:30:00.000Z"), input: 530, output: 300, cacheRead: 1000, turns: undefined },
+    { agent: "claude", id: "aaaaaaaa-0000-4000-8000-000000000002", cwd: "/work/demo/shop", start: Date.parse("2026-10-21T14:00:00.000Z"), end: Date.parse("2026-10-21T14:10:00.000Z"), input: 12, output: 120, cacheRead: 0, turns: undefined },
+    { agent: "claude", id: "aaaaaaaa-0000-4000-8000-000000000003", cwd: "/work/demo/api", start: Date.parse("2026-10-22T08:00:00.000Z"), end: Date.parse("2026-10-22T08:00:00.000Z"), input: 3, output: 30, cacheRead: 0, turns: undefined },
   ]);
   const sum = (k: "input" | "output" | "cacheRead") => sessions.reduce((n, s) => n + s[k], 0);
   expect([sum("input"), sum("output"), sum("cacheRead")]).toEqual([545, 450, 1000]);
