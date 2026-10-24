@@ -167,6 +167,11 @@ export function useVoice({ fetch, repo, onFocus, onFit, deps = {} }: {
     setError(undefined);
   };
 
+  // One utterance per plan; speaking cancels the one before.
+  useEffect(() => {
+    if (plan) speak(plan.reply);
+  }, [plan]);
+
   const asking = plan?.steps.filter((s) => s.asks) ?? [];
   const skipped = Object.keys(decisions).filter((id) => decisions[id] === "skipped");
   return {
