@@ -1,0 +1,11 @@
+{
+  "sessionId": "gggggggg-0000-4000-8000-000000000001",
+  "projectHash": "0f0f0f",
+  "startTime": "2026-10-22T11:00:00.000Z",
+  "lastUpdated": "2026-10-22T11:21:00.000Z",
+  "messages": [
+    {"id": "m1", "timestamp": "2026-10-22T11:00:00.000Z", "type": "user", "content": "explain the router"},
+    {"id": "m2", "timestamp": "2026-10-22T11:01:00.000Z", "type": "gemini", "content": "It maps paths.", "tokens": {"input": 900, "output": 80, "cached": 300, "thoughts": 10, "tool": 0, "total": 990}},
+    {"id": "m3", "timestamp": "2026-10-22T11:21:00.000Z", "type": "gemini", "content": "Added.", "tokens": {"input": 1200, "output": 120, "cached": 0, "thoughts": 0, "tool": 0, "total": 1320}}
+  ]
+}
