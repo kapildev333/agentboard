@@ -110,6 +110,39 @@ describe("App", () => {
     await waitFor(() => expect(screen.queryByText(/Spawn a console or run/)).toBeNull());
   });
 
+  it("the empty board offers Spawn a console and Add a note", async () => {
+    render(<App fetch={fakeApi(boardWith()).fetch} search="?repo=%2Fr" connect={fakeSocket} />);
+    expect(await screen.findByRole("heading", { name: "Nothing on this workspace yet" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Spawn a console" }));
+    expect(screen.getByRole("dialog", { name: "Spawn console" })).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // ⌘⇧N opens it too.
+    fireEvent.keyDown(window, { key: "N", metaKey: true, shiftKey: true });
+    expect(screen.getByRole("dialog", { name: "Spawn console" })).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Escape" });
+    const nodes = () => useBoard.getState().board.workspaces[0]!.nodes;
+    fireEvent.click(screen.getByRole("button", { name: "Add a note" }));
+    expect(nodes().map((n) => n.type)).toEqual(["note"]);
+    expect(await screen.findByTestId(`node-${nodes()[0]!.id}`)).toBeTruthy();
+    // N adds another, unless a field has the key.
+    fireEvent.keyDown(window, { key: "n" });
+    expect(nodes()).toHaveLength(2);
+    const field = document.body.appendChild(document.createElement("textarea"));
+    fireEvent.keyDown(field, { key: "n" });
+    expect(nodes()).toHaveLength(2);
+    field.remove();
+  });
+
+  it("the top bar shows the repo's current branch", async () => {
+    const api = fakeApi(boardWith());
+    const branch = { branch: "feat-x", ahead: 0, behind: 0, dirty: 0, lastCommit: null };
+    const fetch = vi.fn((url: string | URL | Request, init?: RequestInit) => (String(url).startsWith("/api/git/status") ? Promise.resolve(json(branch)) : api.fetch(url, init)));
+    render(<App fetch={fetch} search="?repo=%2Fr" connect={fakeSocket} />);
+    expect((await screen.findByText("feat-x")).closest("header")).toBeTruthy();
+    expect(fetch).toHaveBeenCalledWith("/api/git/status?path=%2Fr");
+  });
+
   it("a backdrop click and Escape each close the spawn modal without posting", async () => {
     const api = fakeApi(boardWith());
     const { container } = render(<App fetch={api.fetch} search="?repo=%2Fr" connect={fakeSocket} />);

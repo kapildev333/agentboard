@@ -3,7 +3,7 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { autosaveBoard } from "../../src/board/store";
 import type { Board as BoardData, BoardNode } from "@agentboard/shared";
-import { Board, useBoard } from "../../src/board";
+import { Board, ZoomLevel, useBoard } from "../../src/board";
 import { CONSOLE_DRAG_HANDLE } from "../../src/console/dragHandle";
 
 type Fn = (...a: never[]) => void;
@@ -90,6 +90,18 @@ describe("Board wiring", () => {
     const { container } = render(<Board nodeTypes={nodeTypes} />);
     expect(container.querySelector(".react-flow__minimap")).toBeTruthy();
     expect(screen.getByRole("button", { name: /fit view/i })).toBeTruthy();
+  });
+
+  it("the zoom toolbar holds zoom in, zoom out and fit view, without the lock", () => {
+    const { container } = render(<Board nodeTypes={nodeTypes} />);
+    const bar = container.querySelector(".react-flow__controls")!;
+    expect([...bar.querySelectorAll("button")].map((b) => b.getAttribute("aria-label"))).toEqual(["Zoom In", "Zoom Out", "Fit View"]);
+  });
+
+  it("the zoom level shows the active workspace's zoom as a percentage", () => {
+    act(() => useBoard.getState().switchWorkspace("b"));
+    render(<ZoomLevel />);
+    expect(screen.getByRole("button", { name: /150%/ }).textContent).toBe("150%");
   });
 
   it("remounts the canvas per workspace", () => {
