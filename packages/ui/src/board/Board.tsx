@@ -18,14 +18,13 @@ import { useBoard } from "./store";
 
 type Data = { node: BoardNode };
 
-/** Wraps every node view with the test id and a resizer that writes back through resizeNode. */
+/** Wraps every node view with the test id and a resizer that writes back through resizeNode; app.css shows the resizer on hover. */
 function withFrame(View: NodeTypes[string]) {
   return function Framed(props: NodeProps) {
     const { resizeNode, moveNode } = useBoard.getState();
     return (
-      <div data-testid={`node-${props.id}`} style={{ width: "100%", height: "100%" }}>
+      <div data-testid={`node-${props.id}`} className="node-frame">
         <NodeResizer
-          isVisible={props.selected}
           minWidth={120}
           minHeight={80}
           onResizeEnd={(_, p) => {
