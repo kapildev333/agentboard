@@ -5,6 +5,7 @@ import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { SettingsSchema, type AgentId, type Board, type ConsoleNode, type CustomAgent, type Settings, type Workspace } from "@agentboard/shared";
+import { AssetError, AssetStore } from "./assets/index.js";
 import { AgentCatalog, launchArgs, resumeArgs } from "./agents/index.js";
 import { GitService, createGitHandlers } from "./git/index.js";
 import { handleOpen } from "./open/index.js";
@@ -69,6 +70,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
   const loading = new Map<string, Promise<Board>>();
   const running = new Set<string>();
   const adopting = new Set<string>(); // consoles waiting for their next session id (D39)
+  const assets = new AssetStore(join(agentboardHome(), "assets"));
   const settingsFile = () => join(agentboardHome(), "settings.json");
 
   const loadBoard = (repo: string): Promise<Board> => {
@@ -318,9 +320,21 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
         throw new HttpError(502, (e as Error).message);
       }
     },
-    // Wiring only (P3-D7): the real handlers land with their lanes.
-    "POST /api/assets": async () => { throw new HttpError(501, "not implemented until lane L34"); },
-    "GET /api/assets/:id": async () => { throw new HttpError(501, "not implemented until lane L34"); },
+    "POST /api/assets": async (input) => {
+      const { bytes, mime } = input as unknown as { bytes: Buffer; mime: string };
+      try {
+        return await assets.put(bytes, mime);
+      } catch (e) {
+        throw e instanceof AssetError ? new HttpError(e.status, e.message) : e;
+      }
+    },
+    "GET /api/assets/:id": async (_, { id }) => {
+      const found = await assets.get(id!);
+      if (!found) throw new HttpError(404, "no such image");
+      // The server sends these bytes as the response; BinarySchema marks that the body is not JSON.
+      return { bytes: await readFile(found.path), contentType: found.contentType };
+    },
+    // Wiring only (P3-D7): the real handler lands with its lane.
     "GET /api/preview": async () => { throw new HttpError(501, "not implemented until lane L32"); },
   };
 

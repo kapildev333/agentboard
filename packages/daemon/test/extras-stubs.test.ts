@@ -10,8 +10,6 @@ afterEach(async () => {
 });
 
 test.each([
-  ["POST", "/api/assets", "L34"],
-  ["GET", "/api/assets/abc", "L34"],
   ["GET", "/api/preview", "L32"],
 ])("%s %s answers 501 until lane %s", async (method, path, lane) => {
   const root = mkdtempSync(join(tmpdir(), "agentboard-stubs-"));

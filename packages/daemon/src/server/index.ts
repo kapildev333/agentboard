@@ -7,6 +7,7 @@ import type { Duplex } from "node:stream";
 import * as shared from "@agentboard/shared";
 import { parseClientMessage, parseDaemonMessage, routes as table, type SchemaName } from "@agentboard/shared";
 import type { ClientMessage, DaemonMessage } from "@agentboard/shared";
+import { MAX_ASSET } from "../assets/index.js";
 import { AUDIO_TYPES } from "../voice/index.js";
 import WebSocket, { WebSocketServer } from "ws";
 
@@ -30,6 +31,10 @@ const MAX_BODY = 1 << 20;
 // The one route with a raw body: recorded audio, passed to its handler as { audio, mime } instead of parsed JSON.
 const AUDIO_ROUTE = "POST /api/voice/transcribe";
 const MAX_AUDIO = 10 * 1024 * 1024;
+// Image routes: the upload body is raw like audio, and the download answers bytes instead of JSON (L34).
+const ASSET_POST = "POST /api/assets";
+const ASSET_GET = "GET /api/assets/:id";
+const RAW_ROUTES: string[] = [AUDIO_ROUTE, ASSET_POST];
 const CODE_TTL_MS = 60_000;
 
 export type ServerOptions = {
@@ -240,11 +245,13 @@ async function handle(
       const mime = req.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() ?? "";
       if (!AUDIO_TYPES.includes(mime)) return json(res, 415, { error: "unsupported media type" });
       raw = { audio: await readBody(req, MAX_AUDIO), mime };
+    } else if (route.key === ASSET_POST) {
+      raw = { bytes: await readBody(req, MAX_ASSET), mime: req.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() ?? "" };
     } else raw = route.method === "GET" ? Object.fromEntries(url.searchParams) : await readJson(req);
   } catch (err) {
     return json(res, err === tooLarge ? 413 : 400, { error: "invalid request" });
   }
-  let input: unknown = route.key === AUDIO_ROUTE ? raw : undefined;
+  let input: unknown = RAW_ROUTES.includes(route.key) ? raw : undefined;
   if (route.request) {
     const parsed = schema(route.request).safeParse(raw);
     if (!parsed.success) return json(res, 400, { error: "invalid request" });
@@ -259,9 +266,14 @@ async function handle(
     if (err instanceof Error && typeof status === "number" && (status === 501 || status === 502 || (status >= 400 && status < 500))) return json(res, status, { error: err.message });
     return json(res, 500, { error: "internal error" });
   }
+  if (route.key === ASSET_GET) {
+    const { bytes, contentType } = result as { bytes: Buffer; contentType: string };
+    res.writeHead(200, { "content-type": contentType, "cache-control": "public, max-age=31536000, immutable", "x-content-type-options": "nosniff" }).end(bytes);
+    return;
+  }
   const out = schema(route.response).safeParse(result);
   if (!out.success) return json(res, 500, { error: "invalid response" });
-  json(res, 200, out.data);
+  json(res, route.key === ASSET_POST ? 201 : 200, out.data);
 }
 
 const tooLarge = new Error("body too large");
