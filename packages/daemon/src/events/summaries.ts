@@ -1,8 +1,11 @@
 import type { Board, ConsoleNode, ConsoleSummary } from "@agentboard/shared";
 
 const MAX = 200;
+// ESC and BEL are the point of this pattern.
+/* eslint-disable no-control-regex */
 // CSI sequences, OSC sequences ending in BEL or ST, and two-character escapes.
 const ANSI = /\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-Z\\-_]/g;
+/* eslint-enable no-control-regex */
 
 /** The last non-empty output line per console, plus its loop, for the Mission Map tiles. */
 export class ConsoleSummaries {
