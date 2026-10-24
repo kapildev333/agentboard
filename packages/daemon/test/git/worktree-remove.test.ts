@@ -27,3 +27,26 @@ test("removes a clean worktree and deletes its branch", async () => {
   expect(existsSync(path)).toBe(false);
   expect(git(repo, "branch", "--list", branch)).toBe("");
 });
+
+test("refuses a dirty worktree without force and removes it with force", async () => {
+  const repo = makeRepo();
+  const h = handlers();
+  const { path, branch } = await h.worktree({ repo, name: "dirty", base: "main" });
+  writeFileSync(join(path, "a.txt"), "changed\n");
+  await expect(h.worktreeRemove({ repo, path, branch, deleteBranch: true, force: false })).rejects.toMatchObject({ code: "dirty", status: 409 });
+  expect(existsSync(path)).toBe(true);
+  expect(git(repo, "branch", "--list", branch)).toContain(branch);
+  await h.worktreeRemove({ repo, path, branch, deleteBranch: true, force: true });
+  expect(existsSync(path)).toBe(false);
+  expect(git(repo, "branch", "--list", branch)).toBe("");
+});
+
+test("refuses a path outside the repo's .worktrees folder", async () => {
+  const repo = makeRepo();
+  const h = handlers();
+  const { branch } = await h.worktree({ repo, name: "w", base: "main" });
+  const outside = [repo, join(repo, ".worktrees"), join(repo, ".worktrees", "w", ".."), mkdtempSync(join(tmpdir(), "ab-out-")), join(repo, ".worktrees", "missing")];
+  for (const path of outside)
+    await expect(h.worktreeRemove({ repo, path, branch, deleteBranch: true, force: true })).rejects.toMatchObject({ code: "outside", status: 400 });
+  expect(git(repo, "branch", "--list", branch)).toContain(branch);
+});
