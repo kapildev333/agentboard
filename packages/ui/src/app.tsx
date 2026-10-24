@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { NodeProps } from "@xyflow/react";
-import { BoardSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type NoteNode, type Settings } from "@agentboard/shared";
+import { BoardSchema, GitStatusSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage, type Board as BoardData, type BoardNode, type ConsoleNode as ConsoleData, type NoteNode, type Settings } from "@agentboard/shared";
 import { Board, WorkspaceTabs, autosaveBoard, useBoard } from "./board";
 import { ConsoleNode, type SocketLike } from "./console";
 import { GitCard } from "./git";
@@ -8,8 +8,10 @@ import { OpenInButtons } from "./open/OpenInButtons";
 import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
 import { MissionMap, useNotifications } from "./status";
 import { resumeConsole, startFresh } from "./console/actions";
-import { StatusPill } from "./console/chrome";
+import { ChevronIcon, MoreIcon, StatusPill } from "./console/chrome";
 import { ConsoleOverlay } from "./console/ConsoleOverlay";
+import { Menu } from "./console/Menu";
+import { RestartBanner } from "./console/RestartBanner";
 
 type Fetch = typeof globalThis.fetch;
 const Api = createContext<{ fetch: Fetch; fontSize: number }>({ fetch: globalThis.fetch, fontSize: 13 });
@@ -84,31 +86,74 @@ export function mergeDaemonBoard(daemon: BoardData, closed: Set<string>): void {
 function ConsoleView(props: NodeProps) {
   const node = (props.data as { node: ConsoleData }).node;
   const { fetch, fontSize } = useContext(Api);
+  const repo = useBoard((s) => s.board.repoPath);
   const [git, setGit] = useState(false);
+  const [dirty, setDirty] = useState(0);
   const [error, setError] = useState<string>();
   const [exitCode, setExitCode] = useState<number | null>();
+  // The git card has no callback; read the dirty count off the status replies it fetches.
+  const gitFetch = useMemo<Fetch>(
+    () => async (input, init) => {
+      const res = await fetch(input, init);
+      if (String(input).startsWith("/api/git/status") && res.ok)
+        void res
+          .clone()
+          .json()
+          .then((b) => setDirty(GitStatusSchema.safeParse(b).data?.dirty ?? 0), () => {});
+      return res;
+    },
+    [fetch],
+  );
   const run = (action: Promise<string | undefined>) => {
     setError(undefined);
     void action.then(setError);
   };
+  const resume = () => run(resumeConsole(fetch, node.id));
   const close = () => useBoard.getState().removeNode(node.id);
+  const cwd = node.cwd === repo ? "." : node.cwd.startsWith(`${repo}/`) ? node.cwd.slice(repo.length + 1) : node.cwd;
   return (
     <div className={`card console-card is-${node.status}${node.status === "needs_you" ? " needs-you" : ""}`}>
       <div className="console-body">
         <ConsoleNode data={{ node }} fontSize={fontSize} onExit={setExitCode} statusBadge={<StatusPill status={node.status} code={exitCode} />} />
-        <ConsoleOverlay node={node} onResume={() => run(resumeConsole(fetch, node.id))} onStartFresh={() => run(startFresh(fetch, node))} onRemove={close} />
+        <ConsoleOverlay node={node} onResume={resume} onStartFresh={() => run(startFresh(fetch, node))} onRemove={close} />
       </div>
       <div className="console-footer nodrag">
-        <button type="button" className="btn-sm" aria-pressed={git} onClick={() => setGit(!git)}>Git</button>
-        <button type="button" className="btn-sm" aria-label={`Close ${node.title}`} onClick={close}>
-          Close
-        </button>
+        {/* rtl cuts the overflow on the left so the path keeps its end; bdi keeps the path itself left to right */}
+        <span className="console-cwd" title={node.cwd}>
+          <bdi>{cwd}</bdi>
+        </span>
         {error && <span role="alert">{error}</span>}
+        <span className="console-spacer" />
+        <button type="button" className="btn-sm btn-quiet" aria-pressed={git} onClick={() => setGit(!git)}>
+          Git{" "}
+          {dirty > 0 && (
+            <span className="chip console-dirty">
+              {dirty}
+              <span className="visually-hidden"> dirty</span>
+            </span>
+          )}
+        </button>
+        <Menu label="Open" trigger={<>Open <ChevronIcon /></>}>
+          {() => <OpenInButtons path={node.cwd} doFetch={fetch} />}
+        </Menu>
+        <Menu label="More actions" trigger={<MoreIcon />} icon menu>
+          {(done) => (
+            <>
+              {(node.status === "stopped" || node.status === "exited") && (
+                <button type="button" role="menuitem" onClick={() => (done(), resume())}>
+                  Resume
+                </button>
+              )}
+              <button type="button" role="menuitem" className="console-danger" aria-label={`Close ${node.title}`} onClick={() => (done(), close())}>
+                Close
+              </button>
+            </>
+          )}
+        </Menu>
       </div>
       {git && (
         <div className="console-git nodrag nowheel">
-          <GitCard fetch={fetch} path={node.cwd} />
-          <OpenInButtons path={node.cwd} doFetch={fetch} />
+          <GitCard fetch={gitFetch} path={node.cwd} />
         </div>
       )}
     </div>
@@ -249,6 +294,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
           </button>
         </header>
         <main className="board">
+          {ready && <RestartBanner fetch={fetch} />}
           {ready ? <Board nodeTypes={nodeTypes} /> : <p className="app-message muted">Loading the board…</p>}
           {ready && empty && (
             <p className="empty-hint">
