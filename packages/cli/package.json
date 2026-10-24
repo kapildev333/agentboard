@@ -1,6 +1,6 @@
 {
   "name": "@agentboard/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
@@ -13,7 +13,7 @@
     "agentboard": "bin/agentboard.js"
   },
   "dependencies": {
-    "@agentboard/shared": "0.0.0",
-    "@agentboard/daemon": "0.0.0"
+    "@agentboard/shared": "0.1.0",
+    "@agentboard/daemon": "0.1.0"
   }
 }

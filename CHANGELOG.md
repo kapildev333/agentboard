@@ -1,6 +1,85 @@
 # Changelog
 
-## Unreleased
+## v0.1.0 (2026-10-24)
+
+AgentBoard v0.1.0 is the first cut of the MVP: phases 0 to 2 of the plan are code-complete. It is a free local tool. A Node daemon runs coding-agent CLIs as terminals on a zoomable board in your browser, one git worktree per console, with status you can read at a glance, and any CLI can invoke it. This release is for dogfood on macOS from the checkout; nothing is published to npm yet.
+
+### What is in this version
+
+- **Daemon** (`agentboard-daemon`, `startDaemon`): PTY manager, board state saved atomically per repo under `~/.agentboard` with fsync before rename, a single-daemon rule, restart shows every console as stopped with a working Resume, and an agent catalog that never executes an agent binary just to list it.
+- **Server**: loopback only; token in a header or as a Bearer; one-time login codes exchanged for an HttpOnly session cookie; Host, Origin and Sec-Fetch-Site checks; WebSocket frames validated against the shared schema, 1 MiB cap; every route from the shared route table wired.
+- **Board**: React Flow canvas with workspaces, pan and zoom, drag and resize, a minimap and the mission map, status badges, web notifications and the tab badge, a repo picker, a spawn dialog with custom agents, settings, notes, and a board revision counter so a stale page never overwrites a newer board.
+- **Consoles**: xterm.js terminals with 10,000 lines of scrollback, copy and paste, font size, truecolor, and pointer coordinates corrected at every zoom level (verified in a real browser from 0.5 to 2).
+- **Status**: hooks for Claude Code (including PreToolUse), Codex notify, Gemini hooks, OpenCode plugin events, and output heuristics with a quiet timer for custom agents; hook-driven consoles fall back to output until their first hook arrives; nested sessions cannot report as their parent.
+- **Git**: a worktree per console with the branch on the node, status with ahead and behind against the base branch, diff view, commit, push and pull request through gh, safe removal, open in VS Code, Zed or Finder (Finder reveals, never launches).
+- **Integration**: the `agentboard` CLI (start, open, status --json, spawn, note) with daemon auto-start; an MCP server over stdio with open_board, spawn_console, list_consoles, add_note and get_status; a Claude Code plugin (marketplace manifest, /board command, status hooks); an OpenCode plugin shipped as one bundle with an agentboard_spawn tool.
+- **Tests**: unit suites in every package, a Playwright smoke (six consoles, keystroke echo p95 under 16 ms against a 50 ms budget, daemon under 90 MB alone and about 530 MB with six fake agents against a 1 GB budget, foreign-origin refusal, reload and restart) and the final scenario where a fake agent spawns consoles through the CLI and the MCP server into two worktrees and both branches show on their git cards.
+
+### Known limits and the owner's checks
+
+- Codex, Gemini CLI and OpenCode were never executed during this build (macOS blocks unsigned binaries with a dialog, D10 and D31); tests use a fake agent. The first real run is the owner's check.
+- The npm name `agentboard` belongs to an unrelated package, so nothing suggests `npx agentboard`; the CLI is linked from the checkout (D33). A release name is still to be chosen.
+- macOS only for now: node-pty ships no Linux prebuild; Linux needs a rebuild with install scripts on.
+- Two tabs on the same board are not supported (D42). A plain `claude` session outside the board does not get a node yet (D28). Right-click paste inside a terminal at a zoom other than 100 percent is a known gap.
+- The five-day dogfood gate and the phase 2 gate (an OpenCode session spawning a second console in a worktree) are the owner's to judge (issue #76).
+
+### How it was built
+
+One governor session dispatched 29 lanes as background worker sessions, each reviewed by an Opus reviewer with mutation-style checks, gated locally instead of CI, and merged with rebase-only merges. Every decision is recorded on issue #27 (D1 to D42, owner to confirm).
+
+### Merged pull requests
+
+- #28 chore: board-init script, ignore lane briefs
+- #30 chore: gate runs fix-pty after npm ci; tick-state script
+- #31 chore: resume script, bgIsolation none, tick-state by worktree
+- #32 chore: dispatch by dependency with stacking, PARALLEL 8, resume by session id
+- #33 L02: Spike: PTY to WebSocket bridge, six shells, latency numbers
+- #34 L06: Spike: Codex notify and Gemini hooks per launch
+- #35 L01: Contracts: shared types, WebSocket protocol, HTTP routes, status map, fixtures
+- #36 L03: Spike: xterm.js inside a React Flow node under zoom
+- #37 L05: Spike: OpenCode plugin events with a local model
+- #38 L15: Board canvas and workspaces
+- #39 L11: PTY manager
+- #40 L04: Spike: Claude Code hook injection, session ids, resume
+- #41 L19: CLI: start, open, status
+- #42 L24: MCP server
+- #43 L20: Git service: worktrees, status, diff, commit, push, PR
+- #45 chore: rebase-only merges (D11); workers never run agent binaries (D10)
+- #46 L00: Foundation: workspace, lint, test, build, gate wiring
+- #47 L12: Server: http, WebSocket, token, Host and Origin checks, static files
+- #48 L17: Status badges, mission map, notifications
+- #49 L21: Git card and diff view
+- #50 L18: Shell: repo picker, spawn dialog, settings
+- #51 L13: Status: hook endpoint, mapper, quiet timer
+- #52 L23: CLI: spawn, note, status with JSON output
+- #53 L16: Console node
+- #54 chore: gate output never prints the home path
+- #55 L10: State store and daemon file
+- #56 chore: allow --force-with-lease after a rebase; rebase-lane script
+- #57 chore: build shared first; build configs resolve @agentboard/shared through dist
+- #58 chore: guard refuses claude run through a path or substitution for workers
+- #59 chore: rebase-resolve script for the stacked-lane cascade
+- #61 chore: gitleaks allowlist for the RFC 6455 sample key; rebase-resolve regenerates lockfiles
+- #62 L14: Agent catalog, launch and resume arguments
+- #63 chore: gate fails foreign-author commits; rebase-resolve drops copied chore commits
+- #64 chore: rebuild-lane script, guard memory path
+- #65 L22: Open in VS Code, Zed or Finder
+- #66 L25: Claude Code plugin
+- #67 L26: OpenCode plugin, production
+- #68 chore: rebuild-lane drops copies of base commits
+- #69 chore: merge gate checks out the PR head sha
+- #70 chore: docs stop suggesting npx agentboard (D33)
+- #72 chore: release script (D36)
+- #73 chore: rebase-resolve merges manifests as a union
+- #74 L1A: Integration and e2e smoke
+- #75 L28: README and user guide
+- #78 chore: release script keeps the Changelog header
+- #79 L27: Integration e2e, CLI and MCP spawned consoles in worktrees
+- #80 L1B: Board updates from the CLI and MCP reach open pages
+- #82 chore: spec Board type carries rev (L1B)
+- #83 L1C: spawn custom --id and ahead counts against the base branch
+- #84 chore: v0.1.0 release notes draft
+- #87 L29: Visual design pass
 
 Phases 0 to 2 of the [build plan](docs/superpowers/plans/2026-10-23-multi-agent-build-plan.md), one line per lane, from the merged pull requests. Rulings are on issue #27.
 
@@ -32,3 +111,4 @@ Phases 0 to 2 of the [build plan](docs/superpowers/plans/2026-10-23-multi-agent-
 - **L25** Claude Code plugin (#66): a `/board` command and status hooks for board-launched consoles (D28), installable from `.claude-plugin/marketplace.json`.
 - **L26** OpenCode plugin (#67): status events with the token header and an `agentboard_spawn` tool, shipped as one esbuild bundle (D27).
 - **L27** Integration e2e (a console spawned from the CLI, two worktrees, a merge from the board): in review as PR #79 when this was written.
+
