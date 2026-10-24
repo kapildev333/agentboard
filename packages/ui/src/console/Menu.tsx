@@ -44,7 +44,13 @@ export function Menu({ label, trigger, icon, menu, children }: MenuProps) {
     all[(next + all.length) % all.length]!.focus();
   };
   return (
-    <div ref={root} className="console-menu-wrap nodrag" onKeyDown={onKeyDown}>
+    <div
+      ref={root}
+      className="console-menu-wrap nodrag"
+      onKeyDown={onKeyDown}
+      // Tab out closes it. A null relatedTarget is not "out": Safari does not focus a clicked button, so a pick would close the menu first.
+      onBlur={(e) => e.relatedTarget && !root.current?.contains(e.relatedTarget) && setOpen(false)}
+    >
       <button
         ref={button}
         type="button"

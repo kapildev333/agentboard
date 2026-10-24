@@ -130,15 +130,26 @@ function ConsoleView(props: NodeProps) {
         </span>
         {error && <span role="alert">{error}</span>}
         <span className="console-spacer" />
-        <button type="button" className="btn-sm btn-quiet" aria-pressed={git} onClick={() => setGit(!git)}>
-          Git{" "}
+        {/* The count describes the button, so its name stays exactly "Git". */}
+        <button
+          type="button"
+          className="btn-sm btn-quiet"
+          aria-pressed={git}
+          aria-describedby={dirty > 0 ? `dirty-${node.id}` : undefined}
+          onClick={() => setGit(!git)}
+        >
+          Git
           {dirty > 0 && (
-            <span className="chip console-dirty">
+            <span className="chip console-dirty" aria-hidden="true">
               {dirty}
-              <span className="visually-hidden"> dirty</span>
             </span>
           )}
         </button>
+        {dirty > 0 && (
+          <span id={`dirty-${node.id}`} className="visually-hidden">
+            {dirty} dirty {dirty === 1 ? "file" : "files"}
+          </span>
+        )}
         <Menu label="Open" trigger={<>Open <ChevronIcon /></>}>
           {() => <OpenInButtons path={node.cwd} doFetch={fetch} />}
         </Menu>
