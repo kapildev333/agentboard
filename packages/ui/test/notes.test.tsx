@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { NodeProps } from "@xyflow/react";
 import type { Board, BoardNode } from "@agentboard/shared";
 import { useBoard } from "../src/board";
-import { ChecklistView, NoteView, TextView, renderMarkdown } from "../src/notes";
+import { AddMenu, ChecklistView, NoteView, TextView, noteAdds, renderMarkdown } from "../src/notes";
 
 const setup = (n: BoardNode) => {
   useBoard.getState().setBoard({
@@ -65,6 +65,26 @@ it("markdown renders a heading and a code block and escapes raw html", () => {
   expect(html).toContain("<ul><li>one</li><li>two</li></ul>");
   expect(html).toContain("<ol><li>first</li></ol>");
   expect(renderMarkdown("[bad](javascript:alert(1))")).not.toContain("<a");
+});
+
+it("the Add menu creates a note at the viewport centre", () => {
+  setup({ ...base, type: "note", text: "" });
+  useBoard.getState().setViewport({ x: -100, y: -50, zoom: 2 });
+  render(<AddMenu items={noteAdds} />);
+  expect(screen.queryByRole("menu")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  fireEvent.keyDown(window, { key: "Escape" });
+  expect(screen.queryByRole("menu")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  fireEvent.mouseDown(document.body);
+  expect(screen.queryByRole("menu")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Note" }));
+  // jsdom is 1024 by 768: the centre in flow coordinates is ((512 + 100) / 2, (384 + 50) / 2), the node sits centred on it.
+  const made = stored()[1]!;
+  expect(made).toMatchObject({ type: "note", text: "", x: 306 - 120, y: 217 - 80, w: 240, h: 160 });
+  expect(screen.queryByRole("menu")).toBeNull();
+  expect(noteAdds.map((a) => a.label)).toEqual(["Note", "Text", "Checklist"]);
 });
 
 it("the text node renders its markdown and Edit swaps in a textarea that Done closes", () => {
