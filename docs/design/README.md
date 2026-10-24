@@ -13,7 +13,7 @@ Components carry class names only; no colour or size is written inline. Roles, l
 | Group | Token | Value |
 |---|---|---|
 | Space (8 px grid) | `--space-half` `--space-1` `--space-2` `--space-3` `--space-4` `--space-6` | 4 8 16 24 32 48 px |
-| Radius | `--radius-sm` `--radius-lg` `--radius-pill` | 6 px (controls, terminal, notes), 10 px (cards, modal), 999 px (pills) |
+| Radius | `--radius-xs` `--radius-sm` `--radius-lg` `--radius-pill` | 2 px (resize handles), 6 px (controls, terminal, notes), 10 px (cards, modal), 999 px (pills) |
 | Font | `--font-sans` | system-ui stack |
 | | `--font-mono` | ui-monospace, Menlo, … (the terminal keeps `Menlo, monospace`) |
 | | `--text-xs` `--text-sm` `--text-md` `--text-lg` | 12 13 14 16 px |
@@ -26,13 +26,14 @@ Components carry class names only; no colour or size is written inline. Roles, l
 | `--color-surface-raised` | `#1e222a` | `#f6f7f9` |
 | `--color-surface-hover` | `#262b35` | `#eceef2` |
 | `--color-border` | `#2b303b` | `#dcdfe6` |
-| `--color-border-strong` | `#404757` | `#b9bfcb` |
+| `--color-border-strong` (control borders, 3:1) | `#646c80` | `#7f8798` |
 | `--color-text` | `#e7e9ee` | `#171a21` |
 | `--color-text-muted` | `#9ba3b4` | `#5b6475` |
 | `--color-accent` (the one accent) | `#7b93ff` | `#3355dd` |
 | `--color-on-accent` | `#0b1020` | `#ffffff` |
 | `--color-danger` | `#ff8a80` | `#c62a1f` |
 | `--term-bg` / `--term-fg` (both themes) | `#0b0d11` / `#d9dee8` | same |
+| `--term-ansi-*` (16 ANSI colours, passed to xterm's theme) | black `#20242c`, red `#ff7b72`, green `#7ee787`, yellow `#e3c76b`, blue `#79a6ff`, magenta `#d2a8ff`, cyan `#76e3ea`, white `#d9dee8`; bright: black `#8b949e`, red `#ffa198`, green `#a5f0b0`, yellow `#f2d98a`, blue `#a5c4ff`, magenta `#e2c5ff`, cyan `#b3f0f5`, white `#ffffff` | same |
 | `--note-bg` / `--note-fg` | `#3b3520` / `#f4e9bf` | `#fff4b8` / `#3a3110` |
 | `--diff-added-fg` / `-bg` | `#6fdc9a` / `#12301f` | `#116329` / `#dcf5e3` |
 | `--diff-removed-fg` / `-bg` | `#ff9a90` / `#3a1716` | `#a40e26` / `#ffe3e1` |
@@ -72,8 +73,22 @@ Needs you is the loudest state on screen: a solid fill (every other status is a 
 | `--status-needs-you-fg` on `--status-needs-you-bg` | 6.9:1 | 5.6:1 |
 | `--status-stopped-fg` on `--status-stopped-bg` | 7.8:1 | 8.2:1 |
 | `--status-exited-fg` on `--status-exited-bg` | 6.6:1 | 5.6:1 |
+| `--term-ansi-red` / `bright-red` on `--term-bg` | 7.7 / 10.0:1 | same |
+| `--term-ansi-green` / `bright-green` on `--term-bg` | 12.7 / 14.5:1 | same |
+| `--term-ansi-yellow` / `bright-yellow` on `--term-bg` | 11.7 / 14.0:1 | same |
+| `--term-ansi-blue` / `bright-blue` on `--term-bg` | 8.1 / 11.1:1 | same |
+| `--term-ansi-magenta` / `bright-magenta` on `--term-bg` | 10.0 / 12.7:1 | same |
+| `--term-ansi-cyan` / `bright-cyan` on `--term-bg` | 12.9 / 15.5:1 | same |
+| `--term-ansi-white` / `bright-white` on `--term-bg` | 14.4 / 19.4:1 | same |
+| `--term-ansi-bright-black` on `--term-bg` | 6.3:1 | same |
 
-Focus: every button, input, link and tabbable element shows a 2 px `--color-accent` outline on `:focus-visible` (6.2:1 and 6.0:1 against the surface).
+ANSI black is left out on purpose: programs paint it as a background.
+
+Non-text (WCAG 1.4.11, 3:1): `--color-border-strong`, the border of every button and input, is 3.3:1 on the surface and 3.6:1 on the page in dark, 3.6:1 and 3.3:1 in light.
+
+Placeholders use `--color-text-muted` (inputs sit on `--color-bg`: 7.5:1 dark, 5.4:1 light), since "branch name" and "Commit message" have no other visible label.
+
+Focus: every button, input, link and tabbable element shows a 2 px `--color-accent` outline on `:focus-visible` (6.2:1 and 6.0:1 against the surface). A focused console or note node gets the same ring, rounded to the card. The spawn modal moves focus to the first installed agent when it opens and closes on Escape, Cancel or a backdrop click.
 
 ## Screenshots
 
