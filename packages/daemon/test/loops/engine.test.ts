@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { ConsoleStatus, Event, Loop, LoopRequest } from "@agentboard/shared";
+import type { BoardEvent, ConsoleStatus, Loop, LoopRequest } from "@agentboard/shared";
 import { LoopEngine } from "../../src/loops/engine.js";
 
 beforeEach(() => void vi.useFakeTimers({ now: new Date(2026, 9, 24, 21, 14) }));
@@ -9,7 +9,7 @@ afterEach(() => void vi.useRealTimers());
 function setup(over: Partial<LoopRequest> = {}) {
   let status: ConsoleStatus = "working";
   const writes: string[] = [];
-  const events: Event[] = [];
+  const events: BoardEvent[] = [];
   const saved: Loop[][] = [];
   const engine = new LoopEngine({
     write: (_id, data) => void writes.push(data),
