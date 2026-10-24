@@ -133,6 +133,23 @@ test("a late attach replays the ring buffer", async () => {
   await until(() => sock.output(node.id).includes("fake>"));
 });
 
+test("a live console shows its lastLine in status, and its spawn is an event listed and pushed over the socket (L42)", async () => {
+  const s = setup();
+  const d = await start(s);
+  const sock = socket(d);
+  await sock.opened;
+  const node = (await d.call("POST", "/api/consoles", { agent: "custom", customId: "fake", cwd: s.repo })).body as ConsoleNode;
+  const line = await until(async () => {
+    const st = (await d.call("GET", "/api/status")).body as { summaries?: { id: string; lastLine: string; repoPath: string }[] };
+    return st.summaries?.find((c) => c.id === node.id && c.lastLine.includes("fake>"));
+  });
+  expect(line.repoPath).toBe(s.repo);
+  const events = (await d.call("GET", "/api/events")).body as { kind: string; consoleId?: string }[];
+  expect(events).toContainEqual(expect.objectContaining({ kind: "spawn", consoleId: node.id }));
+  expect(sock.messages).toContainEqual(expect.objectContaining({ t: "event", event: expect.objectContaining({ kind: "spawn", consoleId: node.id }) }));
+  expect((await d.call("GET", `/api/events?limit=1`)).body).toHaveLength(1);
+});
+
 test("spawning a custom agent without a customId answers 400 naming the missing id", async () => {
   const s = setup();
   const d = await start(s);
