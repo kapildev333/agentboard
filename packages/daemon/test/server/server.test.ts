@@ -420,3 +420,12 @@ test("a busy port rejects createServer instead of crashing the process (L12)", a
   const s = await start();
   await expect(createServer({ port: s.port, token, staticDir: tmpdir(), routes: {} })).rejects.toThrow(/EADDRINUSE/);
 });
+
+test("a refused foreign-origin request calls onRefused with reason and path", async () => {
+  const onRefused = vi.fn();
+  const s = await start({ onRefused });
+  await fetch(`${s.origin}/api/status`, { headers: { "x-agentboard-token": token, origin: "https://evil.example" } });
+  expect(onRefused).toHaveBeenCalledWith({ reason: "foreign origin", path: "/api/status", origin: "https://evil.example" });
+  await fetch(`${s.origin}/api/status`);
+  expect(onRefused).toHaveBeenLastCalledWith({ reason: "missing or wrong token", path: "/api/status" });
+});
