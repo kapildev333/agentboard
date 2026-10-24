@@ -513,7 +513,7 @@ test("POST /api/consoles/:id/input reaches a running console's pty; an unknown i
 });
 
 test("the file handler stubs answer 501 until L61 builds them", async () => {
-  const h = createFileHandlers({ repoOf: async (r) => r });
+  const h = createFileHandlers({ repoOf: async (r) => r, git: async () => "" });
   await expect(h["GET /api/files"]({ repo: "/r" }, {})).rejects.toMatchObject({ status: 501 });
 });
 
