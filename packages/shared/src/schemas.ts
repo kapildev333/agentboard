@@ -166,3 +166,204 @@ export const VoiceSettingsSchema = z.object({ transcribeCommand: z.string(), hol
 // ~/.agentboard/settings.json
 export const SettingsSchema = z.object({ fontSize: z.number(), customAgents: z.array(CustomAgentSchema), planner: PlannerSettingsSchema.optional(), voice: VoiceSettingsSchema.optional() });
 export const OpenRequestSchema = z.object({ editor: z.enum(["code", "zed", "finder"]), path: z.string() });
+
+// Phase 4: orchestration and continuity
+
+export const TextSchema = z.string();
+
+export const TeamSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  roles: z.array(z.object({ name: z.string(), consoleId: z.string().nullable(), order: z.number().int() })),
+  brief: z.string(),
+  triggers: z.object({ handoffOnIdle: z.boolean(), includeDiff: z.boolean(), startStopped: z.boolean() }),
+  collapsed: z.boolean(),
+});
+
+export const ConsoleSummarySchema = ConsoleNodeSchema.extend({
+  lastLine: z.string(),
+  teamId: z.string().optional(),
+  role: z.string().optional(),
+  loopId: z.string().optional(),
+  repoPath: z.string(),
+});
+
+export const EventKindSchema = z.enum(["hook", "status", "spawn", "exit", "handoff", "loop", "memory", "security"]);
+export const EventSchema = z.object({
+  id: z.string(),
+  ts: z.string(),
+  kind: EventKindSchema,
+  consoleId: z.string().optional(),
+  agent: AgentIdSchema.optional(),
+  title: z.string().optional(),
+  detail: z.string(),
+  status: ConsoleStatusSchema.optional(),
+});
+export const EventListSchema = z.array(EventSchema);
+// Query strings arrive as strings, so limit is coerced.
+export const EventsQuerySchema = z.object({ since: z.string().optional(), limit: z.coerce.number().int().positive().optional() });
+
+export const HandoffBriefSchema = z.object({
+  done: z.array(z.string()),
+  left: z.array(z.string()),
+  decisions: z.array(z.string()),
+  ask: z.string(),
+});
+export const HandoffTargetSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("console"), consoleId: z.string() }),
+  z.object({ kind: z.literal("spawn"), agent: AgentIdSchema, customId: z.string().optional(), worktree: z.string().optional(), title: z.string() }),
+]);
+export const HandoffSchema = z.object({
+  id: z.string(),
+  fromConsoleId: z.string(),
+  teamId: z.string().optional(),
+  target: HandoffTargetSchema,
+  brief: HandoffBriefSchema,
+  attachments: z.object({ diff: z.boolean(), teamBrief: z.boolean(), lastLines: z.boolean(), files: z.array(z.string()) }),
+  after: z.object({ markHandedOff: z.boolean(), focusTarget: z.boolean(), addNote: z.boolean() }),
+  createdAt: z.string(),
+  sentAt: z.string().optional(),
+  promptText: z.string(),
+});
+export const HandoffListSchema = z.array(HandoffSchema);
+export const HandoffDraftRequestSchema = z.object({ fromConsoleId: z.string(), teamId: z.string().optional() });
+export const HandoffQuerySchema = z.object({ console: z.string().optional() });
+export const HandoffSendResponseSchema = z.object({ consoleId: z.string() });
+
+export const LoopTriggerSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("schedule"), cron: z.string() }),
+  z.object({ kind: z.literal("idle"), delaySec: z.number().nonnegative() }),
+  z.object({ kind: z.literal("output"), pattern: z.string() }),
+]);
+export const LoopStopSchema = z.object({
+  goal: z.object({ pattern: z.string(), op: z.enum(["lte", "gte", "eq"]), value: z.number() }).optional(),
+  maxRuns: z.number().int().positive().optional(),
+  timeBoxMin: z.number().positive().optional(),
+});
+export const LoopStateSchema = z.enum(["running", "scheduled", "paused", "retired"]);
+export const LoopRunSchema = z.object({
+  n: z.number().int().positive(),
+  startedAt: z.string(),
+  endedAt: z.string().optional(),
+  outcome: z.string(),
+  tokens: z.number().nullable(),
+});
+export const LoopSchema = z.object({
+  id: z.string(),
+  consoleId: z.string(),
+  name: z.string(),
+  trigger: LoopTriggerSchema,
+  stop: LoopStopSchema,
+  prompt: z.string(),
+  state: LoopStateSchema,
+  pausedReason: z.string().optional(),
+  runs: z.array(LoopRunSchema),
+  createdAt: z.string(),
+});
+export const LoopListSchema = z.array(LoopSchema);
+/** What a client sends to create or edit a loop; the daemon owns id, state, runs and createdAt. */
+export const LoopRequestSchema = LoopSchema.pick({ consoleId: true, name: true, trigger: true, stop: true, prompt: true });
+
+export const ComposerSlotSchema = z.object({
+  agent: AgentIdSchema,
+  customId: z.string().optional(),
+  profileId: z.string().optional(),
+  role: z.string().optional(),
+  prompt: z.string(),
+  useShared: z.boolean(),
+});
+export const ComposerLaunchRequestSchema = z.object({
+  cwd: z.string(),
+  baseBranch: z.string(),
+  placement: z.enum(["grid", "besideCaller"]),
+  callerConsoleId: z.string().optional(),
+  sharedPrompt: z.string(),
+  makeTeam: z.boolean(),
+  teamName: z.string().optional(),
+  staggerSec: z.number().nonnegative(),
+  slots: z.array(ComposerSlotSchema).min(1).max(12),
+});
+export const ComposerLaunchResponseSchema = z.object({ consoleIds: z.array(z.string()), teamId: z.string().optional() });
+/** shared is the template's shared prompt. */
+export const ComposerTemplateSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  slots: z.array(ComposerSlotSchema).min(1).max(12),
+  shared: z.string(),
+});
+export const ComposerTemplateListSchema = z.array(ComposerTemplateSchema);
+
+export const UsageRangeSchema = z.enum(["today", "14d", "30d", "all"]);
+export const UsageQuerySchema = z.object({
+  range: UsageRangeSchema.default("14d"),
+  group: z.enum(["agent", "repo", "console"]).default("agent"),
+});
+export const UsageReportSchema = z.object({
+  range: UsageRangeSchema,
+  totals: z.object({
+    input: z.number(),
+    output: z.number(),
+    cacheRead: z.number(),
+    sessions: z.number().int(),
+    medianSessionMin: z.number(),
+    needsYouWaitSec: z.number(),
+  }),
+  // Partial: a day without a gemini session has no gemini key.
+  byDay: z.array(z.object({ day: z.string(), byAgent: z.partialRecord(AgentIdSchema, z.number()) })),
+  groups: z.array(z.object({
+    key: z.string(),
+    label: z.string(),
+    agent: AgentIdSchema.optional(),
+    sessions: z.number().int(),
+    input: z.number(),
+    output: z.number(),
+    cacheRead: z.number(),
+  })),
+  sources: z.array(z.object({ agent: AgentIdSchema, path: z.string(), files: z.number().int() })),
+  checkedAt: z.string(),
+});
+
+export const MemoryScopeSchema = z.enum(["repo", "global"]);
+export const MemorySourceSchema = z.object({
+  kind: z.enum(["user", "handoff", "session", "proposal"]),
+  consoleId: z.string().optional(),
+  label: z.string(),
+});
+export const MemoryItemSchema = z.object({
+  id: z.string(),
+  scope: MemoryScopeSchema,
+  title: z.string(),
+  body: z.string(),
+  source: MemorySourceSchema,
+  state: z.enum(["kept", "proposed"]),
+  createdAt: z.string(),
+  pushed: z.array(z.object({ consoleId: z.string(), at: z.string() })),
+});
+export const MemoryItemListSchema = z.array(MemoryItemSchema);
+/** Without repo, only the global items. */
+export const MemoryQuerySchema = z.object({ repo: z.string().optional() });
+/** repo picks the store a repo-scoped item goes to. */
+export const MemoryAddRequestSchema = z.object({
+  repo: z.string().optional(),
+  scope: MemoryScopeSchema,
+  title: z.string(),
+  body: z.string(),
+  source: MemorySourceSchema.optional(),
+});
+export const MemoryProposeRequestSchema = z.object({
+  repo: z.string().optional(),
+  title: z.string(),
+  body: z.string(),
+  consoleId: z.string().optional(),
+});
+export const MemoryPushRequestSchema = z.object({ consoleIds: z.union([z.array(z.string()), z.literal("workspace")]) });
+export const MemoryPushResponseSchema = z.object({ pushed: z.array(z.string()) });
+
+export const ProfileSchema = z.object({
+  id: z.string(),
+  agent: AgentIdSchema,
+  name: z.string(),
+  env: z.record(z.string(), z.string()),
+  args: z.array(z.string()),
+});

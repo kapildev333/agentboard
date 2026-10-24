@@ -1,0 +1,20 @@
+{
+  "id": "c-builder",
+  "title": "Checkout flow",
+  "x": 520,
+  "y": 80,
+  "w": 480,
+  "h": 320,
+  "type": "console",
+  "agent": "claude",
+  "cwd": "/tmp/acme-storefront/.worktrees/feat-checkout",
+  "worktree": { "path": "/tmp/acme-storefront/.worktrees/feat-checkout", "branch": "feat/checkout", "base": "main" },
+  "session": { "provider": "claude", "id": "sess-checkout-1" },
+  "status": "working",
+  "createdAt": "2026-10-23T20:40:00.000Z",
+  "lastActiveAt": "2026-10-23T21:58:00.000Z",
+  "lastLine": "● Edit src/lib/postal.ts",
+  "teamId": "team-checkout",
+  "role": "builder",
+  "repoPath": "/tmp/acme-storefront"
+}

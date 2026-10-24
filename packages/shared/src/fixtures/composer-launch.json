@@ -1,0 +1,16 @@
+{
+  "cwd": "/tmp/acme-storefront",
+  "baseBranch": "main",
+  "placement": "grid",
+  "sharedPrompt": "Work only inside your worktree. Keep tests green. Finish by summarising what changed in 3 lines.",
+  "makeTeam": true,
+  "teamName": "checkout",
+  "staggerSec": 10,
+  "slots": [
+    { "agent": "claude", "role": "planner", "prompt": "Read the issue, write PLAN.md with numbered steps, then stop.", "useShared": false },
+    { "agent": "claude", "role": "builder", "prompt": "Wait for the planner's brief. Implement step by step; one commit per step.", "useShared": false },
+    { "agent": "codex", "role": "reviewer", "prompt": "Review the builder's diff. Comments only; end with approve / changes requested.", "useShared": false },
+    { "agent": "opencode", "profileId": "opencode-ollama", "prompt": "Bump patch versions only. Run the suite. Open a PR if green.", "useShared": false },
+    { "agent": "gemini", "prompt": "Rewrite the README quick start for the new CLI.", "useShared": true }
+  ]
+}
