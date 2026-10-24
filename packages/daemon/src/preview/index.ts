@@ -37,6 +37,12 @@ export function previewHandler(key: string) {
     const board = `http://${req.headers.host}`;
     const headers = Object.fromEntries(FORWARD.filter((h) => req.headers[h] !== undefined).map((h) => [h, req.headers[h]!]));
     const out = http.request({ host: target.hostname.replace(/^\[|\]$/g, ""), port: target.port || 80, path: target.pathname + target.search, method: req.method, headers }, (up) => {
+      const location = up.headers.location;
+      if (location) {
+        const next = loopback(location, target);
+        if (!next) return void (up.resume(), res.writeHead(403).end());
+        res.setHeader("location", `/preview/${key}/${encodeURIComponent(next.href)}`);
+      }
       const type = up.headers["content-type"];
       const html = req.method === "GET" && /^text\/html\b/i.test(type ?? "") && !up.headers["content-encoding"];
       res.setHeader("content-security-policy", `connect-src ${target.origin} ws://${target.host}; frame-ancestors ${board}`);
