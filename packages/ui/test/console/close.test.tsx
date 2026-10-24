@@ -138,6 +138,7 @@ it("Remove on a dirty worktree forces it", async () => {
   fireEvent.click(await screen.findByRole("radio", { name: /Remove worktree/ }));
   fireEvent.click(screen.getByRole("button", { name: "Close console, remove worktree" }));
   await waitFor(() => expect(deletes().find((c) => c.url === "/api/git/worktree")?.body).toMatchObject({ force: true }));
+  await waitFor(() => expect(onBoard()).toBe(false)); // so no close is still in flight when the next test starts
 });
 
 it("a refusal shows inline as an alert and the console stays on the board", async () => {

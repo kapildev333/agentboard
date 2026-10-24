@@ -37,9 +37,9 @@ export function CloseConsole({
 
   // The board subscription ends the console; focus goes back to the board, on the next console if there is one.
   const leave = () => {
+    const next = [...document.querySelectorAll<HTMLElement>(".react-flow__node")].find((n) => !n.contains(opener.current));
+    next?.focus();
     useBoard.getState().removeNode(node.id);
-    // Only when focus was lost with the node, so it never pulls focus from whatever took it since.
-    setTimeout(() => document.activeElement === document.body && document.querySelector<HTMLElement>(".react-flow__node")?.focus());
   };
   // The console ends and leaves the daemon's board first, then the worktree goes; the page drops the node only once both did.
   const remove = async (wt: Worktree, force: boolean): Promise<string | undefined> => {
