@@ -7,6 +7,8 @@ import { afterEach, expect, test } from "vitest";
 import WebSocket from "ws";
 import type { Board, ConsoleNode, DaemonMessage } from "@agentboard/shared";
 import { startDaemon } from "../src/app.js";
+import { createFileHandlers } from "../src/files/index.js";
+import { createVaultHandlers } from "../src/vault/index.js";
 
 const fakeAgent = fileURLToPath(new URL("../../e2e/fake-agent/index.mjs", import.meta.url));
 const cleanup: (() => Promise<void> | void)[] = [];
@@ -366,4 +368,27 @@ test("a SessionEnd clear from a foreign session arms nothing (D39)", async () =>
   await hook("SessionEnd", { session_id: "nested", reason: "clear" });
   await hook("Stop", { session_id: "other-nested" });
   expect((await status()).session!.id).toBe(first);
+});
+
+test("POST /api/consoles/:id/input reaches a running console's pty; an unknown id answers 404", async () => {
+  const s = setup();
+  const d = await start(s);
+  const sock = socket(d);
+  await sock.opened;
+  const node = (await d.call("POST", "/api/consoles", { agent: "custom", customId: "fake", cwd: s.repo })).body as ConsoleNode;
+  sock.send({ t: "attach", consoleId: node.id });
+  await until(() => sock.output(node.id).includes("fake>"));
+  expect(await d.call("POST", `/api/consoles/${node.id}/input`, { data: "studio\r" })).toEqual({ status: 200, body: { ok: true } });
+  await until(() => sock.output(node.id).includes("you said: studio"));
+  expect((await d.call("POST", "/api/consoles/nope/input", { data: "x" })).status).toBe(404);
+});
+
+test("the file handler stubs answer 501 until L61 builds them", async () => {
+  const h = createFileHandlers({ repoOf: async (r) => r });
+  await expect(h["GET /api/files"]({ repo: "/r" }, {})).rejects.toMatchObject({ status: 501 });
+});
+
+test("the vault handler stubs answer 501 until L63 builds them", async () => {
+  const h = createVaultHandlers({ repoOf: async (r) => r });
+  await expect(h["GET /api/vault/notes"]({ repo: "/r" }, {})).rejects.toMatchObject({ status: 501 });
 });
