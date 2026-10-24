@@ -50,6 +50,21 @@ it("the delete button removes the active workspace", () => {
   expect(useBoard.getState().board.workspaces.map((w) => w.id)).toEqual(["a"]);
 });
 
+it("⌘2 switches to the second workspace when no terminal is focused", () => {
+  render(<WorkspaceTabs />);
+  expect(screen.getByRole("tab", { name: "B" }).getAttribute("aria-keyshortcuts")).toBe("Meta+2");
+  fireEvent.keyDown(window, { key: "2", metaKey: true });
+  expect(useBoard.getState().board.activeWorkspaceId).toBe("b");
+  // A focused terminal (xterm's textarea) keeps the key.
+  const term = document.body.appendChild(document.createElement("div"));
+  term.className = "xterm";
+  const input = term.appendChild(document.createElement("textarea"));
+  input.focus();
+  fireEvent.keyDown(input, { key: "1", metaKey: true });
+  expect(useBoard.getState().board.activeWorkspaceId).toBe("b");
+  term.remove();
+});
+
 it("the tablist holds only tabs", () => {
   render(<WorkspaceTabs />);
   const kids = [...screen.getByRole("tablist").querySelectorAll("button")];
