@@ -318,6 +318,10 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
         throw new HttpError(502, (e as Error).message);
       }
     },
+    // Wiring only (P3-D7): the real handlers land with their lanes.
+    "POST /api/assets": async () => { throw new HttpError(501, "not implemented until lane L34"); },
+    "GET /api/assets/:id": async () => { throw new HttpError(501, "not implemented until lane L34"); },
+    "GET /api/preview": async () => { throw new HttpError(501, "not implemented until lane L32"); },
   };
 
   const server = await createServer({

@@ -28,12 +28,10 @@ export const routes = [
   { method: "GET", path: "/api/settings", request: null, response: "SettingsSchema" },
   { method: "PUT", path: "/api/settings", request: "SettingsSchema", response: "OkSchema" },
   { method: "POST", path: "/api/open", request: "OpenRequestSchema", response: "OkSchema" },
-<<<<<<< HEAD
   { method: "POST", path: "/api/command/plan", request: "PlanRequestSchema", response: "PlanSchema" },
   { method: "POST", path: "/api/command/run", request: "RunRequestSchema", response: "RunResponseSchema" },
   // The body is raw audio (audio/webm, audio/wav or audio/ogg), so there is no JSON request schema.
   { method: "POST", path: "/api/voice/transcribe", request: null, response: "TranscribeResponseSchema" },
-=======
   // The body is the raw image (png, jpeg, gif or webp), so there is no JSON request schema.
   { method: "POST", path: "/api/assets", request: null, response: "AssetUploadResponseSchema" },
   // The response is the image bytes, not JSON; BinarySchema marks that.
@@ -41,5 +39,4 @@ export const routes = [
   { method: "GET", path: "/api/preview", request: null, response: "PreviewInfoSchema" },
   // Also served, outside /api and not in this table: GET /preview/<key>/<percent-encoded target url>,
   // the web tile preview proxy (L32). <key> comes from GET /api/preview.
->>>>>>> 0c0d7bc (feat: asset and preview routes, phase 3 types)
 ] as const satisfies readonly Route[];
