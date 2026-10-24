@@ -89,10 +89,10 @@ export function SpawnDialog({ fetch, cwd, onSpawned, onCancel }: { fetch: Fetch;
         </label>
         {useWorktree && <input aria-label="branch name" placeholder="branch name" value={branch} onChange={(e) => setBranch(e.target.value)} />}
       </div>
-      <div className="field">
+      <label className="field">
         <span className="field-label">First prompt (optional)</span>
         <textarea aria-label="first prompt" rows={3} value={prompt} onChange={(e) => setPrompt(e.target.value)} />
-      </div>
+      </label>
       {error && <p role="alert">{error}</p>}
       <div className="actions">
         <button type="button" onClick={onCancel}>Cancel</button>
