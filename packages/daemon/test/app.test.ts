@@ -260,7 +260,7 @@ test("settings default when settings.json is missing", async () => {
   const s = setup();
   rmSync(join(s.home, "settings.json"));
   const d = await start(s);
-  expect((await d.call("GET", "/api/settings")).body).toEqual({ fontSize: 13, customAgents: [], profiles: [], composerTemplates: [], memory: { offerAtSpawn: false } });
+  expect((await d.call("GET", "/api/settings")).body).toEqual({ fontSize: 13, customAgents: [] });
 });
 
 test("POST /api/open with a relative path answers 400 with the reason (L22)", async () => {

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SettingsPanel, type Settings } from "../../src/shell";
 
 afterEach(cleanup);
-const settings: Settings = { fontSize: 14, customAgents: [{ id: "aider", name: "aider", command: "aider", args: ["--yes"] }], profiles: [], composerTemplates: [], memory: { offerAtSpawn: false } };
+const settings: Settings = { fontSize: 14, customAgents: [{ id: "aider", name: "aider", command: "aider", args: ["--yes"] }] };
 
 describe("SettingsPanel", () => {
   it("the settings panel reports a font size change", () => {
@@ -47,7 +47,7 @@ describe("SettingsPanel", () => {
 
   it("clearing the regex stores undefined", () => {
     const onChange = vi.fn();
-    const s: Settings = { fontSize: 14, customAgents: [{ id: "a", name: "a", command: "b", args: [], needsYou: "x" }], profiles: [], composerTemplates: [], memory: { offerAtSpawn: false } };
+    const s: Settings = { fontSize: 14, customAgents: [{ id: "a", name: "a", command: "b", args: [], needsYou: "x" }] };
     render(<SettingsPanel settings={s} onChange={onChange} />);
     fireEvent.change(screen.getByLabelText("needs-you regex 1"), { target: { value: "" } });
     expect(onChange.mock.lastCall![0].customAgents[0].needsYou).toBeUndefined();
