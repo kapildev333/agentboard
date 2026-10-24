@@ -73,3 +73,74 @@
   background: var(--term-bg);
   transition: opacity 120ms;
 }
+
+/* ---- card states ---- */
+.console-card .console-body {
+  position: relative;
+}
+
+.console-card.is-stopped .console-term {
+  opacity: 0.45;
+}
+
+.console-card.is-exited .console-term {
+  opacity: 0.6;
+}
+
+/* Over the terminal: below the 36 px header, inside its 8 px margin. */
+.console-card .console-overlay {
+  position: absolute;
+  inset: 36px var(--space-1) 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-2);
+}
+
+.console-card .console-stopped {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-half);
+  max-width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-overlay);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.console-card .console-overlay-label {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.console-card .console-session {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.console-card .console-session code {
+  font-family: var(--font-mono);
+}
+
+.console-card .console-overlay-actions {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.console-card .console-exited-actions {
+  position: absolute;
+  right: calc(var(--space-1) + var(--space-1));
+  bottom: var(--space-1);
+  display: flex;
+  gap: var(--space-1);
+}
+
+.console-card .console-danger {
+  color: var(--color-danger);
+}

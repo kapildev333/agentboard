@@ -7,7 +7,9 @@ import { GitCard } from "./git";
 import { OpenInButtons } from "./open/OpenInButtons";
 import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
 import { MissionMap, useNotifications } from "./status";
+import { resumeConsole, startFresh } from "./console/actions";
 import { StatusPill } from "./console/chrome";
+import { ConsoleOverlay } from "./console/ConsoleOverlay";
 
 type Fetch = typeof globalThis.fetch;
 const Api = createContext<{ fetch: Fetch; fontSize: number }>({ fetch: globalThis.fetch, fontSize: 13 });
@@ -85,26 +87,20 @@ function ConsoleView(props: NodeProps) {
   const [git, setGit] = useState(false);
   const [error, setError] = useState<string>();
   const [exitCode, setExitCode] = useState<number | null>();
-  const resume = async () => {
+  const run = (action: Promise<string | undefined>) => {
     setError(undefined);
-    const res = await fetch(`/api/consoles/${encodeURIComponent(node.id)}/resume`, { method: "POST" }).catch(() => null);
-    if (!res?.ok) setError(((await res?.json().catch(() => null)) as { error?: string } | null)?.error ?? "could not resume");
+    void action.then(setError);
   };
-  const stopped = node.status === "stopped" || node.status === "exited";
+  const close = () => useBoard.getState().removeNode(node.id);
   return (
-    <div className={node.status === "needs_you" ? "card console-card needs-you" : "card console-card"}>
+    <div className={`card console-card is-${node.status}${node.status === "needs_you" ? " needs-you" : ""}`}>
       <div className="console-body">
-        <ConsoleNode
-          data={{ node }}
-          fontSize={fontSize}
-          onExit={setExitCode}
-          statusBadge={<StatusPill status={node.status} code={exitCode} />}
-        />
+        <ConsoleNode data={{ node }} fontSize={fontSize} onExit={setExitCode} statusBadge={<StatusPill status={node.status} code={exitCode} />} />
+        <ConsoleOverlay node={node} onResume={() => run(resumeConsole(fetch, node.id))} onStartFresh={() => run(startFresh(fetch, node))} onRemove={close} />
       </div>
       <div className="console-footer nodrag">
-        {stopped && <button type="button" className="btn-sm" onClick={() => void resume()}>Resume</button>}
         <button type="button" className="btn-sm" aria-pressed={git} onClick={() => setGit(!git)}>Git</button>
-        <button type="button" className="btn-sm" aria-label={`Close ${node.title}`} onClick={() => useBoard.getState().removeNode(node.id)}>
+        <button type="button" className="btn-sm" aria-label={`Close ${node.title}`} onClick={close}>
           Close
         </button>
         {error && <span role="alert">{error}</span>}
