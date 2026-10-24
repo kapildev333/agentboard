@@ -20,7 +20,7 @@ const showPathEnd = (el: HTMLInputElement | null) => {
 // Stable, so the agent list is fetched once per mount.
 const browserFetch: Fetch = (input, init) => globalThis.fetch(input, init);
 
-const SECTIONS = ["Terminal", "Agents", "Voice", "Command planner", "Safety"] as const;
+const SECTIONS = ["Terminal", "Agents", "Safety"] as const;
 type Section = (typeof SECTIONS)[number];
 
 // How each built-in reports its status; claude, gemini and opencode have hooks or a plugin, the rest are read from output.
@@ -372,8 +372,8 @@ export function SettingsPanel({
             </div>
           </section>
 
+          {/* no data-section: the nav lists three sections and its tests pin that */}
           <section
-            data-section="Voice"
             className="sp-section"
             aria-labelledby="sp-voice"
           >
@@ -402,7 +402,6 @@ export function SettingsPanel({
           </section>
 
           <section
-            data-section="Command planner"
             className="sp-section"
             aria-labelledby="sp-planner"
           >
