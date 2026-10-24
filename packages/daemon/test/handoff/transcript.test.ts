@@ -21,3 +21,9 @@ it("the claude reader maps tool_use Edit to an edited file", async () => {
     { role: "assistant", text: "What's left:\n- Copy review" },
   ]);
 });
+
+it("an unknown agent falls back to the ring buffer's last 50 lines", async () => {
+  const out = Array.from({ length: 60 }, (_, i) => `\x1b[32mline ${i}\x1b[0m`).join("\r\n");
+  const turns = await readTranscript(node({ agent: "custom" }), { home, replay: (id) => (id === "c1" ? out : "") });
+  expect(turns).toEqual([{ role: "assistant", text: Array.from({ length: 50 }, (_, i) => `line ${i + 10}`).join("\n") }]);
+});
