@@ -1,17 +1,5 @@
 /* Settings drawer contents: a section nav on the left, a scrolling pane on the right; a row of chips under 560 px. */
 .settings-panel {
-  /* ponytail: local copies of the agent marks; replace with L1D's --mark-* tokens and AgentMark */
-  --mark-claude-bg: #3a2a12;
-  --mark-claude-fg: #f2c98a;
-  --mark-codex-bg: #10331f;
-  --mark-codex-fg: #7ee787;
-  --mark-gemini-bg: #13284d;
-  --mark-gemini-fg: #9dbfff;
-  --mark-opencode-bg: #2c1f4a;
-  --mark-opencode-fg: #d2a8ff;
-  --mark-custom-bg: #2a2f39;
-  --mark-custom-fg: #c0c6d1;
-
   container-type: inline-size;
   flex: 1;
   min-height: 0;
@@ -32,12 +20,14 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding-right: var(--space-1);
+  border-right: 1px solid var(--color-border);
 }
 
 .settings-panel .sp-nav-item {
   justify-content: flex-start;
-  height: 28px;
-  padding: 0 var(--space-1);
+  height: 30px;
+  padding: 0 10px;
   border-color: transparent;
   background: transparent;
   color: var(--color-text-muted);
@@ -48,7 +38,7 @@
 }
 
 .settings-panel .sp-nav-item[aria-current="true"] {
-  background: var(--color-surface-raised);
+  background: var(--color-surface-hover);
   color: var(--color-text);
   font-weight: 600;
 }
@@ -63,7 +53,7 @@
   padding: var(--space-1);
   color: var(--color-text-muted);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-2xs);
 }
 
 .settings-panel .sp-content {
@@ -83,7 +73,7 @@
 }
 
 .settings-panel .sp-heading {
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
   font-weight: 600;
 }
 
@@ -154,13 +144,29 @@
 
 .settings-panel .sp-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.settings-panel .sp-table thead {
+  background: var(--color-bg);
+}
+
+.settings-panel .sp-table .chip {
+  height: 20px;
+  line-height: 18px;
+  border-color: var(--color-border);
+  background: var(--color-surface-raised);
+  font-size: var(--text-2xs);
 }
 
 .settings-panel .sp-table th {
   padding: var(--space-half) var(--space-1);
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-align: left;
@@ -168,7 +174,7 @@
 }
 
 .settings-panel .sp-table td {
-  height: 36px;
+  height: 40px;
   padding: 0 var(--space-1);
   border-top: 1px solid var(--color-border);
 }
@@ -200,32 +206,14 @@
   color: var(--color-text-muted);
 }
 
-.settings-panel .sp-mark {
-  display: inline-grid;
-  place-items: center;
-  flex: none;
-  width: 20px;
-  height: 20px;
-  border-radius: var(--radius-sm);
-  background: var(--mark-custom-bg);
-  color: var(--mark-custom-fg);
-  font-family: "JetBrains Mono", var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.settings-panel .sp-mark[data-agent="claude"] { background: var(--mark-claude-bg); color: var(--mark-claude-fg); }
-.settings-panel .sp-mark[data-agent="codex"] { background: var(--mark-codex-bg); color: var(--mark-codex-fg); }
-.settings-panel .sp-mark[data-agent="gemini"] { background: var(--mark-gemini-bg); color: var(--mark-gemini-fg); }
-.settings-panel .sp-mark[data-agent="opencode"] { background: var(--mark-opencode-bg); color: var(--mark-opencode-fg); }
-
 .settings-panel .sp-card {
   display: grid;
-  gap: var(--space-2);
-  padding: var(--space-2);
+  gap: 12px;
+  padding: 14px var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: var(--color-surface-raised);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .settings-panel .sp-card-head {
@@ -258,7 +246,7 @@
   background: var(--status-idle-bg);
   color: var(--status-idle-fg);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-2xs);
 }
 
 /* Narrow drawer: the nav becomes a row of chips above the content, the fields one column. */
@@ -274,6 +262,8 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-1);
+    padding: 0;
+    border: 0;
   }
 
   .settings-panel .sp-nav-item {
