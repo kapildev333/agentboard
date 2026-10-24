@@ -28,4 +28,8 @@ export const routes = [
   { method: "GET", path: "/api/settings", request: null, response: "SettingsSchema" },
   { method: "PUT", path: "/api/settings", request: "SettingsSchema", response: "OkSchema" },
   { method: "POST", path: "/api/open", request: "OpenRequestSchema", response: "OkSchema" },
+  { method: "POST", path: "/api/command/plan", request: "PlanRequestSchema", response: "PlanSchema" },
+  { method: "POST", path: "/api/command/run", request: "RunRequestSchema", response: "RunResponseSchema" },
+  // The body is raw audio (audio/webm, audio/wav or audio/ogg), so there is no JSON request schema.
+  { method: "POST", path: "/api/voice/transcribe", request: null, response: "TranscribeResponseSchema" },
 ] as const satisfies readonly Route[];

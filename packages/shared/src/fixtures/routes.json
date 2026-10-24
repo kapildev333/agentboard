@@ -275,5 +275,79 @@
     "response": {
       "ok": true
     }
+  },
+  "POST /api/command/plan": {
+    "request": {
+      "text": "close the two idle consoles and resume the docs pass",
+      "repo": "/tmp/demo-repo"
+    },
+    "response": {
+      "id": "plan-1",
+      "text": "close the two idle consoles and resume the docs pass",
+      "steps": [
+        {
+          "id": "s1",
+          "kind": "close",
+          "consoleIds": ["c-ci", "c-lint"],
+          "summary": "Close CI cleanup and Lint sweep",
+          "detail": "Both are idle.",
+          "asks": true
+        },
+        {
+          "id": "s2",
+          "kind": "resume",
+          "consoleId": "c-docs",
+          "summary": "Resume Docs pass",
+          "asks": false
+        }
+      ],
+      "plannedBy": "rules",
+      "ms": 4,
+      "reply": "I will close CI cleanup and Lint sweep, which needs your OK, and resume Docs pass."
+    }
+  },
+  "POST /api/command/run": {
+    "request": {
+      "plan": {
+        "id": "plan-1",
+        "text": "close the two idle consoles and resume the docs pass",
+        "steps": [
+          {
+            "id": "s1",
+            "kind": "close",
+            "consoleIds": ["c-ci", "c-lint"],
+            "summary": "Close CI cleanup and Lint sweep",
+            "detail": "Both are idle.",
+            "asks": true
+          },
+          {
+            "id": "s2",
+            "kind": "resume",
+            "consoleId": "c-docs",
+            "summary": "Resume Docs pass",
+            "asks": false
+          }
+        ],
+        "plannedBy": "rules",
+        "ms": 4,
+        "reply": "I will close CI cleanup and Lint sweep, which needs your OK, and resume Docs pass."
+      },
+      "confirmed": ["s1"],
+      "skipped": []
+    },
+    "response": {
+      "results": [
+        { "stepId": "s1", "status": "done" },
+        { "stepId": "s2", "status": "done", "consoleId": "c-docs" }
+      ]
+    }
+  },
+  "POST /api/voice/transcribe": {
+    "request": null,
+    "response": {
+      "text": "close the two idle consoles and resume the docs pass",
+      "ms": 850,
+      "engine": "whisper-cli"
+    }
   }
 }
