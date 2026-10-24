@@ -32,7 +32,8 @@ test.beforeAll(async () => {
     customAgents: [{ id: "fake", name: "Fake", command: join(bin, "node"), args: [join(bin, "fake-agent.mjs")], needsYou: "approve\\?" }],
   };
   writeFileSync(join(home, "settings.json"), JSON.stringify(settings));
-  h = { root, home, repo, path, cleanup: () => rmSync(root, { recursive: true, force: true }) };
+  // No cues: the shots only type plain lines, so the fake agent runs without a cues file.
+  h = { root, home, repo, path, cues: "", cleanup: () => rmSync(root, { recursive: true, force: true }) };
   d = await startDaemon(h);
 });
 
