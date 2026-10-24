@@ -22,6 +22,10 @@ export function useDraft(value: string, save: (v: string) => void) {
     timer.current = undefined;
     latest.current.save(latest.current.draft);
   };
+  // What the store holds wins (the daemon pushed a change) unless this view has an edit still pending.
+  useEffect(() => {
+    if (!timer.current) setDraft(value);
+  }, [value]);
   // A pending edit is saved when the view goes away (Done, node removed).
   useEffect(() => () => timer.current && flush(), []);
   return {

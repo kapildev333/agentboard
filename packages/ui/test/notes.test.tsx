@@ -39,6 +39,16 @@ it("typing in a note saves the text to the store", () => {
   expect((stored()[0] as { text: string }).text).toBe("bye");
 });
 
+it("a note shows text the daemon pushed, but keeps an edit still pending", () => {
+  setup({ ...base, type: "note", text: "old" });
+  render(<View C={NoteView} />);
+  act(() => useBoard.setState(({ board }) => ({ board: { ...board, workspaces: [{ ...board.workspaces[0]!, nodes: [{ ...stored()[0]!, text: "pushed" } as BoardNode] }] } })));
+  expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe("pushed");
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "mine" } });
+  act(() => useBoard.setState(({ board }) => ({ board: { ...board, workspaces: [{ ...board.workspaces[0]!, nodes: [{ ...stored()[0]!, text: "other" } as BoardNode] }] } })));
+  expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe("mine");
+});
+
 it("ticking a checklist item flips done", () => {
   setup({ ...base, type: "checklist", items: [{ text: "a", done: true }, { text: "b", done: false }, { text: "c", done: false }] });
   render(<View C={ChecklistView} />);
