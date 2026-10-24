@@ -50,6 +50,26 @@ test("the studio context types into a console and spawns a titled console in the
   expect(seen.ctx!.consoles.map((c) => c.id)).toEqual(["c9"]);
 });
 
+test("a spawn without a title leaves a console the broadcast already added untouched", async () => {
+  let before: Board | undefined;
+  const fetch = vi.fn(async (url: string | URL | Request) => {
+    const u = String(url);
+    if (u === "/api/consoles") {
+      useBoard.getState().addNode(node);
+      before = useBoard.getState().board;
+    }
+    return new Response(JSON.stringify(u.startsWith("/api/board") ? board : u === "/api/consoles" ? node : u === "/api/settings" ? { fontSize: 13, customAgents: [] } : { ok: true }));
+  });
+  location.hash = "#/code";
+  const socket = (): SocketLike => ({ readyState: 1, onopen: null, onmessage: null, onclose: null, send() {}, close() {} });
+  render(<App fetch={fetch} search="?repo=%2Fr" connect={socket} />);
+  await waitFor(() => expect(seen.ctx?.board.workspaces[0]!.nodes).toEqual([]));
+  await act(() => seen.ctx!.spawn("p"));
+  const after = useBoard.getState().board;
+  expect(after).toBe(before);
+  expect(after.workspaces[0]!.nodes).toMatchObject([{ id: "c9", title: "Claude" }]);
+});
+
 test("a spawned console the daemon's broadcast already put on the board is renamed, not added twice", async () => {
   const fetch = vi.fn(async (url: string | URL | Request) => {
     const u = String(url);
