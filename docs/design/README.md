@@ -1,6 +1,13 @@
 # AgentBoard design
 
-The source is the owner's "AgentBoard Screens" canvas, row 01 (D45): `Foundations` (the token sheet), `Launch`, `Board-Empty` and `Main`, with the spawn dialog, settings drawer and console card artboards beside them.
+The source is the owner's "AgentBoard Screens" canvas, row 01 (D45). Its eight artboards are plain HTML under [`screens/`](screens/), 1440x900 each: [Foundations](screens/Foundations.dc.html) (the token sheet), [Launch](screens/Launch.dc.html), [Board-Empty](screens/Board-Empty.dc.html), [Main](screens/Main.dc.html), [Spawn](screens/Spawn.dc.html), [Settings](screens/Settings.dc.html), [Console-States](screens/Console-States.dc.html) and [Hook-Setup](screens/Hook-Setup.dc.html). They load Inter and JetBrains Mono from Google Fonts for the canvas; the app itself bundles both fonts and fetches nothing.
+
+Where the app departs from an artboard, on purpose:
+
+- The launch page's primary button reads "Open", not "Open board", and there is no Browse button: the tests find the button by the name Open, and a browser's directory picker never reveals a folder's path.
+- The zoom toolbar's third button is "Fit view", not "Fit to view" (the board tests match `/fit view/`), and has no Lock layout button.
+- The rail's daemon card shows the address and the PTY count; GET /api/status reports neither the pid nor memory or CPU yet.
+- No "Command…" box in the top bar until phase 5.
 
 The board's look lives in three sheets under `packages/ui/src/styles`, imported once by `main.tsx` after the app so they follow React Flow's and xterm's own sheets:
 
@@ -51,10 +58,10 @@ One 20 x 20 rounded square with an 11 px JetBrains Mono bold letter, `aria-hidde
 
 | Agent | Letter | Dark fg / bg | Light fg / bg |
 |---|---|---|---|
-| claude | C | `#f2c98a` / `#3a2a12` | `#6b4210` / `#fbe9cc` |
+| claude | C | `#f2c98a` / `#3a2a12` | `#6b4500` / `#fdf0c2` |
 | codex | X | `#7ee787` / `#10331f` | `#13623a` / `#d9f5e3` |
 | gemini | G | `#9dbfff` / `#13284d` | `#1d3f9e` / `#dde7ff` |
-| opencode | O | `#d2a8ff` / `#2c1f4a` | `#5a2a9c` / `#efe3ff` |
+| opencode | O | `#d2a8ff` / `#2c1f4a` | `#5a2ca0` / `#ece0ff` |
 | custom | first letter | `#c0c6d1` / `#2a2f39` | `#3c4350` / `#e6e9ee` |
 
 ## Keyboard
@@ -73,10 +80,10 @@ Controls inside the board (zoom buttons, mission-map rows, empty-board actions, 
 | Group | Token | Value |
 |---|---|---|
 | Space (8 px grid) | `--space-half` `--space-1` `--space-2` `--space-3` `--space-4` `--space-6` | 4 8 16 24 32 48 px |
-| Radius | `--radius-xs` `--radius-sm` `--radius-lg` `--radius-pill` | 2 px (resize handles, key caps), 6 px (controls, terminal, notes, marks), 10 px (cards, modal), 999 px (pills) |
-| Font | `--font-sans` | Inter, system-ui, … (used when installed; nothing is fetched) |
-| | `--font-mono` | "JetBrains Mono", ui-monospace, Menlo, … (the terminal keeps `Menlo, monospace`) |
-| | `--text-2xs` `--text-xs` `--text-sm` `--text-md` `--text-lg` `--text-xl` `--text-2xl` | 11 12 13 14 16 18 20 px |
+| Radius | `--radius-xs` `--radius-sm` `--radius-lg` `--radius-pill` | 2 px (resize handles), 6 px (controls, terminal, notes), 10 px (cards, modal), 999 px (pills); marks 5 px and key caps 4 px, as Foundations draws them |
+| Font | `--font-sans` | "Inter Variable", Inter, system-ui, … (bundled with `@fontsource-variable/inter`; nothing is fetched at run time) |
+| | `--font-mono` | "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, Menlo, … (bundled the same way; the terminal keeps `Menlo, monospace`) |
+| | `--text-2xs` `--text-xs` `--text-sm` `--text-md` `--text-lg` `--text-xl` | 11 12 13 14 16 20 px |
 | Controls | `--control-height` `--control-height-sm` `--input-height` | 28 24 32 px |
 | | `--chip-height` `--pill-height` `--kbd-height` `--mark-size` | 20 22 18 20 px |
 | Layout | `--topbar-height` `--rail-width` `--drawer-width` | 44 264 640 px |
@@ -143,10 +150,10 @@ Needs you is the loudest state on screen: a solid fill (every other status is a 
 | `--term-ansi-cyan` / `bright-cyan` on `--term-bg` | 12.9 / 15.5:1 | same |
 | `--term-ansi-white` / `bright-white` on `--term-bg` | 14.4 / 19.4:1 | same |
 | `--term-ansi-bright-black` on `--term-bg` | 6.3:1 | same |
-| `--mark-claude-fg` on `--mark-claude-bg` | 8.9:1 | 7.3:1 |
+| `--mark-claude-fg` on `--mark-claude-bg` | 8.9:1 | 7.4:1 |
 | `--mark-codex-fg` on `--mark-codex-bg` | 9.0:1 | 6.4:1 |
 | `--mark-gemini-fg` on `--mark-gemini-bg` | 7.9:1 | 7.5:1 |
-| `--mark-opencode-fg` on `--mark-opencode-bg` | 7.7:1 | 7.6:1 |
+| `--mark-opencode-fg` on `--mark-opencode-bg` | 7.7:1 | 7.2:1 |
 | `--mark-custom-fg` on `--mark-custom-bg` | 7.8:1 | 8.2:1 |
 
 ANSI black is left out on purpose: programs paint it as a background.

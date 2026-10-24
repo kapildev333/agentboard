@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Foundations</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-danger{border-color:#ff8a80;color:#ff8a80;background:transparent}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.input{display:flex;align-items:center;height:32px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font-size:13px;box-sizing:border-box}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st-starting{background:#3a2f0b;color:#f5d36b}.st-working{background:#13284d;color:#9dbfff}.st-idle{background:#10331f;color:#6fdc9a}.st-needs{background:#ff6b5e;color:#1f0604;font-weight:700;box-shadow:0 0 0 2px #161920,0 0 0 3px #ff6b5e}.st-stopped{background:#2a2f39;color:#c0c6d1}.st-exited{background:#22262e;color:#a3abbb}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}.m-gemini{background:#13284d;color:#9dbfff}.m-opencode{background:#2c1f4a;color:#d2a8ff}.m-custom{background:#2a2f39;color:#c0c6d1}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.sw{display:flex;flex-direction:column;gap:6px}
+.sw-box{height:44px;border-radius:6px;border:1px solid #2b303b}
+.sw-name{font-size:12px}
+.sw-hex{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4}
+.sec{display:flex;flex-direction:column;gap:12px}
+.ansi{height:22px;border-radius:4px}
+</style>
+</helmet>
+
+<div style="width:1440px;height:900px;box-sizing:border-box;padding:40px 48px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;row-gap:32px;align-content:start;background:#0e1014;overflow:hidden">
+
+  <div style="grid-column:1 / span 12;display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid #2b303b;padding-bottom:16px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div aria-hidden="true" style="width:28px;height:28px;border-radius:7px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;padding:5px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em">AgentBoard foundations</h1>
+    </div>
+    <div class="mono muted" style="font-size:12px">Inter · JetBrains Mono · 8 px grid · radii 2 / 6 / 10 / 999 · one accent</div>
+  </div>
+
+  <section class="sec" style="grid-column:1 / span 7">
+    <span class="label">Surfaces and text · dark default</span>
+    <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px">
+      <div class="sw"><div class="sw-box" style="background:#0e1014"></div><span class="sw-name">bg</span><span class="sw-hex">#0e1014</span></div>
+      <div class="sw"><div class="sw-box" style="background:#161920"></div><span class="sw-name">surface</span><span class="sw-hex">#161920</span></div>
+      <div class="sw"><div class="sw-box" style="background:#1e222a"></div><span class="sw-name">raised</span><span class="sw-hex">#1e222a</span></div>
+      <div class="sw"><div class="sw-box" style="background:#262b35"></div><span class="sw-name">hover</span><span class="sw-hex">#262b35</span></div>
+      <div class="sw"><div class="sw-box" style="background:#2b303b"></div><span class="sw-name">border</span><span class="sw-hex">#2b303b</span></div>
+      <div class="sw"><div class="sw-box" style="background:#646c80"></div><span class="sw-name">border-strong</span><span class="sw-hex">#646c80</span></div>
+      <div class="sw"><div class="sw-box" style="background:#e7e9ee"></div><span class="sw-name">text</span><span class="sw-hex">#e7e9ee</span></div>
+      <div class="sw"><div class="sw-box" style="background:#9ba3b4"></div><span class="sw-name">text-muted</span><span class="sw-hex">#9ba3b4</span></div>
+      <div class="sw"><div class="sw-box" style="background:#7b93ff"></div><span class="sw-name">accent</span><span class="sw-hex">#7b93ff</span></div>
+      <div class="sw"><div class="sw-box" style="background:#ff8a80"></div><span class="sw-name">danger</span><span class="sw-hex">#ff8a80</span></div>
+      <div class="sw"><div class="sw-box" style="background:#0b0d11"></div><span class="sw-name">term-bg</span><span class="sw-hex">#0b0d11</span></div>
+      <div class="sw"><div class="sw-box" style="background:#3b3520;border-color:#5a4f2c"></div><span class="sw-name">note</span><span class="sw-hex">#3b3520</span></div>
+    </div>
+  </section>
+
+  <section class="sec" style="grid-column:8 / span 5">
+    <span class="label">Terminal ANSI · same in both themes</span>
+    <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;padding:12px;background:#0b0d11;border-radius:6px;border:1px solid #2b303b">
+      <div class="ansi" style="background:#20242c"></div><div class="ansi" style="background:#ff7b72"></div><div class="ansi" style="background:#7ee787"></div><div class="ansi" style="background:#e3c76b"></div><div class="ansi" style="background:#79a6ff"></div><div class="ansi" style="background:#d2a8ff"></div><div class="ansi" style="background:#76e3ea"></div><div class="ansi" style="background:#d9dee8"></div>
+      <div class="ansi" style="background:#8b949e"></div><div class="ansi" style="background:#ffa198"></div><div class="ansi" style="background:#a5f0b0"></div><div class="ansi" style="background:#f2d98a"></div><div class="ansi" style="background:#a5c4ff"></div><div class="ansi" style="background:#e2c5ff"></div><div class="ansi" style="background:#b3f0f5"></div><div class="ansi" style="background:#ffffff"></div>
+    </div>
+    <div class="mono muted" style="font-size:11px">Every colour ≥ 4.5:1 on term-bg except black, which programs paint as a background.</div>
+  </section>
+
+  <section class="sec" style="grid-column:1 / span 4">
+    <span class="label">Status · one solid, five tints</span>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <span class="pill st-starting"><span class="dot" style="background:#f5d36b"></span>Starting</span>
+      <span class="pill st-working"><span class="dot" style="background:#9dbfff"></span>Working</span>
+      <span class="pill st-idle"><span class="dot" style="background:#6fdc9a"></span>Idle</span>
+      <span class="pill st-needs">Needs you</span>
+      <span class="pill st-stopped"><span class="dot" style="background:#646c80"></span>Stopped</span>
+      <span class="pill st-exited"><span class="dot" style="background:#555e6e"></span>Exited</span>
+    </div>
+    <p class="muted" style="margin:0;font-size:12px;line-height:1.5">Needs you is the only solid fill on screen: bold, ringed, and the console card takes a 2 px ring in the same colour. Every other state is a tint so it stays quiet.</p>
+  </section>
+
+  <section class="sec" style="grid-column:5 / span 4">
+    <span class="label">Agent marks · ANSI hues, never vendor logos</span>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px"><span class="mark m-claude">C</span><span style="width:84px">claude</span><span class="chip">hooks</span><span class="mono muted" style="font-size:11px">claude --resume &lt;id&gt;</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span class="mark m-codex">X</span><span style="width:84px">codex</span><span class="chip">notify</span><span class="mono muted" style="font-size:11px">codex resume &lt;id&gt;</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span class="mark m-gemini">G</span><span style="width:84px">gemini</span><span class="chip">hooks</span><span class="mono muted" style="font-size:11px">gemini --resume</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span class="mark m-opencode">O</span><span style="width:84px">opencode</span><span class="chip">plugin</span><span class="mono muted" style="font-size:11px">opencode -s &lt;id&gt;</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span class="mark m-custom">?</span><span style="width:84px">custom</span><span class="chip">regex</span><span class="mono muted" style="font-size:11px">quiet 20 s → idle</span></div>
+    </div>
+  </section>
+
+  <section class="sec" style="grid-column:9 / span 4">
+    <span class="label">Type</span>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:20px;font-weight:700;letter-spacing:-.01em">Panel title 20 / 700</div>
+      <div style="font-size:16px;font-weight:600">Section 16 / 600</div>
+      <div style="font-size:14px">Body 14 / 400 — the default for dialogs</div>
+      <div style="font-size:13px">UI 13 / 400 — buttons, rows, chrome</div>
+      <div style="font-size:12px" class="muted">Caption 12 / 400 muted</div>
+      <div class="label">Label 11 / 600 / caps</div>
+      <div class="mono" style="font-size:12px;color:#d9dee8;background:#0b0d11;padding:6px 8px;border-radius:6px">terminal · JetBrains Mono 12 / 1.6</div>
+    </div>
+  </section>
+
+  <section class="sec" style="grid-column:1 / span 6">
+    <span class="label">Controls</span>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <button class="btn btn-primary">Spawn console</button>
+      <button class="btn">Default</button>
+      <button class="btn btn-quiet">Quiet</button>
+      <button class="btn btn-danger">Remove worktree</button>
+      <button class="btn btn-sm">Small</button>
+      <button class="btn btn-sm btn-quiet">Git</button>
+      <span class="kbd">⌘K</span><span class="kbd">⌘⇧N</span><span class="kbd">Esc</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <label style="display:flex;flex-direction:column;gap:4px;flex:1"><span style="font-size:12px;font-weight:500">Worktree name</span><span class="input mono">feat/checkout</span></label>
+      <label style="display:flex;flex-direction:column;gap:4px;flex:1"><span style="font-size:12px;font-weight:500">First prompt</span><span class="input" style="color:#9ba3b4">Optional…</span></label>
+      <label style="display:flex;flex-direction:column;gap:4px;flex:1"><span style="font-size:12px;font-weight:500">Focused</span><span class="input mono" style="outline:2px solid #7b93ff;outline-offset:2px">main</span></label>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span class="chip">main</span><span class="chip">feat/checkout</span><span class="chip" style="color:#e3c76b;border-color:#3a2f0b;background:#3a2f0b">dirty 3</span><span class="chip" style="color:#6fdc9a;border-color:#10331f;background:#10331f">ahead 2</span><span class="chip">↳ Checkout flow</span>
+      <label style="display:flex;align-items:center;gap:8px;margin-left:8px"><input type="checkbox" checked style="accent-color:#7b93ff;margin:0">new worktree</label>
+      <label style="display:flex;align-items:center;gap:8px"><input type="radio" checked name="r" style="accent-color:#7b93ff;margin:0">claude</label>
+      <label style="display:flex;align-items:center;gap:8px"><input type="radio" name="r" style="accent-color:#7b93ff;margin:0">codex</label>
+    </div>
+  </section>
+
+  <section class="sec" style="grid-column:7 / span 6">
+    <span class="label">Console card anatomy</span>
+    <article class="card" style="width:100%;max-width:560px;display:flex;flex-direction:column;overflow:hidden">
+      <header style="display:flex;align-items:center;gap:8px;height:36px;padding:0 8px 0 10px;border-bottom:1px solid #2b303b">
+        <span class="mark m-claude">C</span>
+        <span style="font-weight:600">Title</span>
+        <span class="chip">branch</span>
+        <span style="flex:1"></span>
+        <span class="mono muted" style="font-size:11px">elapsed</span>
+        <span class="pill st-working"><span class="dot" style="background:#9dbfff"></span>Status</span>
+      </header>
+      <div style="margin:8px;height:64px;border-radius:6px;background:#0b0d11;display:flex;align-items:center;justify-content:center" class="mono muted">xterm.js · WebGL · 10 000 lines scrollback</div>
+      <footer style="display:flex;align-items:center;gap:4px;height:30px;padding:0 6px 0 10px;border-top:1px solid #2b303b">
+        <span class="mono muted" style="font-size:11px">cwd relative to repo</span><span style="flex:1"></span>
+        <button class="btn btn-quiet btn-sm">Git</button><button class="btn btn-quiet btn-sm">Open ▾</button><button class="btn btn-quiet btn-sm" aria-label="More">…</button>
+      </footer>
+    </article>
+    <div class="muted" style="font-size:12px;line-height:1.5">Header: mark · title · branch · spawned-from · elapsed · status. Footer: cwd · Git (with dirty count) · Open in editor · more. Rings: 2 px accent when focused, 2 px needs-you red when waiting.</div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

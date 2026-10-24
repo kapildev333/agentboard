@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AgentBoard · Board with four consoles</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:#0e1014;color:#e7e9ee;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased}
+a{color:#7b93ff;text-decoration:none}a:hover{color:#97aaff}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.muted{color:#9ba3b4}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ba3b4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#1e222a;color:#e7e9ee;font-size:13px;white-space:nowrap}
+.btn-primary{background:#7b93ff;border-color:#7b93ff;color:#0b1020;font-weight:600}
+.btn-quiet{border-color:transparent;background:transparent;color:#9ba3b4}
+.btn-sm{height:24px;padding:0 8px;font-size:12px}
+.btn-icon{width:28px;padding:0}
+.input{display:flex;align-items:center;height:32px;padding:0 10px;border:1px solid #646c80;border-radius:6px;background:#0e1014;color:#e7e9ee;font-size:13px;box-sizing:border-box}
+.card{background:#161920;border:1px solid #2b303b;border-radius:10px;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)}
+.pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st-working{background:#13284d;color:#9dbfff}.st-idle{background:#10331f;color:#6fdc9a}.st-needs{background:#ff6b5e;color:#1f0604;font-weight:700;box-shadow:0 0 0 2px #161920,0 0 0 3px #ff6b5e}.st-stopped{background:#2a2f39;color:#c0c6d1}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid #2b303b;border-radius:999px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:#9ba3b4;white-space:nowrap}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;font-family:"JetBrains Mono",ui-monospace,monospace;flex:none}
+.m-claude{background:#3a2a12;color:#f2c98a}.m-codex{background:#10331f;color:#7ee787}.m-gemini{background:#13284d;color:#9dbfff}.m-opencode{background:#2c1f4a;color:#d2a8ff}.m-custom{background:#2a2f39;color:#c0c6d1}
+.term{background:#0b0d11;border-radius:6px;color:#d9dee8;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12px;line-height:1.6;padding:10px 12px;white-space:pre;overflow:hidden;margin:0}
+.t-dim{color:#8b949e}.t-red{color:#ff7b72}.t-green{color:#7ee787}.t-yellow{color:#e3c76b}.t-blue{color:#79a6ff}.t-magenta{color:#d2a8ff}.t-cyan{color:#76e3ea}.t-bold{font-weight:700;color:#ffffff}
+.cursor{display:inline-block;width:7px;height:13px;background:#d9dee8;vertical-align:-2px}
+.canvas{background-color:#0e1014;background-image:radial-gradient(#2c313c 1px,transparent 1.5px);background-size:20px 20px}
+.kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border:1px solid #2b303b;border-bottom-width:2px;border-radius:4px;background:#1e222a;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:#9ba3b4}
+.tab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#9ba3b4;font-size:13px}
+.tab.on{color:#e7e9ee;font-weight:600;border-bottom-color:#7b93ff}
+.rail-row{display:flex;align-items:center;gap:8px;width:100%;height:32px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:#e7e9ee;text-align:left}
+.rail-row:hover{background:#262b35}
+.node-head{display:flex;align-items:center;gap:8px;height:36px;padding:0 8px 0 10px;border-bottom:1px solid #2b303b;cursor:grab}
+.node-foot{display:flex;align-items:center;gap:4px;height:30px;padding:0 6px 0 10px;border-top:1px solid #2b303b}
+.ico{width:14px;height:14px;flex:none}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:900px;display:flex;flex-direction:column;background:#0e1014">
+
+  <header style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;background:#161920;border-bottom:1px solid #2b303b;flex-wrap:wrap;box-sizing:border-box">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:4px">
+      <div aria-hidden="true" style="width:20px;height:20px;border-radius:5px;background:#7b93ff;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:4px;box-sizing:border-box"><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px"></span><span style="background:#0b1020;border-radius:1px;opacity:.45"></span></div>
+      <span style="font-weight:700;letter-spacing:-.01em">AgentBoard</span>
+    </div>
+    <span aria-hidden="true" style="width:1px;height:20px;background:#2b303b"></span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#9ba3b4" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+      <span style="font-weight:500">acme-storefront</span>
+      <span class="chip">main</span>
+    </div>
+    <nav aria-label="Workspaces" style="display:flex;align-items:center;align-self:stretch;margin-left:8px">
+      <button class="tab on">main <span class="kbd">⌘1</span></button>
+      <button class="tab">checkout <span class="kbd">⌘2</span></button>
+      <button class="tab">infra <span class="kbd">⌘3</span></button>
+      <button class="btn btn-quiet btn-icon" aria-label="New workspace"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+    </nav>
+    <div style="flex:1"></div>
+    <button class="btn btn-quiet btn-sm mono" aria-label="Zoom level">100%</button>
+    <button class="input" aria-label="Open command bar" style="width:220px;height:28px;gap:8px;color:#9ba3b4;justify-content:flex-start"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><span>Command…</span><span class="kbd" style="margin-left:auto">⌘K</span></button>
+    <button class="btn btn-primary">Spawn console</button>
+    <button class="btn btn-icon" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2" fill="#1e222a"></circle><circle cx="15" cy="12" r="2" fill="#1e222a"></circle><circle cx="11" cy="17" r="2" fill="#1e222a"></circle></svg></button>
+  </header>
+
+  <div style="display:flex;flex:1;min-height:856px;flex-wrap:wrap">
+
+    <main class="canvas" aria-label="Board" style="position:relative;flex:999 1 560px;min-width:0;min-height:856px;overflow:hidden">
+
+      <article class="card" aria-label="Console: Checkout flow" style="position:absolute;left:24px;top:24px;width:440px;height:330px;display:flex;flex-direction:column;overflow:hidden">
+        <header class="node-head">
+          <span class="mark m-claude" aria-hidden="true">C</span>
+          <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Checkout flow</span>
+          <span class="chip"><svg class="ico" style="width:11px;height:11px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"></circle><circle cx="6" cy="18" r="2.5"></circle><circle cx="18" cy="8" r="2.5"></circle><path d="M6 8.5v7M18 10.5c0 3-3 4-6 4.5-2 .3-4 1-4 3"></path></svg>feat/checkout</span>
+          <span style="flex:1"></span>
+          <span class="mono muted" style="font-size:11px">12m</span>
+          <span class="pill st-working"><span class="dot" style="background:#9dbfff"></span>Working</span>
+        </header>
+        <pre class="term" style="flex:1;margin:8px"><span class="t-dim">›</span> <span class="t-bold">Validate postal codes per country in the checkout form</span>
+
+<span class="t-blue">●</span> Read <span class="t-cyan">src/checkout/Form.tsx</span>
+<span class="t-blue">●</span> Read <span class="t-cyan">src/lib/postal.ts</span>
+<span class="t-green">●</span> Edit <span class="t-cyan">src/lib/postal.ts</span> <span class="t-green">+42</span> <span class="t-red">−7</span>
+<span class="t-yellow">●</span> Bash <span class="t-dim">npm test -- postal</span>
+  <span class="t-green">✓ 18 passed</span> <span class="t-dim">(1.8s)</span>
+<span class="t-blue">●</span> Edit <span class="t-cyan">src/checkout/Form.tsx</span> <span class="t-dim">writing…</span> <span class="cursor"></span></pre>
+        <footer class="node-foot">
+          <span class="mono muted" style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">.worktrees/feat-checkout</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-quiet btn-sm">Git <span class="chip" style="height:16px;padding:0 5px;font-size:10px;color:#e3c76b;border-color:#3a2f0b;background:#3a2f0b">3</span></button>
+          <button class="btn btn-quiet btn-sm">Open <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+          <button class="btn btn-quiet btn-sm btn-icon" aria-label="More actions" style="width:24px"><svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button>
+        </footer>
+      </article>
+
+      <article class="card" aria-label="Console: Tax rounding fix, needs you" style="position:absolute;left:488px;top:24px;width:440px;height:330px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 0 2px #ff6b5e,0 4px 16px rgb(255 107 94/.25)">
+        <header class="node-head">
+          <span class="mark m-codex" aria-hidden="true">X</span>
+          <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tax rounding fix</span>
+          <span class="chip"><svg class="ico" style="width:11px;height:11px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"></circle><circle cx="6" cy="18" r="2.5"></circle><circle cx="18" cy="8" r="2.5"></circle><path d="M6 8.5v7M18 10.5c0 3-3 4-6 4.5-2 .3-4 1-4 3"></path></svg>fix/tax-rounding</span>
+          <span style="flex:1"></span>
+          <span class="mono muted" style="font-size:11px">3m</span>
+          <span class="pill st-needs">Needs you</span>
+        </header>
+        <pre class="term" style="flex:1;margin:8px"><span class="t-dim">›</span> <span class="t-bold">Fix tax rounding for CAD line items</span>
+
+  Proposed change <span class="t-cyan">src/tax/round.ts</span>
+  <span class="t-red">- return Math.round(v * 100) / 100</span>
+  <span class="t-green">+ return roundHalfEven(v, 2)</span>
+
+  Then run <span class="t-dim">npm test -- tax</span>
+
+<span class="t-yellow">?</span> <span class="t-bold">Apply this change and run tests?</span> <span class="t-dim">[y/N]</span> <span class="cursor"></span></pre>
+        <footer class="node-foot">
+          <span class="mono muted" style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">.worktrees/fix-tax-rounding</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-quiet btn-sm">Git</button>
+          <button class="btn btn-quiet btn-sm">Open <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+          <button class="btn btn-quiet btn-sm btn-icon" aria-label="More actions" style="width:24px"><svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button>
+        </footer>
+      </article>
+
+      <article class="card" aria-label="Console: CI cleanup" style="position:absolute;left:24px;top:378px;width:440px;height:300px;display:flex;flex-direction:column;overflow:hidden">
+        <header class="node-head">
+          <span class="mark m-opencode" aria-hidden="true">O</span>
+          <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">CI cleanup</span>
+          <span class="chip"><svg class="ico" style="width:11px;height:11px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"></circle><circle cx="6" cy="18" r="2.5"></circle><circle cx="18" cy="8" r="2.5"></circle><path d="M6 8.5v7M18 10.5c0 3-3 4-6 4.5-2 .3-4 1-4 3"></path></svg>chore/ci</span>
+          <span class="chip" title="Spawned from the Checkout flow console">↳ Checkout flow</span>
+          <span style="flex:1"></span>
+          <span class="mono muted" style="font-size:11px">41m</span>
+          <span class="pill st-idle"><span class="dot" style="background:#6fdc9a"></span>Idle</span>
+        </header>
+        <pre class="term" style="flex:1;margin:8px"><span class="t-magenta">opencode</span> <span class="t-dim">· acme-storefront · chore/ci · ollama/qwen3-coder</span>
+<span class="t-dim">›</span> <span class="t-bold">Tidy the GitHub Actions matrix</span>
+
+<span class="t-green">✓</span> .github/workflows/ci.yml <span class="t-dim">updated</span>
+<span class="t-green">✓</span> 3 jobs → 2 jobs, pnpm cache restored
+<span class="t-green">✓</span> ran <span class="t-dim">act -j test</span> locally, green
+
+<span class="t-dim">Waiting for input. Ctrl-C interrupts.</span> <span class="cursor"></span></pre>
+        <footer class="node-foot">
+          <span class="mono muted" style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">.worktrees/chore-ci</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-quiet btn-sm">Git</button>
+          <button class="btn btn-quiet btn-sm">Open <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+          <button class="btn btn-quiet btn-sm btn-icon" aria-label="More actions" style="width:24px"><svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button>
+        </footer>
+      </article>
+
+      <article class="card" aria-label="Console: Docs pass, stopped" style="position:absolute;left:488px;top:378px;width:440px;height:300px;display:flex;flex-direction:column;overflow:hidden">
+        <header class="node-head">
+          <span class="mark m-gemini" aria-hidden="true">G</span>
+          <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Docs pass</span>
+          <span class="chip"><svg class="ico" style="width:11px;height:11px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"></circle><circle cx="6" cy="18" r="2.5"></circle><circle cx="18" cy="8" r="2.5"></circle><path d="M6 8.5v7M18 10.5c0 3-3 4-6 4.5-2 .3-4 1-4 3"></path></svg>main</span>
+          <span style="flex:1"></span>
+          <span class="pill st-stopped"><span class="dot" style="background:#646c80"></span>Stopped</span>
+        </header>
+        <div style="position:relative;flex:1;margin:8px;display:flex">
+          <pre class="term" style="flex:1;opacity:.45"><span class="t-dim">›</span> Rewrite README quick start for the new CLI
+
+<span class="t-green">✓</span> README.md <span class="t-dim">sections 1–3 rewritten</span>
+<span class="t-green">✓</span> docs/getting-started.md <span class="t-dim">created</span>
+<span class="t-dim">session ended · daemon restarted</span></pre>
+          <div class="card" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:300px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:#1e222a">
+            <div style="display:flex;align-items:center;gap:8px"><span class="label">Stopped</span><span class="mono muted" style="font-size:11px">daemon restarted 2m ago</span></div>
+            <div class="mono muted" style="font-size:11px">session 7f3a…c21e · gemini resume</div>
+            <div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1">Resume session</button><button class="btn" style="flex:1">Start fresh</button></div>
+          </div>
+        </div>
+        <footer class="node-foot">
+          <span class="mono muted" style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">~/code/acme-storefront</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-quiet btn-sm">Git</button>
+          <button class="btn btn-quiet btn-sm">Open <svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+          <button class="btn btn-quiet btn-sm btn-icon" aria-label="More actions" style="width:24px"><svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button>
+        </footer>
+      </article>
+
+      <aside aria-label="Sticky note" style="position:absolute;left:952px;top:24px;width:200px;height:150px;box-sizing:border-box;padding:12px 14px;border:1px solid #5a4f2c;border-radius:6px;background:#3b3520;color:#f4e9bf;font-size:13px;line-height:1.45;box-shadow:0 1px 2px rgb(0 0 0/.4),0 4px 12px rgb(0 0 0/.25)">Ship the checkout page today.<br><br>Review the tax diff before merging — rounding must match Xero.</aside>
+
+      <section class="card" aria-label="Checklist" style="position:absolute;left:952px;top:198px;width:200px;height:190px;box-sizing:border-box;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><span class="label">Today</span><span class="mono muted" style="font-size:11px">2/4</span></div>
+        <label style="display:flex;align-items:center;gap:8px;color:#9ba3b4;text-decoration:line-through"><input type="checkbox" checked style="accent-color:#7b93ff;margin:0">Postal validation</label>
+        <label style="display:flex;align-items:center;gap:8px;color:#9ba3b4;text-decoration:line-through"><input type="checkbox" checked style="accent-color:#7b93ff;margin:0">CI matrix</label>
+        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" style="accent-color:#7b93ff;margin:0">Tax rounding</label>
+        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" style="accent-color:#7b93ff;margin:0">README quick start</label>
+      </section>
+
+      <div class="card" role="toolbar" aria-label="Zoom" style="position:absolute;left:16px;bottom:16px;display:flex;flex-direction:column;padding:4px;gap:2px">
+        <button class="btn btn-quiet btn-icon" aria-label="Zoom in"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+        <button class="btn btn-quiet btn-icon" aria-label="Zoom out"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+        <button class="btn btn-quiet btn-icon" aria-label="Fit to view"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"></path></svg></button>
+        <button class="btn btn-quiet btn-icon" aria-label="Lock layout"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></button>
+      </div>
+
+      <div class="card" aria-label="Minimap" style="position:absolute;right:16px;bottom:16px;width:180px;height:120px;background:#12151b;overflow:hidden">
+        <div style="position:absolute;left:12px;top:12px;width:54px;height:40px;background:#262b35;border-radius:2px"></div>
+        <div style="position:absolute;left:70px;top:12px;width:54px;height:40px;background:#3a2422;border-radius:2px;outline:1px solid #ff6b5e"></div>
+        <div style="position:absolute;left:12px;top:56px;width:54px;height:36px;background:#262b35;border-radius:2px"></div>
+        <div style="position:absolute;left:70px;top:56px;width:54px;height:36px;background:#262b35;border-radius:2px"></div>
+        <div style="position:absolute;left:128px;top:12px;width:26px;height:18px;background:#3b3520;border-radius:2px"></div>
+        <div style="position:absolute;left:128px;top:34px;width:26px;height:22px;background:#262b35;border-radius:2px"></div>
+        <div style="position:absolute;left:6px;top:6px;width:160px;height:100px;border:1px solid #646c80;border-radius:2px"></div>
+      </div>
+
+    </main>
+
+    <aside aria-label="Mission map" style="flex:1 1 264px;max-width:264px;background:#161920;border-left:1px solid #2b303b;display:flex;flex-direction:column;box-sizing:border-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px"><span class="label">Mission map</span><span class="mono muted" style="font-size:11px">4 consoles</span></div>
+
+      <div style="padding:4px 8px;display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 8px 4px"><span class="pill st-needs" style="height:20px;font-size:11px">Needs you</span><span class="mono muted" style="font-size:11px">1</span></div>
+        <button class="rail-row"><span class="dot" style="background:#ff6b5e;box-shadow:0 0 0 3px rgb(255 107 94/.3)"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">Tax rounding fix</span><span class="mark m-codex" style="width:16px;height:16px;font-size:9px" aria-label="codex">X</span><span class="mono muted" style="font-size:11px">3m</span></button>
+
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 8px 4px"><span class="pill st-working" style="height:20px;font-size:11px">Working</span><span class="mono muted" style="font-size:11px">1</span></div>
+        <button class="rail-row"><span class="dot" style="background:#9dbfff"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Checkout flow</span><span class="mark m-claude" style="width:16px;height:16px;font-size:9px" aria-label="claude">C</span><span class="mono muted" style="font-size:11px">12m</span></button>
+
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 8px 4px"><span class="pill st-idle" style="height:20px;font-size:11px">Idle</span><span class="mono muted" style="font-size:11px">1</span></div>
+        <button class="rail-row"><span class="dot" style="background:#6fdc9a"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CI cleanup</span><span class="mark m-opencode" style="width:16px;height:16px;font-size:9px" aria-label="opencode">O</span><span class="mono muted" style="font-size:11px">41m</span></button>
+
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 8px 4px"><span class="pill st-stopped" style="height:20px;font-size:11px">Stopped</span><span class="mono muted" style="font-size:11px">1</span></div>
+        <button class="rail-row"><span class="dot" style="background:#646c80"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#9ba3b4">Docs pass</span><span class="mark m-gemini" style="width:16px;height:16px;font-size:9px" aria-label="gemini">G</span><span class="mono muted" style="font-size:11px">—</span></button>
+      </div>
+
+      <div style="flex:1"></div>
+
+      <div style="margin:12px;padding:12px;border:1px solid #2b303b;border-radius:10px;background:#12151b;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><span class="label">Daemon</span><span class="dot" style="background:#6fdc9a" aria-label="running"></span></div>
+        <div class="mono" style="font-size:11px;color:#c0c6d1">127.0.0.1:51823 · pid 41822</div>
+        <div class="mono muted" style="font-size:11px">4 PTYs · 412 MB · 0.9% CPU</div>
+        <div class="muted" style="font-size:11px;margin-top:2px">Nothing leaves this machine.</div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
