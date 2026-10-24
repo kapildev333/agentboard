@@ -1,23 +1,85 @@
 # AgentBoard design
 
+The source is the owner's "AgentBoard Screens" canvas, row 01 (D45): `Foundations` (the token sheet), `Launch`, `Board-Empty` and `Main`, with the spawn dialog, settings drawer and console card artboards beside them.
+
 The board's look lives in three sheets under `packages/ui/src/styles`, imported once by `main.tsx` after the app so they follow React Flow's and xterm's own sheets:
 
-- `tokens.css`: every colour, space, radius and font as a CSS variable. Dark is the default; `prefers-color-scheme: light` swaps the colours.
-- `base.css`: element defaults (in `:where()`, so any class wins), buttons (`.btn-primary`, `.btn-sm`, `.btn-icon`), inputs, focus rings, chips, field labels, the path field.
-- `app.css`: one section per component: app shell and top bar, overlays (spawn modal, settings drawer), React Flow on the tokens, status badge, console card, note, mission map, settings, git card and diff.
+- `tokens.css`: every colour, space, radius, font and control size as a CSS variable. Dark is the default; `prefers-color-scheme: light` swaps the colours.
+- `base.css`: element defaults (in `:where()`, so any class wins), focus rings, and the shared primitives below. Other components use these instead of local copies.
+- `app.css`: one section per component: launch page, app shell and top bar, empty board, overlays (spawn modal, settings drawer), React Flow on the tokens, console card, note, mission map, settings, git card and diff.
 
 Components carry class names only; no colour or size is written inline. Roles, labels and accessible names are unchanged, so the tests and the e2e selectors still find everything.
+
+## Primitives (base.css)
+
+| Class | Look |
+|---|---|
+| `.btn` (every `<button>` by default) | 28 px tall, 6 px radius, 1 px `--color-border-strong`, raised surface, 13 px / 500 |
+| `.btn-primary` | accent fill, `--color-on-accent` text, 600 |
+| `.btn-quiet` | transparent, no border, muted text |
+| `.btn-danger` | `--color-danger` border and text |
+| `.btn-sm` | 24 px tall, 12 px text |
+| `.btn-icon` | 28 x 28, needs an `aria-label` |
+| `.input` (every text field by default) | 32 px tall, 6 px radius, `--color-bg` fill |
+| `.card` | surface, 1 px `--color-border`, 10 px radius, `--shadow-card` |
+| `.chip` | 20 px pill, mono 11 px, 1 px `--color-border`, muted |
+| `.kbd` | 18 px key cap, mono 10 px, 2 px bottom border |
+| `.pill` `.st-<status>` | 22 px, 12 / 600, a 6 px dot and a tint per status; `.st-needs_you` is solid, ringed (`0 0 0 2px` surface, `0 0 0 3px` needs-you) and has no dot. `StatusBadge` renders it. |
+| `.mark` `.mark-<agent>` | the agent mark (below). `AgentMark` renders it. |
+| `.label` | 11 / 600, caps, letter-spacing 0.06em, muted |
+| `.caption` | 12, muted |
+| `.mono` `.muted` `.sr-only` | monospace 12, muted text, visually hidden |
+
+Icons are inline 14 px stroke SVGs with `aria-hidden` (`packages/ui/src/board/icons.tsx`), never emoji or a vendor logo. The logo is four squares, one in the accent.
+
+## Type scale
+
+| Use | Size / weight |
+|---|---|
+| Panel title (`.title`) | 20 / 700, letter-spacing -0.01em |
+| Dialog title | 18 / 700 |
+| Section (`.section-heading`) | 16 / 600 |
+| Body | 14 |
+| UI (buttons, rows) | 13 |
+| Caption (`.caption`) | 12, muted |
+| Label (`.label`) | 11 / 600, caps, 0.06em, muted |
+| Terminal | 12 / 1.6, monospace |
+
+## Agent marks
+
+One 20 x 20 rounded square with an 11 px JetBrains Mono bold letter, `aria-hidden` (the agent's name always sits beside it). `<AgentMark agent="claude" />` for a built-in agent; any other string is a custom agent's name and shows its first letter.
+
+| Agent | Letter | Dark fg / bg | Light fg / bg |
+|---|---|---|---|
+| claude | C | `#f2c98a` / `#3a2a12` | `#6b4210` / `#fbe9cc` |
+| codex | X | `#7ee787` / `#10331f` | `#13623a` / `#d9f5e3` |
+| gemini | G | `#9dbfff` / `#13284d` | `#1d3f9e` / `#dde7ff` |
+| opencode | O | `#d2a8ff` / `#2c1f4a` | `#5a2a9c` / `#efe3ff` |
+| custom | first letter | `#c0c6d1` / `#2a2f39` | `#3c4350` / `#e6e9ee` |
+
+## Keyboard
+
+| Key | Does | Where |
+|---|---|---|
+| ⌘1 to ⌘9 | switch to that workspace (each tab shows its key cap) | anywhere but a focused terminal or field |
+| ⌘⇧N | open the spawn dialog | anywhere (a browser may keep it: Chrome opens a private window) |
+| N | add a note in the middle of the view | anywhere but a focused terminal or field |
+| Esc | close the spawn dialog or the settings drawer; focus goes back to the opener | the drawer ignores an Escape typed into a terminal |
+
+Controls inside the board (zoom buttons, mission-map rows, empty-board actions, tabs) draw their focus ring inset, so the canvas edge never clips it.
 
 ## Tokens
 
 | Group | Token | Value |
 |---|---|---|
 | Space (8 px grid) | `--space-half` `--space-1` `--space-2` `--space-3` `--space-4` `--space-6` | 4 8 16 24 32 48 px |
-| Radius | `--radius-xs` `--radius-sm` `--radius-lg` `--radius-pill` | 2 px (resize handles), 6 px (controls, terminal, notes), 10 px (cards, modal), 999 px (pills) |
-| Font | `--font-sans` | Inter (self-hosted from `@fontsource-variable/inter`), then the system-ui stack |
-| | `--font-mono` | JetBrains Mono (`@fontsource-variable/jetbrains-mono`), then ui-monospace, Menlo, …; the terminal uses it too |
-| | `--text-2xs` `--text-xs` `--text-sm` `--text-md` `--text-lg` `--text-xl` | 11 (caps labels) 12 13 14 16 20 (panel titles) px |
-| Layout | `--topbar-height` `--rail-width` `--drawer-width` | 44 264 400 px |
+| Radius | `--radius-xs` `--radius-sm` `--radius-lg` `--radius-pill` | 2 px (resize handles, key caps), 6 px (controls, terminal, notes, marks), 10 px (cards, modal), 999 px (pills) |
+| Font | `--font-sans` | Inter, system-ui, … (used when installed; nothing is fetched) |
+| | `--font-mono` | "JetBrains Mono", ui-monospace, Menlo, … (the terminal keeps `Menlo, monospace`) |
+| | `--text-2xs` `--text-xs` `--text-sm` `--text-md` `--text-lg` `--text-xl` `--text-2xl` | 11 12 13 14 16 18 20 px |
+| Controls | `--control-height` `--control-height-sm` `--input-height` | 28 24 32 px |
+| | `--chip-height` `--pill-height` `--kbd-height` `--mark-size` | 20 22 18 20 px |
+| Layout | `--topbar-height` `--rail-width` `--drawer-width` | 44 264 640 px |
 
 | Colour | Dark (default) | Light |
 |---|---|---|
@@ -43,13 +105,6 @@ Components carry class names only; no colour or size is written inline. Roles, l
 | `--status-needs-you-fg` / `-bg` | `#1f0604` / `#ff6b5e` | `#ffffff` / `#c62a1f` |
 | `--status-stopped-fg` / `-bg` | `#c0c6d1` / `#2a2f39` | `#3c4350` / `#e6e9ee` |
 | `--status-exited-fg` / `-bg` | `#a3abbb` / `#22262e` | `#555e6e` / `#eceef2` |
-| `--mark-claude-fg` / `-bg` | `#f2c98a` / `#3a2a12` | `#6b4500` / `#fdf0c2` |
-| `--mark-codex-fg` / `-bg` | `#7ee787` / `#10331f` | `#13623a` / `#d9f5e3` |
-| `--mark-gemini-fg` / `-bg` | `#9dbfff` / `#13284d` | `#1d3f9e` / `#dde7ff` |
-| `--mark-opencode-fg` / `-bg` | `#d2a8ff` / `#2c1f4a` | `#5a2ca0` / `#ece0ff` |
-| `--mark-custom-fg` / `-bg` | `#c0c6d1` / `#2a2f39` | `#3c4350` / `#e6e9ee` |
-
-Agent marks are a 20 px monogram (`.mark.mark-<agent>`: C, X, G, O, ?) in an ANSI hue at the left of the console header, never a vendor logo.
 
 Needs you is the loudest state on screen: a solid fill (every other status is a tint), bold, ringed; its console card gets a 2 px ring in the same colour and its mission-map dot a halo.
 
@@ -88,10 +143,10 @@ Needs you is the loudest state on screen: a solid fill (every other status is a 
 | `--term-ansi-cyan` / `bright-cyan` on `--term-bg` | 12.9 / 15.5:1 | same |
 | `--term-ansi-white` / `bright-white` on `--term-bg` | 14.4 / 19.4:1 | same |
 | `--term-ansi-bright-black` on `--term-bg` | 6.3:1 | same |
-| `--mark-claude-fg` on `--mark-claude-bg` | 8.9:1 | 7.4:1 |
+| `--mark-claude-fg` on `--mark-claude-bg` | 8.9:1 | 7.3:1 |
 | `--mark-codex-fg` on `--mark-codex-bg` | 9.0:1 | 6.4:1 |
 | `--mark-gemini-fg` on `--mark-gemini-bg` | 7.9:1 | 7.5:1 |
-| `--mark-opencode-fg` on `--mark-opencode-bg` | 7.7:1 | 7.2:1 |
+| `--mark-opencode-fg` on `--mark-opencode-bg` | 7.7:1 | 7.6:1 |
 | `--mark-custom-fg` on `--mark-custom-bg` | 7.8:1 | 8.2:1 |
 
 ANSI black is left out on purpose: programs paint it as a background.
@@ -120,3 +175,6 @@ SHOTS=before npx playwright test -c docs/design/playwright.config.ts # before-*.
 | Settings | ![](before-04-settings.png) | ![](04-settings.png) |
 | Git card | ![](before-05-git-card.png) | ![](05-git-card.png) |
 | Light theme | | ![](06-three-consoles-light.png) |
+| Launch page | | ![](07-launch.png) |
+
+The before column is the board as it stood after L1A to L1C (v0.1.0); the after column is the redesign from the Screens canvas.

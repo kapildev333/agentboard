@@ -117,4 +117,12 @@ test("screenshots", async ({ page }) => {
   await expect(nodes.nth(0).getByText("Now with a second line.")).toBeVisible();
   await page.waitForTimeout(300);
   await page.screenshot({ path: out("05-git-card") });
+
+  // The launch page: the page without a repo, with demo as the one recent repo.
+  if (process.env.SHOTS !== "before") {
+    await page.goto(new URL("/", page.url()).href);
+    await expect(page.getByLabel("repo path")).toBeVisible();
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: out("07-launch") });
+  }
 });
