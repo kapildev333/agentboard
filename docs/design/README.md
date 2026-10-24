@@ -14,9 +14,9 @@ Components carry class names only; no colour or size is written inline. Roles, l
 |---|---|---|
 | Space (8 px grid) | `--space-half` `--space-1` `--space-2` `--space-3` `--space-4` `--space-6` | 4 8 16 24 32 48 px |
 | Radius | `--radius-xs` `--radius-sm` `--radius-lg` `--radius-pill` | 2 px (resize handles), 6 px (controls, terminal, notes), 10 px (cards, modal), 999 px (pills) |
-| Font | `--font-sans` | system-ui stack |
-| | `--font-mono` | ui-monospace, Menlo, … (the terminal keeps `Menlo, monospace`) |
-| | `--text-xs` `--text-sm` `--text-md` `--text-lg` | 12 13 14 16 px |
+| Font | `--font-sans` | Inter (self-hosted from `@fontsource-variable/inter`), then the system-ui stack |
+| | `--font-mono` | JetBrains Mono (`@fontsource-variable/jetbrains-mono`), then ui-monospace, Menlo, …; the terminal uses it too |
+| | `--text-2xs` `--text-xs` `--text-sm` `--text-md` `--text-lg` `--text-xl` | 11 (caps labels) 12 13 14 16 20 (panel titles) px |
 | Layout | `--topbar-height` `--rail-width` `--drawer-width` | 44 264 400 px |
 
 | Colour | Dark (default) | Light |
@@ -43,6 +43,13 @@ Components carry class names only; no colour or size is written inline. Roles, l
 | `--status-needs-you-fg` / `-bg` | `#1f0604` / `#ff6b5e` | `#ffffff` / `#c62a1f` |
 | `--status-stopped-fg` / `-bg` | `#c0c6d1` / `#2a2f39` | `#3c4350` / `#e6e9ee` |
 | `--status-exited-fg` / `-bg` | `#a3abbb` / `#22262e` | `#555e6e` / `#eceef2` |
+| `--mark-claude-fg` / `-bg` | `#f2c98a` / `#3a2a12` | `#6b4500` / `#fdf0c2` |
+| `--mark-codex-fg` / `-bg` | `#7ee787` / `#10331f` | `#13623a` / `#d9f5e3` |
+| `--mark-gemini-fg` / `-bg` | `#9dbfff` / `#13284d` | `#1d3f9e` / `#dde7ff` |
+| `--mark-opencode-fg` / `-bg` | `#d2a8ff` / `#2c1f4a` | `#5a2ca0` / `#ece0ff` |
+| `--mark-custom-fg` / `-bg` | `#c0c6d1` / `#2a2f39` | `#3c4350` / `#e6e9ee` |
+
+Agent marks are a 20 px monogram (`.mark.mark-<agent>`: C, X, G, O, ?) in an ANSI hue at the left of the console header, never a vendor logo.
 
 Needs you is the loudest state on screen: a solid fill (every other status is a tint), bold, ringed; its console card gets a 2 px ring in the same colour and its mission-map dot a halo.
 
@@ -81,6 +88,11 @@ Needs you is the loudest state on screen: a solid fill (every other status is a 
 | `--term-ansi-cyan` / `bright-cyan` on `--term-bg` | 12.9 / 15.5:1 | same |
 | `--term-ansi-white` / `bright-white` on `--term-bg` | 14.4 / 19.4:1 | same |
 | `--term-ansi-bright-black` on `--term-bg` | 6.3:1 | same |
+| `--mark-claude-fg` on `--mark-claude-bg` | 8.9:1 | 7.4:1 |
+| `--mark-codex-fg` on `--mark-codex-bg` | 9.0:1 | 6.4:1 |
+| `--mark-gemini-fg` on `--mark-gemini-bg` | 7.9:1 | 7.5:1 |
+| `--mark-opencode-fg` on `--mark-opencode-bg` | 7.7:1 | 7.2:1 |
+| `--mark-custom-fg` on `--mark-custom-bg` | 7.8:1 | 8.2:1 |
 
 ANSI black is left out on purpose: programs paint it as a background.
 
