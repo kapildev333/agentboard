@@ -30,6 +30,13 @@ test("daemon.json is re-read on every request", async () => {
   expect(urls).toEqual(["http://127.0.0.1:1111/api/status", "http://127.0.0.1:2222/api/status"]);
 });
 
+test("every request names the MCP server to the daemon's call log", async () => {
+  const seen: RequestInit[] = [];
+  const f = (async (_: string, init: RequestInit) => (seen.push(init), new Response(JSON.stringify({ consoles: [] })))) as typeof fetch;
+  await new DaemonClient(() => ({ port: 1, token: "t", pid: 1 }), f, {}).getStatus();
+  expect(seen[0]!.headers).toMatchObject({ "x-agentboard-token": "t", "x-agentboard-client": "mcp" });
+});
+
 test("the MCP server and the CLI read daemon.json through one function (L24, L10)", async () => {
   const { loadDaemonInfo } = await import("@agentboard/cli");
   expect(readDaemonInfo).toBe(loadDaemonInfo);
