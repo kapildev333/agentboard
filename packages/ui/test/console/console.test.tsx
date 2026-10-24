@@ -161,6 +161,14 @@ describe("ConsoleNode", () => {
     expect(root.className).not.toMatch(/nowheel/);
   });
 
+  it("the header carries the agent's mark", () => {
+    const { container } = mount({ data: { node: { id: "c1", title: "Claude", agent: "codex" } } });
+    const mark = container.querySelector(".console-header .mark")!;
+    expect(mark.className).toBe("mark mark-codex");
+    expect(mark.textContent).toBe("X");
+    expect(mark.getAttribute("aria-label")).toBe("codex");
+  });
+
   it("exit shows the marker", () => {
     const { getByText, queryByText } = mount();
     act(() => sockets[0]!.open());
