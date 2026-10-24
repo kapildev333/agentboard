@@ -6,7 +6,6 @@ import { CommandBar } from "./command";
 import { ConsoleNode, type SocketLike } from "./console";
 import { GitCard } from "./git";
 import { LayoutMenu } from "./layout";
-import { OpenInButtons } from "./open/OpenInButtons";
 import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
 import { MissionMap, StatusBadge, useNotifications } from "./status";
 import { AddMenu, ChecklistView, NoteView, TextView, noteAdds } from "./notes";
@@ -117,8 +116,7 @@ function ConsoleView(props: NodeProps) {
       </div>
       {git && (
         <div className="console-git nodrag nowheel">
-          <GitCard fetch={fetch} path={node.cwd} />
-          <OpenInButtons path={node.cwd} doFetch={fetch} />
+          <GitCard fetch={fetch} path={node.cwd} base={node.worktree?.base} />
         </div>
       )}
     </div>

@@ -56,7 +56,7 @@ it("commit posts the message", async () => {
   render(<GitCard fetch={fetch} path="/r" />);
   fireEvent.click(await screen.findByText("Commit"));
   fireEvent.change(screen.getByLabelText("Commit message"), { target: { value: "fix it" } });
-  fireEvent.click(screen.getByText("Submit"));
+  fireEvent.click(screen.getByText("Commit 3 files"));
   await vi.waitFor(() => expect(calls.some(([k]) => k === "POST /api/git/commit")).toBe(true));
   const post = calls.find(([k]) => k === "POST /api/git/commit")!;
   expect(JSON.parse(post[1]!.body as string)).toEqual({ path: "/r", message: "fix it" });
@@ -212,7 +212,7 @@ it("the commit form closes after a successful commit", async () => {
   render(<GitCard fetch={fetch} path="/r" />);
   fireEvent.click(await screen.findByText("Commit"));
   fireEvent.change(screen.getByLabelText("Commit message"), { target: { value: "fix it" } });
-  fireEvent.click(screen.getByText("Submit"));
+  fireEvent.click(screen.getByText("Commit 3 files"));
   await vi.waitFor(() => expect(screen.queryByLabelText("Commit message")).toBeNull());
 });
 
@@ -240,7 +240,7 @@ it("a failed commit shows the error and keeps the message", async () => {
   render(<GitCard fetch={fetch} path="/r" />);
   fireEvent.click(await screen.findByText("Commit"));
   fireEvent.change(screen.getByLabelText("Commit message"), { target: { value: "fix it" } });
-  fireEvent.click(screen.getByText("Submit"));
+  fireEvent.click(screen.getByText("Commit 3 files"));
   expect((await screen.findByRole("alert")).textContent).toBe("nothing to commit");
   expect((screen.getByLabelText("Commit message") as HTMLInputElement).value).toBe("fix it");
 });
@@ -273,7 +273,7 @@ it("a successful commit or push reloads the status so the counts refresh (L21)",
   await vi.waitFor(() => expect(calls.filter(([k]) => k === "GET /api/git/status")).toHaveLength(2));
   fireEvent.click(screen.getByText("Commit"));
   fireEvent.change(screen.getByLabelText("Commit message"), { target: { value: "fix it" } });
-  fireEvent.click(screen.getByText("Submit"));
+  fireEvent.click(screen.getByText("Commit 3 files"));
   await vi.waitFor(() => expect(calls.filter(([k]) => k === "GET /api/git/status")).toHaveLength(3));
 });
 
