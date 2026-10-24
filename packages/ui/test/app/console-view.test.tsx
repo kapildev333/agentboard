@@ -88,6 +88,13 @@ describe("ConsoleView", () => {
     expect(node.queryByRole("menu")).toBeNull();
     expect(document.activeElement).toBe(more);
 
+    // Tab out of the menu closes it; moving between its own items does not.
+    fireEvent.click(more);
+    fireEvent.blur(node.getByRole("menuitem", { name: "Close Fake c2" }), { relatedTarget: more });
+    expect(node.getByRole("menu")).toBeTruthy();
+    fireEvent.blur(node.getByRole("menuitem", { name: "Close Fake c2" }), { relatedTarget: document.body });
+    expect(node.queryByRole("menu")).toBeNull();
+
     fireEvent.click(more);
     fireEvent.click(node.getByRole("menuitem", { name: "Close Fake c2" }));
     await waitFor(() => expect(api.calls).toContainEqual({ url: "/api/consoles/c2", method: "DELETE", body: undefined }));
@@ -115,7 +122,8 @@ describe("ConsoleView", () => {
     fireEvent.pointerDown(document.body);
     expect(node.queryByRole("button", { name: "Zed" })).toBeNull();
     fireEvent.click(node.getByRole("button", { name: "Git" }));
-    expect(await node.findByRole("button", { name: "Git 3 dirty" })).toBeTruthy();
+    // The count describes the button; its name stays exactly "Git".
+    expect(await node.findByRole("button", { name: "Git", description: "3 dirty files" })).toBeTruthy();
   });
 
   it("a focused terminal rings its card, without a :has() rule re-run on every row xterm writes", async () => {
