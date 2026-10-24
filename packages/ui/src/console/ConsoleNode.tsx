@@ -27,7 +27,11 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
   const fit = useRef<FitAddon | null>(null);
 
   useEffect(() => {
-    const t = new Terminal({ fontFamily: "Menlo, monospace", fontSize, scrollback: 10000, cursorBlink: false, allowProposedApi: false });
+    // The terminal's colours are the --term-* tokens; jsdom has none, so xterm keeps its defaults there.
+    const css = getComputedStyle(el.current!);
+    const token = (name: string) => css.getPropertyValue(name).trim() || undefined;
+    const theme = { background: token("--term-bg"), foreground: token("--term-fg"), cursor: token("--term-fg"), selectionBackground: token("--term-selection") };
+    const t = new Terminal({ fontFamily: "Menlo, monospace", fontSize, scrollback: 10000, cursorBlink: false, allowProposedApi: false, theme });
     const f = new FitAddon();
     t.loadAddon(f);
     t.open(el.current!);
@@ -64,19 +68,17 @@ export function ConsoleNode({ data, socketFactory, fontSize = 13, statusBadge }:
   // One renderer (xterm's DOM) at every zoom. No zoom refit: fit() measures layout pixels, which a React Flow zoom never changes.
 
   return (
-    <div
-      style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}
-    >
-      <header className={CONSOLE_DRAG_HANDLE.slice(1)}>
-        {data.node.title} {statusBadge}
+    <div className="console">
+      <header className={`${CONSOLE_DRAG_HANDLE.slice(1)} console-header`}>
+        <span className="console-title">{data.node.title}</span> {statusBadge}
       </header>
       <div
         ref={el}
-        className={focused ? "nodrag nowheel" : undefined}
+        className={focused ? "console-term nodrag nowheel" : "console-term"}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={{ flex: 1, minHeight: 0 }} />
-      {exited && <footer>[exited]</footer>}
+      />
+      {exited && <footer className="console-exited">[exited]</footer>}
     </div>
   );
 }

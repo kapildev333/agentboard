@@ -90,20 +90,29 @@ function ConsoleView(props: NodeProps) {
   };
   const stopped = node.status === "stopped" || node.status === "exited";
   return (
-    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: "#fff", border: "1px solid #d1d5db", borderRadius: 6, overflow: "hidden" }}>
-      <div style={{ flex: 1, minHeight: 0 }}>
-        <ConsoleNode data={{ node }} fontSize={fontSize} statusBadge={<StatusBadge status={node.status} />} />
+    <div className={node.status === "needs_you" ? "card console-card needs-you" : "card console-card"}>
+      <div className="console-body">
+        <ConsoleNode
+          data={{ node }}
+          fontSize={fontSize}
+          statusBadge={
+            <span className="console-meta">
+              {node.worktree && <span className="chip" title={node.worktree.branch}>{node.worktree.branch}</span>}
+              <StatusBadge status={node.status} />
+            </span>
+          }
+        />
       </div>
-      <div className="nodrag" style={{ display: "flex", gap: 4, padding: 4, borderTop: "1px solid #e5e7eb", fontSize: 12 }}>
-        {stopped && <button type="button" onClick={() => void resume()}>Resume</button>}
-        <button type="button" aria-pressed={git} onClick={() => setGit(!git)}>Git</button>
-        <button type="button" aria-label={`Close ${node.title}`} onClick={() => useBoard.getState().removeNode(node.id)}>
+      <div className="console-footer nodrag">
+        {stopped && <button type="button" className="btn-sm" onClick={() => void resume()}>Resume</button>}
+        <button type="button" className="btn-sm" aria-pressed={git} onClick={() => setGit(!git)}>Git</button>
+        <button type="button" className="btn-sm" aria-label={`Close ${node.title}`} onClick={() => useBoard.getState().removeNode(node.id)}>
           Close
         </button>
         {error && <span role="alert">{error}</span>}
       </div>
       {git && (
-        <div className="nodrag nowheel" style={{ maxHeight: "50%", overflow: "auto", padding: 4, borderTop: "1px solid #e5e7eb", fontSize: 12 }}>
+        <div className="console-git nodrag nowheel">
           <GitCard fetch={fetch} path={node.cwd} />
           <OpenInButtons path={node.cwd} doFetch={fetch} />
         </div>
@@ -114,7 +123,7 @@ function ConsoleView(props: NodeProps) {
 
 function NoteView(props: NodeProps) {
   const node = (props.data as { node: NoteNode }).node;
-  return <div style={{ width: "100%", height: "100%", background: "#fef9c3", padding: 8, whiteSpace: "pre-wrap", overflow: "auto" }}>{node.text}</div>;
+  return <div className="note">{node.text}</div>;
 }
 
 // Module-level so React Flow never remounts the nodes (and their terminals) on a render.
