@@ -282,3 +282,19 @@ describe("ConsoleNode", () => {
     expect(sockets).toHaveLength(1);
   });
 });
+
+describe("console card", () => {
+  it("the header shows the agent mark, branch chip and status pill", () => {
+    const node = { id: "c1", title: "Claude: feature-a", agent: "claude", status: "working", lastActiveAt: new Date(Date.now() - 5 * 60_000).toISOString(), worktree: { path: "/r/.wt/a", branch: "feature-a", base: "main" } };
+    const { container } = mount({ data: { node } });
+    const header = container.querySelector("header")!;
+    const mark = header.querySelector(".agent-mark")!;
+    expect(mark.textContent).toBe("C");
+    expect(mark.getAttribute("aria-hidden")).toBe("true");
+    expect(header.querySelector(".console-branch")!.textContent).toBe("feature-a");
+    expect(header.querySelector(".console-elapsed")!.textContent).toBe("5m");
+    const pill = header.querySelector("[data-status]")!;
+    expect(pill.getAttribute("data-status")).toBe("working");
+    expect(pill.textContent).toBe("Working");
+  });
+});
