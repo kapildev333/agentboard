@@ -359,5 +359,855 @@
       "ms": 850,
       "engine": "whisper-cli"
     }
+  },
+  "GET /api/events": {
+    "request": {
+      "since": "2026-10-23T21:00:00.000Z",
+      "limit": 50
+    },
+    "response": [
+      {
+        "id": "ev-0412",
+        "ts": "2026-10-23T21:14:00.000Z",
+        "kind": "status",
+        "consoleId": "c-flaky",
+        "agent": "opencode",
+        "title": "Flaky test hunter",
+        "detail": "needs you: Bash go install",
+        "status": "needs_you"
+      }
+    ]
+  },
+  "POST /api/handoffs": {
+    "request": {
+      "fromConsoleId": "c-builder",
+      "teamId": "team-checkout"
+    },
+    "response": {
+      "id": "ho-builder-reviewer",
+      "fromConsoleId": "c-builder",
+      "teamId": "team-checkout",
+      "target": {
+        "kind": "spawn",
+        "agent": "codex",
+        "title": "Reviewer"
+      },
+      "brief": {
+        "done": [
+          "validatePostal(country, code) added in src/lib/postal.ts with rules for CA, UK, NL",
+          "Checkout form shows an inline error with an example format",
+          "18 new tests; the full suite is green (212)"
+        ],
+        "left": [
+          "Copy review on the error text",
+          "Decide whether to normalise spacing (e.g. \"K1P5G1\" → \"K1P 5G1\") before validating"
+        ],
+        "decisions": [
+          "UK rule accepts the GIR 0AA special case",
+          "Did not touch the address autocomplete; it formats postal codes on its own"
+        ],
+        "ask": "Review the diff for correctness and copy. Do not edit files; leave comments as a numbered list and say \"approve\" or \"changes requested\" on the last line."
+      },
+      "attachments": {
+        "diff": true,
+        "teamBrief": true,
+        "lastLines": false,
+        "files": [
+          "PLAN.md"
+        ]
+      },
+      "after": {
+        "markHandedOff": true,
+        "focusTarget": true,
+        "addNote": false
+      },
+      "createdAt": "2026-10-23T22:10:00.000Z",
+      "promptText": "You are the reviewer on team \"checkout\". Brief from Builder follows.\n\n## What was done\n- validatePostal(country, code) in src/lib/postal.ts (CA, UK, NL)\n- Inline error with example format in the checkout form\n- 18 new tests, suite green (212)\n\n## What's left\n- Copy review on the error text\n- Normalise spacing before validating?\n\n## Ask\nReview the diff for correctness and copy. Do not edit files…\n\n[attached: diff (3 files), team brief, PLAN.md]"
+    }
+  },
+  "PUT /api/handoffs/:id": {
+    "request": {
+      "id": "ho-builder-reviewer",
+      "fromConsoleId": "c-builder",
+      "teamId": "team-checkout",
+      "target": {
+        "kind": "spawn",
+        "agent": "codex",
+        "title": "Reviewer"
+      },
+      "brief": {
+        "done": [
+          "validatePostal(country, code) added in src/lib/postal.ts with rules for CA, UK, NL",
+          "Checkout form shows an inline error with an example format",
+          "18 new tests; the full suite is green (212)"
+        ],
+        "left": [
+          "Copy review on the error text",
+          "Decide whether to normalise spacing (e.g. \"K1P5G1\" → \"K1P 5G1\") before validating"
+        ],
+        "decisions": [
+          "UK rule accepts the GIR 0AA special case",
+          "Did not touch the address autocomplete; it formats postal codes on its own"
+        ],
+        "ask": "Review the diff for correctness and copy. Do not edit files; leave comments as a numbered list and say \"approve\" or \"changes requested\" on the last line."
+      },
+      "attachments": {
+        "diff": true,
+        "teamBrief": true,
+        "lastLines": false,
+        "files": [
+          "PLAN.md"
+        ]
+      },
+      "after": {
+        "markHandedOff": true,
+        "focusTarget": true,
+        "addNote": false
+      },
+      "createdAt": "2026-10-23T22:10:00.000Z",
+      "promptText": "You are the reviewer on team \"checkout\". Brief from Builder follows.\n\n## What was done\n- validatePostal(country, code) in src/lib/postal.ts (CA, UK, NL)\n- Inline error with example format in the checkout form\n- 18 new tests, suite green (212)\n\n## What's left\n- Copy review on the error text\n- Normalise spacing before validating?\n\n## Ask\nReview the diff for correctness and copy. Do not edit files…\n\n[attached: diff (3 files), team brief, PLAN.md]"
+    },
+    "response": {
+      "id": "ho-builder-reviewer",
+      "fromConsoleId": "c-builder",
+      "teamId": "team-checkout",
+      "target": {
+        "kind": "spawn",
+        "agent": "codex",
+        "title": "Reviewer"
+      },
+      "brief": {
+        "done": [
+          "validatePostal(country, code) added in src/lib/postal.ts with rules for CA, UK, NL",
+          "Checkout form shows an inline error with an example format",
+          "18 new tests; the full suite is green (212)"
+        ],
+        "left": [
+          "Copy review on the error text",
+          "Decide whether to normalise spacing (e.g. \"K1P5G1\" → \"K1P 5G1\") before validating"
+        ],
+        "decisions": [
+          "UK rule accepts the GIR 0AA special case",
+          "Did not touch the address autocomplete; it formats postal codes on its own"
+        ],
+        "ask": "Review the diff for correctness and copy. Do not edit files; leave comments as a numbered list and say \"approve\" or \"changes requested\" on the last line."
+      },
+      "attachments": {
+        "diff": true,
+        "teamBrief": true,
+        "lastLines": false,
+        "files": [
+          "PLAN.md"
+        ]
+      },
+      "after": {
+        "markHandedOff": true,
+        "focusTarget": true,
+        "addNote": false
+      },
+      "createdAt": "2026-10-23T22:10:00.000Z",
+      "promptText": "You are the reviewer on team \"checkout\". Brief from Builder follows.\n\n## What was done\n- validatePostal(country, code) in src/lib/postal.ts (CA, UK, NL)\n- Inline error with example format in the checkout form\n- 18 new tests, suite green (212)\n\n## What's left\n- Copy review on the error text\n- Normalise spacing before validating?\n\n## Ask\nReview the diff for correctness and copy. Do not edit files…\n\n[attached: diff (3 files), team brief, PLAN.md]"
+    }
+  },
+  "POST /api/handoffs/:id/send": {
+    "request": null,
+    "response": {
+      "consoleId": "c-reviewer"
+    }
+  },
+  "GET /api/handoffs": {
+    "request": {
+      "console": "c-builder"
+    },
+    "response": [
+      {
+        "id": "ho-builder-reviewer",
+        "fromConsoleId": "c-builder",
+        "teamId": "team-checkout",
+        "target": {
+          "kind": "spawn",
+          "agent": "codex",
+          "title": "Reviewer"
+        },
+        "brief": {
+          "done": [
+            "validatePostal(country, code) added in src/lib/postal.ts with rules for CA, UK, NL",
+            "Checkout form shows an inline error with an example format",
+            "18 new tests; the full suite is green (212)"
+          ],
+          "left": [
+            "Copy review on the error text",
+            "Decide whether to normalise spacing (e.g. \"K1P5G1\" → \"K1P 5G1\") before validating"
+          ],
+          "decisions": [
+            "UK rule accepts the GIR 0AA special case",
+            "Did not touch the address autocomplete; it formats postal codes on its own"
+          ],
+          "ask": "Review the diff for correctness and copy. Do not edit files; leave comments as a numbered list and say \"approve\" or \"changes requested\" on the last line."
+        },
+        "attachments": {
+          "diff": true,
+          "teamBrief": true,
+          "lastLines": false,
+          "files": [
+            "PLAN.md"
+          ]
+        },
+        "after": {
+          "markHandedOff": true,
+          "focusTarget": true,
+          "addNote": false
+        },
+        "createdAt": "2026-10-23T22:10:00.000Z",
+        "promptText": "You are the reviewer on team \"checkout\". Brief from Builder follows.\n\n## What was done\n- validatePostal(country, code) in src/lib/postal.ts (CA, UK, NL)\n- Inline error with example format in the checkout form\n- 18 new tests, suite green (212)\n\n## What's left\n- Copy review on the error text\n- Normalise spacing before validating?\n\n## Ask\nReview the diff for correctness and copy. Do not edit files…\n\n[attached: diff (3 files), team brief, PLAN.md]",
+        "sentAt": "2026-10-23T22:11:00.000Z"
+      }
+    ]
+  },
+  "GET /api/loops": {
+    "request": null,
+    "response": [
+      {
+        "id": "loop-gateway-perf",
+        "consoleId": "c-gateway-bench",
+        "name": "Gateway perf loop",
+        "trigger": {
+          "kind": "idle",
+          "delaySec": 30
+        },
+        "stop": {
+          "goal": {
+            "pattern": "p95 (\\d+)ms",
+            "op": "lte",
+            "value": 12
+          },
+          "maxRuns": 10,
+          "timeBoxMin": 120
+        },
+        "prompt": "Run {run}. Last bench: {last_output}. Target is {goal}. Profile the hot path in internal/limiter, make one focused change, run `make bench`, and report p95 as \"p95 NNms\" on the last line. Do not touch the public API.",
+        "state": "running",
+        "runs": [
+          {
+            "n": 1,
+            "startedAt": "2026-10-23T20:46:00.000Z",
+            "endedAt": "2026-10-23T21:08:00.000Z",
+            "outcome": "paused 4m · needed you (Bash: go install)",
+            "tokens": 44000
+          },
+          {
+            "n": 2,
+            "startedAt": "2026-10-23T21:09:00.000Z",
+            "endedAt": "2026-10-23T21:30:00.000Z",
+            "outcome": "p95 17ms · goal not met",
+            "tokens": 41600
+          },
+          {
+            "n": 3,
+            "startedAt": "2026-10-23T21:31:00.000Z",
+            "endedAt": "2026-10-23T21:50:00.000Z",
+            "outcome": "p95 14ms · goal not met",
+            "tokens": 38100
+          },
+          {
+            "n": 4,
+            "startedAt": "2026-10-23T21:52:00.000Z",
+            "outcome": "running",
+            "tokens": null
+          }
+        ],
+        "createdAt": "2026-10-23T20:45:00.000Z"
+      }
+    ]
+  },
+  "POST /api/loops": {
+    "request": {
+      "consoleId": "c-gateway-bench",
+      "name": "Gateway perf loop",
+      "trigger": {
+        "kind": "idle",
+        "delaySec": 30
+      },
+      "stop": {
+        "goal": {
+          "pattern": "p95 (\\d+)ms",
+          "op": "lte",
+          "value": 12
+        },
+        "maxRuns": 10,
+        "timeBoxMin": 120
+      },
+      "prompt": "Run {run}. Last bench: {last_output}. Target is {goal}. Profile the hot path in internal/limiter, make one focused change, run `make bench`, and report p95 as \"p95 NNms\" on the last line. Do not touch the public API."
+    },
+    "response": {
+      "id": "loop-gateway-perf",
+      "consoleId": "c-gateway-bench",
+      "name": "Gateway perf loop",
+      "trigger": {
+        "kind": "idle",
+        "delaySec": 30
+      },
+      "stop": {
+        "goal": {
+          "pattern": "p95 (\\d+)ms",
+          "op": "lte",
+          "value": 12
+        },
+        "maxRuns": 10,
+        "timeBoxMin": 120
+      },
+      "prompt": "Run {run}. Last bench: {last_output}. Target is {goal}. Profile the hot path in internal/limiter, make one focused change, run `make bench`, and report p95 as \"p95 NNms\" on the last line. Do not touch the public API.",
+      "state": "scheduled",
+      "runs": [],
+      "createdAt": "2026-10-23T20:45:00.000Z"
+    }
+  },
+  "PUT /api/loops/:id": {
+    "request": {
+      "consoleId": "c-gateway-bench",
+      "name": "Gateway perf loop",
+      "trigger": {
+        "kind": "idle",
+        "delaySec": 30
+      },
+      "stop": {
+        "goal": {
+          "pattern": "p95 (\\d+)ms",
+          "op": "lte",
+          "value": 12
+        },
+        "maxRuns": 10,
+        "timeBoxMin": 120
+      },
+      "prompt": "Run {run}. Last bench: {last_output}. Target is {goal}. Profile the hot path in internal/limiter, make one focused change, run `make bench`, and report p95 as \"p95 NNms\" on the last line. Do not touch the public API."
+    },
+    "response": {
+      "id": "loop-gateway-perf",
+      "consoleId": "c-gateway-bench",
+      "name": "Gateway perf loop",
+      "trigger": {
+        "kind": "idle",
+        "delaySec": 30
+      },
+      "stop": {
+        "goal": {
+          "pattern": "p95 (\\d+)ms",
+          "op": "lte",
+          "value": 12
+        },
+        "maxRuns": 10,
+        "timeBoxMin": 120
+      },
+      "prompt": "Run {run}. Last bench: {last_output}. Target is {goal}. Profile the hot path in internal/limiter, make one focused change, run `make bench`, and report p95 as \"p95 NNms\" on the last line. Do not touch the public API.",
+      "state": "running",
+      "runs": [
+        {
+          "n": 1,
+          "startedAt": "2026-10-23T20:46:00.000Z",
+          "endedAt": "2026-10-23T21:08:00.000Z",
+          "outcome": "paused 4m · needed you (Bash: go install)",
+          "tokens": 44000
+        },
+        {
+          "n": 2,
+          "startedAt": "2026-10-23T21:09:00.000Z",
+          "endedAt": "2026-10-23T21:30:00.000Z",
+          "outcome": "p95 17ms · goal not met",
+          "tokens": 41600
+        },
+        {
+          "n": 3,
+          "startedAt": "2026-10-23T21:31:00.000Z",
+          "endedAt": "2026-10-23T21:50:00.000Z",
+          "outcome": "p95 14ms · goal not met",
+          "tokens": 38100
+        },
+        {
+          "n": 4,
+          "startedAt": "2026-10-23T21:52:00.000Z",
+          "outcome": "running",
+          "tokens": null
+        }
+      ],
+      "createdAt": "2026-10-23T20:45:00.000Z"
+    }
+  },
+  "DELETE /api/loops/:id": {
+    "request": null,
+    "response": {
+      "ok": true
+    }
+  },
+  "POST /api/loops/:id/pause": {
+    "request": null,
+    "response": {
+      "id": "loop-gateway-perf",
+      "consoleId": "c-gateway-bench",
+      "name": "Gateway perf loop",
+      "trigger": {
+        "kind": "idle",
+        "delaySec": 30
+      },
+      "stop": {
+        "goal": {
+          "pattern": "p95 (\\d+)ms",
+          "op": "lte",
+          "value": 12
+        },
+        "maxRuns": 10,
+        "timeBoxMin": 120
+      },
+      "prompt": "Run {run}. Last bench: {last_output}. Target is {goal}. Profile the hot path in internal/limiter, make one focused change, run `make bench`, and report p95 as \"p95 NNms\" on the last line. Do not touch the public API.",
+      "state": "paused",
+      "runs": [
+        {
+          "n": 1,
+          "startedAt": "2026-10-23T20:46:00.000Z",
+          "endedAt": "2026-10-23T21:08:00.000Z",
+          "outcome": "paused 4m · needed you (Bash: go install)",
+          "tokens": 44000
+        },
+        {
+          "n": 2,
+          "startedAt": "2026-10-23T21:09:00.000Z",
+          "endedAt": "2026-10-23T21:30:00.000Z",
+          "outcome": "p95 17ms · goal not met",
+          "tokens": 41600
+        },
+        {
+          "n": 3,
+          "startedAt": "2026-10-23T21:31:00.000Z",
+          "endedAt": "2026-10-23T21:50:00.000Z",
+          "outcome": "p95 14ms · goal not met",
+          "tokens": 38100
+        },
+        {
+          "n": 4,
+          "startedAt": "2026-10-23T21:52:00.000Z",
+          "outcome": "running",
+          "tokens": null
+        }
+      ],
+      "createdAt": "2026-10-23T20:45:00.000Z",
+      "pausedReason": "Paused: console needed you at 21:14"
+    }
+  },
+  "POST /api/loops/:id/resume": {
+    "request": null,
+    "response": {
+      "id": "loop-gateway-perf",
+      "consoleId": "c-gateway-bench",
+      "name": "Gateway perf loop",
+      "trigger": {
+        "kind": "idle",
+        "delaySec": 30
+      },
+      "stop": {
+        "goal": {
+          "pattern": "p95 (\\d+)ms",
+          "op": "lte",
+          "value": 12
+        },
+        "maxRuns": 10,
+        "timeBoxMin": 120
+      },
+      "prompt": "Run {run}. Last bench: {last_output}. Target is {goal}. Profile the hot path in internal/limiter, make one focused change, run `make bench`, and report p95 as \"p95 NNms\" on the last line. Do not touch the public API.",
+      "state": "running",
+      "runs": [
+        {
+          "n": 1,
+          "startedAt": "2026-10-23T20:46:00.000Z",
+          "endedAt": "2026-10-23T21:08:00.000Z",
+          "outcome": "paused 4m · needed you (Bash: go install)",
+          "tokens": 44000
+        },
+        {
+          "n": 2,
+          "startedAt": "2026-10-23T21:09:00.000Z",
+          "endedAt": "2026-10-23T21:30:00.000Z",
+          "outcome": "p95 17ms · goal not met",
+          "tokens": 41600
+        },
+        {
+          "n": 3,
+          "startedAt": "2026-10-23T21:31:00.000Z",
+          "endedAt": "2026-10-23T21:50:00.000Z",
+          "outcome": "p95 14ms · goal not met",
+          "tokens": 38100
+        },
+        {
+          "n": 4,
+          "startedAt": "2026-10-23T21:52:00.000Z",
+          "outcome": "running",
+          "tokens": null
+        }
+      ],
+      "createdAt": "2026-10-23T20:45:00.000Z"
+    }
+  },
+  "POST /api/loops/:id/run": {
+    "request": null,
+    "response": {
+      "id": "loop-gateway-perf",
+      "consoleId": "c-gateway-bench",
+      "name": "Gateway perf loop",
+      "trigger": {
+        "kind": "idle",
+        "delaySec": 30
+      },
+      "stop": {
+        "goal": {
+          "pattern": "p95 (\\d+)ms",
+          "op": "lte",
+          "value": 12
+        },
+        "maxRuns": 10,
+        "timeBoxMin": 120
+      },
+      "prompt": "Run {run}. Last bench: {last_output}. Target is {goal}. Profile the hot path in internal/limiter, make one focused change, run `make bench`, and report p95 as \"p95 NNms\" on the last line. Do not touch the public API.",
+      "state": "running",
+      "runs": [
+        {
+          "n": 1,
+          "startedAt": "2026-10-23T20:46:00.000Z",
+          "endedAt": "2026-10-23T21:08:00.000Z",
+          "outcome": "paused 4m · needed you (Bash: go install)",
+          "tokens": 44000
+        },
+        {
+          "n": 2,
+          "startedAt": "2026-10-23T21:09:00.000Z",
+          "endedAt": "2026-10-23T21:30:00.000Z",
+          "outcome": "p95 17ms · goal not met",
+          "tokens": 41600
+        },
+        {
+          "n": 3,
+          "startedAt": "2026-10-23T21:31:00.000Z",
+          "endedAt": "2026-10-23T21:50:00.000Z",
+          "outcome": "p95 14ms · goal not met",
+          "tokens": 38100
+        },
+        {
+          "n": 4,
+          "startedAt": "2026-10-23T21:52:00.000Z",
+          "outcome": "running",
+          "tokens": null
+        }
+      ],
+      "createdAt": "2026-10-23T20:45:00.000Z"
+    }
+  },
+  "POST /api/composer/launch": {
+    "request": {
+      "cwd": "/tmp/acme-storefront",
+      "baseBranch": "main",
+      "placement": "grid",
+      "sharedPrompt": "Work only inside your worktree. Keep tests green. Finish by summarising what changed in 3 lines.",
+      "makeTeam": true,
+      "teamName": "checkout",
+      "staggerSec": 10,
+      "slots": [
+        {
+          "agent": "claude",
+          "role": "planner",
+          "prompt": "Read the issue, write PLAN.md with numbered steps, then stop.",
+          "useShared": false
+        },
+        {
+          "agent": "claude",
+          "role": "builder",
+          "prompt": "Wait for the planner's brief. Implement step by step; one commit per step.",
+          "useShared": false
+        },
+        {
+          "agent": "codex",
+          "role": "reviewer",
+          "prompt": "Review the builder's diff. Comments only; end with approve / changes requested.",
+          "useShared": false
+        },
+        {
+          "agent": "opencode",
+          "profileId": "opencode-ollama",
+          "prompt": "Bump patch versions only. Run the suite. Open a PR if green.",
+          "useShared": false
+        },
+        {
+          "agent": "gemini",
+          "prompt": "Rewrite the README quick start for the new CLI.",
+          "useShared": true
+        }
+      ]
+    },
+    "response": {
+      "consoleIds": [
+        "c-1",
+        "c-2",
+        "c-3",
+        "c-4",
+        "c-5"
+      ],
+      "teamId": "team-checkout"
+    }
+  },
+  "GET /api/composer/templates": {
+    "request": null,
+    "response": [
+      {
+        "id": "plan-build-review",
+        "name": "Plan → build → review",
+        "description": "3 slots, roles set, handoff order on",
+        "slots": [
+          {
+            "agent": "claude",
+            "role": "planner",
+            "prompt": "Read the issue, write PLAN.md with numbered steps, then stop.",
+            "useShared": false
+          },
+          {
+            "agent": "claude",
+            "role": "builder",
+            "prompt": "Wait for the planner's brief. Implement step by step; one commit per step.",
+            "useShared": true
+          },
+          {
+            "agent": "codex",
+            "role": "reviewer",
+            "prompt": "Review the builder's diff. Comments only; end with approve / changes requested.",
+            "useShared": false
+          }
+        ],
+        "shared": "Work only inside your worktree. Keep tests green. Finish by summarising what changed in 3 lines."
+      }
+    ]
+  },
+  "GET /api/usage": {
+    "request": {
+      "range": "14d",
+      "group": "agent"
+    },
+    "response": {
+      "range": "14d",
+      "totals": {
+        "input": 11900000,
+        "output": 2100000,
+        "cacheRead": 4400000,
+        "sessions": 92,
+        "medianSessionMin": 41,
+        "needsYouWaitSec": 2280
+      },
+      "byDay": [
+        {
+          "day": "2026-10-22",
+          "byAgent": {
+            "claude": 1200000,
+            "codex": 380000,
+            "gemini": 260000,
+            "opencode": 90000
+          }
+        },
+        {
+          "day": "2026-10-23",
+          "byAgent": {
+            "claude": 1310000,
+            "codex": 410000,
+            "gemini": 220000
+          }
+        }
+      ],
+      "groups": [
+        {
+          "key": "claude",
+          "label": "claude",
+          "agent": "claude",
+          "sessions": 51,
+          "input": 7900000,
+          "output": 1300000,
+          "cacheRead": 3600000
+        },
+        {
+          "key": "codex",
+          "label": "codex",
+          "agent": "codex",
+          "sessions": 18,
+          "input": 2100000,
+          "output": 400000,
+          "cacheRead": 600000
+        },
+        {
+          "key": "gemini",
+          "label": "gemini",
+          "agent": "gemini",
+          "sessions": 9,
+          "input": 1200000,
+          "output": 200000,
+          "cacheRead": 100000
+        },
+        {
+          "key": "opencode",
+          "label": "opencode",
+          "agent": "opencode",
+          "sessions": 14,
+          "input": 700000,
+          "output": 200000,
+          "cacheRead": 0
+        }
+      ],
+      "sources": [
+        {
+          "agent": "claude",
+          "path": "~/.claude/projects/**/*.jsonl",
+          "files": 51
+        },
+        {
+          "agent": "codex",
+          "path": "~/.codex/sessions/**/*.jsonl",
+          "files": 18
+        },
+        {
+          "agent": "gemini",
+          "path": "~/.gemini/tmp/**/logs.json",
+          "files": 9
+        },
+        {
+          "agent": "opencode",
+          "path": "~/.local/share/opencode/storage/",
+          "files": 14
+        }
+      ],
+      "checkedAt": "2026-10-23T22:00:00.000Z"
+    }
+  },
+  "GET /api/usage.csv": {
+    "request": {
+      "range": "14d",
+      "group": "repo"
+    },
+    "response": "key,label,sessions,input,output,cacheRead\nacme-storefront,acme-storefront,48,8100000,1400000,1700000\n"
+  },
+  "GET /api/memory": {
+    "request": {
+      "repo": "/tmp/acme-storefront"
+    },
+    "response": [
+      {
+        "id": "mem-tax-rounding",
+        "scope": "repo",
+        "title": "Tax rounding matches Xero",
+        "body": "Half-even rounding on CAD line items, applied per line, not on the total. Xero rejects totals off by a cent.",
+        "source": {
+          "kind": "handoff",
+          "consoleId": "c-reviewer",
+          "label": "from handoff · Reviewer · Oct 21"
+        },
+        "state": "kept",
+        "createdAt": "2026-10-21T16:30:00.000Z",
+        "pushed": [
+          {
+            "consoleId": "c-builder",
+            "at": "2026-10-23T21:56:00.000Z"
+          }
+        ]
+      }
+    ]
+  },
+  "POST /api/memory": {
+    "request": {
+      "repo": "/tmp/acme-storefront",
+      "scope": "repo",
+      "title": "Tax rounding matches Xero",
+      "body": "Half-even rounding on CAD line items, applied per line, not on the total. Xero rejects totals off by a cent."
+    },
+    "response": {
+      "id": "mem-tax-rounding",
+      "scope": "repo",
+      "title": "Tax rounding matches Xero",
+      "body": "Half-even rounding on CAD line items, applied per line, not on the total. Xero rejects totals off by a cent.",
+      "source": {
+        "kind": "user",
+        "label": "you · Oct 21"
+      },
+      "state": "kept",
+      "createdAt": "2026-10-21T16:30:00.000Z",
+      "pushed": []
+    }
+  },
+  "PUT /api/memory/:id": {
+    "request": {
+      "id": "mem-tax-rounding",
+      "scope": "repo",
+      "title": "Tax rounding matches Xero",
+      "body": "Half-even rounding on CAD line items, applied per line, not on the total. Xero rejects totals off by a cent.",
+      "source": {
+        "kind": "handoff",
+        "consoleId": "c-reviewer",
+        "label": "from handoff · Reviewer · Oct 21"
+      },
+      "state": "kept",
+      "createdAt": "2026-10-21T16:30:00.000Z",
+      "pushed": [
+        {
+          "consoleId": "c-builder",
+          "at": "2026-10-23T21:56:00.000Z"
+        }
+      ]
+    },
+    "response": {
+      "id": "mem-tax-rounding",
+      "scope": "repo",
+      "title": "Tax rounding matches Xero",
+      "body": "Half-even rounding on CAD line items, applied per line, not on the total. Xero rejects totals off by a cent.",
+      "source": {
+        "kind": "handoff",
+        "consoleId": "c-reviewer",
+        "label": "from handoff · Reviewer · Oct 21"
+      },
+      "state": "kept",
+      "createdAt": "2026-10-21T16:30:00.000Z",
+      "pushed": [
+        {
+          "consoleId": "c-builder",
+          "at": "2026-10-23T21:56:00.000Z"
+        }
+      ]
+    }
+  },
+  "DELETE /api/memory/:id": {
+    "request": null,
+    "response": {
+      "ok": true
+    }
+  },
+  "POST /api/memory/:id/push": {
+    "request": {
+      "consoleIds": "workspace"
+    },
+    "response": {
+      "pushed": [
+        "c-builder",
+        "c-ci"
+      ]
+    }
+  },
+  "POST /api/memory/propose": {
+    "request": {
+      "repo": "/tmp/acme-storefront",
+      "title": "CI concurrency group",
+      "body": "The workflow needs a concurrency group per ref or PR runs stack up.",
+      "consoleId": "c-ci"
+    },
+    "response": {
+      "id": "mem-ci-concurrency",
+      "scope": "repo",
+      "title": "CI concurrency group",
+      "body": "The workflow needs a concurrency group per ref or PR runs stack up.",
+      "source": {
+        "kind": "proposal",
+        "consoleId": "c-ci",
+        "label": "proposed by the console"
+      },
+      "state": "proposed",
+      "createdAt": "2026-10-23T21:56:00.000Z",
+      "pushed": []
+    }
   }
 }

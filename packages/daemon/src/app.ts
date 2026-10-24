@@ -318,6 +318,29 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
         throw new HttpError(502, (e as Error).message);
       }
     },
+    // Phase 4 stubs; each lane replaces its own (L42 events, L45 handoffs, L47 loops, L49 composer, L4A usage, L4C memory).
+    "GET /api/events": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "POST /api/handoffs": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "PUT /api/handoffs/:id": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "POST /api/handoffs/:id/send": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "GET /api/handoffs": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "GET /api/loops": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "POST /api/loops": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "PUT /api/loops/:id": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "DELETE /api/loops/:id": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "POST /api/loops/:id/pause": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "POST /api/loops/:id/resume": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "POST /api/loops/:id/run": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "POST /api/composer/launch": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "GET /api/composer/templates": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "GET /api/usage": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "GET /api/usage.csv": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "GET /api/memory": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "POST /api/memory": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "PUT /api/memory/:id": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "DELETE /api/memory/:id": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "POST /api/memory/:id/push": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "POST /api/memory/propose": async () => { throw new HttpError(501, "phase 4: not built yet"); },
   };
 
   const server = await createServer({
