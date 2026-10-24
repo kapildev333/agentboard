@@ -184,6 +184,8 @@ export const SettingsSchema = z.object({
   profiles: z.array(z.lazy(() => ProfileSchema)).optional(),
   composerTemplates: z.array(z.lazy(() => ComposerTemplateSchema)).optional(),
   memory: z.object({ offerAtSpawn: z.boolean() }).optional(),
+  /** Closing a console whose worktree is clean and pushed removes the worktree and its branch without asking. */
+  closeCleanWorktreesWithoutAsking: z.boolean().optional(),
 });
 export const OpenRequestSchema = z.object({ editor: z.enum(["code", "zed", "finder"]), path: z.string() });
 

@@ -128,8 +128,8 @@ it("Remove, confirmed with Enter, closes the console first and then removes the 
   fireEvent.keyDown(dialog, { key: "Enter" });
   await waitFor(() => expect(onBoard()).toBe(false));
   expect(deletes()[0]).toMatchObject({ url: "/api/consoles/c1" });
-  expect(deletes()[1]).toEqual({ url: "/api/git/worktree", method: "DELETE", body: { repo: "/r", ...worktree, deleteBranch: true, force: false } });
-  expect(screen.queryByRole("alertdialog")).toBeNull();
+  expect(deletes()[1]).toEqual({ url: "/api/git/worktree", method: "DELETE", body: { repo: "/r", path: worktree.path, branch: worktree.branch, deleteBranch: true, force: false } });
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
 });
 
 it("Remove on a dirty worktree forces it", async () => {
@@ -154,7 +154,7 @@ it("Show me the diff first closes the dialog and opens the git card with the dif
   const { calls, deletes } = setup();
   await clickClose();
   fireEvent.click(await screen.findByRole("radio", { name: /Show me the diff first/ }));
-  fireEvent.click(screen.getByRole("button", { name: "Close console, keep worktree" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show the diff" }));
   await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
   expect(await screen.findByText(/dirty 2/)).toBeTruthy();
   await waitFor(() => expect(calls.some((c) => c.url.startsWith("/api/git/diff"))).toBe(true));
@@ -187,7 +187,8 @@ it("with the setting on, a clean worktree closes and is removed with no dialog",
   const { deletes } = setup({ status: clean, settings: { closeCleanWorktreesWithoutAsking: true } });
   await act(async () => {}); // the settings load
   await clickClose();
-  await waitFor(() => expect(deletes().map((c) => c.url)).toEqual(["/api/consoles/c1", "/api/git/worktree"]));
+  // The board subscription's own DELETE of the departed node follows; the daemon answers it 404.
+  await waitFor(() => expect(deletes().map((c) => c.url).slice(0, 2)).toEqual(["/api/consoles/c1", "/api/git/worktree"]));
   expect(screen.queryByRole("alertdialog")).toBeNull();
   expect(onBoard()).toBe(false);
 });

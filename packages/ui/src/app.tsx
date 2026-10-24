@@ -4,7 +4,8 @@ import { BoardSchema, PutBoardResponseSchema, SettingsSchema, parseDaemonMessage
 import { Board, WorkspaceTabs, autosaveBoard, useBoard } from "./board";
 import { CommandBar } from "./command";
 import { ConsoleNode, type SocketLike } from "./console";
-import { GitCard } from "./git";
+import { CloseConsole } from "./console/CloseConsole";
+import { DiffView, GitCard } from "./git";
 import { LayoutMenu } from "./layout";
 import { OpenInButtons } from "./open/OpenInButtons";
 import { RepoPicker, SettingsPanel, SpawnDialog } from "./shell";
@@ -12,7 +13,8 @@ import { MissionMap, StatusBadge, useNotifications } from "./status";
 import { WebTileView } from "./webtile";
 
 type Fetch = typeof globalThis.fetch;
-const Api = createContext<{ fetch: Fetch; fontSize: number }>({ fetch: globalThis.fetch, fontSize: 13 });
+const DEFAULT_SETTINGS: Settings = { fontSize: 13, customAgents: [] };
+const Api = createContext<{ fetch: Fetch; settings: Settings; saveSettings: (s: Settings) => void }>({ fetch: globalThis.fetch, settings: DEFAULT_SETTINGS, saveSettings: () => {} });
 
 const RECENT = "agentboard.recent";
 const consoles = (b: BoardData) => b.workspaces.flatMap((w) => w.nodes).filter((n): n is ConsoleData => n.type === "console");
@@ -83,8 +85,10 @@ export function mergeDaemonBoard(daemon: BoardData, closed: Set<string>): void {
 
 function ConsoleView(props: NodeProps) {
   const node = (props.data as { node: ConsoleData }).node;
-  const { fetch, fontSize } = useContext(Api);
+  const { fetch, settings, saveSettings } = useContext(Api);
+  const fontSize = settings.fontSize;
   const [git, setGit] = useState(false);
+  const [diffFirst, setDiffFirst] = useState(false);
   const [error, setError] = useState<string>();
   const resume = async () => {
     setError(undefined);
@@ -109,14 +113,22 @@ function ConsoleView(props: NodeProps) {
       <div className="console-footer nodrag">
         {stopped && <button type="button" className="btn-sm" onClick={() => void resume()}>Resume</button>}
         <button type="button" className="btn-sm" aria-pressed={git} onClick={() => setGit(!git)}>Git</button>
-        <button type="button" className="btn-sm" aria-label={`Close ${node.title}`} onClick={() => useBoard.getState().removeNode(node.id)}>
-          Close
-        </button>
+        <CloseConsole
+          node={node}
+          fetch={fetch}
+          settings={settings}
+          onSettings={saveSettings}
+          onShowDiff={() => {
+            setGit(true);
+            setDiffFirst(true);
+          }}
+        />
         {error && <span role="alert">{error}</span>}
       </div>
       {git && (
         <div className="console-git nodrag nowheel">
           <GitCard fetch={fetch} path={node.cwd} />
+          {diffFirst && <DiffView fetch={fetch} path={node.cwd} />}
           <OpenInButtons path={node.cwd} doFetch={fetch} />
         </div>
       )}
@@ -145,7 +157,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
   const repo = new URLSearchParams(search).get("repo");
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();
-  const [settings, setSettings] = useState<Settings>({ fontSize: 13, customAgents: [] });
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [panel, setPanel] = useState<"spawn" | "settings" | "command" | null>(null);
   const flow = useRef<{ fitView: () => unknown }>(undefined);
   const empty = useBoard((s) => !s.board.workspaces.find((w) => w.id === s.board.activeWorkspaceId)?.nodes.length);
@@ -257,7 +269,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
     void fetch("/api/settings", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(s) });
   };
   return (
-    <Api.Provider value={{ fetch, fontSize: settings.fontSize }}>
+    <Api.Provider value={{ fetch, settings, saveSettings }}>
       <div className="app">
         <header className="topbar">
           <strong className="topbar-repo" title={repo}>{repo.split("/").pop()}</strong>

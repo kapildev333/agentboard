@@ -1,0 +1,228 @@
+/* ---- The close dialog of a console that owns a worktree (Close-Worktree canvas) ---- */
+.close-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 21;
+  transform: translate(-50%, -50%);
+  width: min(560px, calc(100vw - var(--space-4)));
+  max-height: calc(100vh - var(--space-6));
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-overlay);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+}
+
+.close-head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px var(--space-3) 0;
+}
+
+.close-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.close-title {
+  flex: 1;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.close-desc,
+.close-opt-desc,
+.close-keys,
+.close-skip {
+  color: var(--color-text-muted);
+}
+
+.close-desc {
+  margin: 0;
+}
+
+.close-warn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-half);
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--status-starting-fg) 30%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--status-starting-bg);
+}
+
+.close-warn.quiet {
+  border-color: var(--color-border);
+  background: var(--color-surface-raised);
+}
+
+.close-warn-title {
+  font-weight: 600;
+  color: var(--status-starting-fg);
+}
+
+.close-warn.quiet .close-warn-title {
+  color: var(--color-text);
+}
+
+.close-warn-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
+.close-warn-branch {
+  color: var(--color-text-muted);
+}
+
+.close-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-half);
+}
+
+.chip.warn {
+  border-color: var(--status-starting-bg);
+  background: var(--status-starting-bg);
+  color: var(--status-starting-fg);
+}
+
+.close-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 18px var(--space-3) 6px;
+  border: 0;
+}
+
+.close-legend {
+  margin-bottom: var(--space-1);
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.close-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  cursor: pointer;
+}
+
+.close-opt input {
+  margin: 3px 0 0;
+  accent-color: var(--color-accent);
+}
+
+.close-opt.on {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.close-opt.danger input {
+  accent-color: var(--color-danger);
+}
+
+.close-opt.danger.on {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 1px var(--color-danger);
+}
+
+.close-opt:has(input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.close-opt-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.close-opt-title {
+  font-weight: 600;
+}
+
+.close-opt.danger .close-opt-title {
+  color: var(--color-danger);
+}
+
+.close-opt-desc {
+  font-size: var(--text-xs);
+}
+
+.close-opt-desc code {
+  font-family: var(--font-mono);
+}
+
+.close-skip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 6px var(--space-3) 14px;
+  font-size: var(--text-xs);
+}
+
+.close-skip input {
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.close-error {
+  margin: 0 var(--space-3) 14px;
+  color: var(--color-danger);
+}
+
+.close-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 14px var(--space-3);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.close-keys {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+}
+
+.close-keys kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 5px;
+  border: 1px solid var(--color-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--color-surface-raised);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.close-spacer {
+  flex: 1;
+}
