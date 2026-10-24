@@ -58,7 +58,7 @@ function spawn(clause: string, rest: string, snapshot: BoardSnapshot, quotes: st
   const nearM = head.match(/^(.*?)\s+(?:next to|beside)\s+(.+)$/i);
   if (nearM) [head, near] = [nearM[1]!, resolve(nearM[2]!, snapshot)[0]?.id];
   let prompt: string | undefined;
-  const quoted = head.match(/\u0001(\d+)\u0001/);
+  const quoted = head.match(/⟪(\d+)⟫/);
   if (quoted) {
     prompt = quotes[Number(quoted[1])];
     head = head.replace(quoted[0], " ");
@@ -91,7 +91,7 @@ function spawn(clause: string, rest: string, snapshot: BoardSnapshot, quotes: st
 
 /** One clause, one intent; anything it does not understand gives no step. */
 function parseClause(clause: string, snapshot: BoardSnapshot, quotes: string[]): Draft[] {
-  const unquote = (s: string) => s.replace(/\u0001(\d+)\u0001/g, (_, i: string) => quotes[Number(i)] ?? "").trim();
+  const unquote = (s: string) => s.replace(/⟪(\d+)⟫/g, (_, i: string) => quotes[Number(i)] ?? "").trim();
   let m: RegExpMatchArray | null;
   if (/^(fit|show everything|show all|zoom to fit)\b/i.test(clause)) return [{ kind: "fit" }];
   if ((m = clause.match(/^(?:add\s+(?:a\s+)?note|note(?:\s+down)?|write\s+(?:a\s+)?note)\s+(?:saying\s+|that\s+)?(.+)$/i)))
@@ -142,7 +142,7 @@ function clauses(text: string): string[] {
 
 export function parseRules(text: string, snapshot: BoardSnapshot): PlanStep[] {
   const quotes: string[] = [];
-  const masked = text.replace(/["“”]([^"“”]*)["“”]/g, (_, q: string) => `\u0001${quotes.push(q) - 1}\u0001`);
+  const masked = text.replace(/["“”]([^"“”]*)["“”]/g, (_, q: string) => `⟪${quotes.push(q) - 1}⟫`);
   const drafts: Draft[] = [];
   for (const c of clauses(masked)) {
     for (const d of parseClause(c, snapshot, quotes)) {
