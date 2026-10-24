@@ -135,6 +135,7 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
   const [error, setError] = useState<string>();
   const [settings, setSettings] = useState<Settings>({ fontSize: 13, customAgents: [] });
   const [panel, setPanel] = useState<"spawn" | "settings" | null>(null);
+  const empty = useBoard((s) => !s.board.workspaces.find((w) => w.id === s.board.activeWorkspaceId)?.nodes.length);
   useNotifications({ onFocus: focusNode });
 
   useEffect(() => {
@@ -210,8 +211,14 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
   }, [repo, fetch, connect]);
 
   const go = (path: string) => (location.search = `?repo=${encodeURIComponent(path)}`);
-  if (error) return <p role="alert" style={{ padding: 16 }}>{error}</p>;
-  if (!repo) return <main style={{ padding: 16 }}><h1>AgentBoard</h1><RepoPicker recent={readRecent()} onOpen={go} /></main>;
+  if (error) return <p role="alert" className="app-message">{error}</p>;
+  if (!repo)
+    return (
+      <main className="picker">
+        <h1>AgentBoard</h1>
+        <RepoPicker recent={readRecent()} onOpen={go} />
+      </main>
+    );
 
   const saveSettings = (s: Settings) => {
     setSettings(s);
@@ -219,37 +226,49 @@ export function App({ fetch = browserFetch, search = location.search, connect = 
   };
   return (
     <Api.Provider value={{ fetch, fontSize: settings.fontSize }}>
-      <div style={{ display: "grid", gridTemplateRows: "auto 1fr", gridTemplateColumns: "1fr 240px", height: "100vh", fontFamily: "system-ui, sans-serif" }}>
-        <header style={{ gridColumn: "1 / 3", display: "flex", gap: 8, alignItems: "center", padding: "6px 8px", borderBottom: "1px solid #d1d5db" }}>
-          <strong title={repo}>{repo.split("/").pop()}</strong>
+      <div className="app">
+        <header className="topbar">
+          <strong className="topbar-repo" title={repo}>{repo.split("/").pop()}</strong>
           {ready && <WorkspaceTabs />}
-          <span style={{ flex: 1 }} />
-          <button type="button" onClick={() => setPanel(panel === "spawn" ? null : "spawn")}>Spawn console</button>
-          <button type="button" onClick={() => setPanel(panel === "settings" ? null : "settings")}>Settings</button>
+          <span className="topbar-spacer" />
+          <button type="button" className="btn-primary" aria-expanded={panel === "spawn"} onClick={() => setPanel(panel === "spawn" ? null : "spawn")}>
+            Spawn console
+          </button>
+          <button type="button" aria-expanded={panel === "settings"} onClick={() => setPanel(panel === "settings" ? null : "settings")}>
+            Settings
+          </button>
         </header>
-        <main style={{ position: "relative", minHeight: 0 }}>
-          {ready ? <Board nodeTypes={nodeTypes} /> : <p style={{ padding: 16 }}>Loading the board…</p>}
-          {panel && (
-            <div role="dialog" aria-label={panel === "spawn" ? "Spawn console" : "Settings"} style={{ position: "absolute", top: 8, right: 8, zIndex: 10, background: "#fff", border: "1px solid #d1d5db", borderRadius: 6, padding: 12, minWidth: 320 }}>
-              {panel === "spawn" ? (
-                <SpawnDialog
-                  fetch={fetch}
-                  cwd={repo}
-                  onSpawned={(n) => {
-                    const { board, addNode } = useBoard.getState();
-                    if (!consoles(board).some((c) => c.id === n.id)) addNode(n);
-                    setPanel(null);
-                  }}
-                />
-              ) : (
-                <SettingsPanel settings={settings} onChange={saveSettings} />
-              )}
-            </div>
+        <main className="board">
+          {ready ? <Board nodeTypes={nodeTypes} /> : <p className="app-message muted">Loading the board…</p>}
+          {ready && empty && (
+            <p className="empty-hint">
+              Spawn a console or run <code>agentboard spawn</code> from any terminal
+            </p>
           )}
         </main>
-        <div style={{ borderLeft: "1px solid #d1d5db", overflow: "auto", padding: 8 }}>
+        <div className="rail">
           <MissionMap onFocus={focusNode} />
         </div>
+        {panel === "spawn" && <div className="backdrop" onClick={() => setPanel(null)} />}
+        {panel && (
+          <div role="dialog" aria-label={panel === "spawn" ? "Spawn console" : "Settings"} className={panel === "spawn" ? "modal" : "drawer"}>
+            <h2 className="panel-title">{panel === "spawn" ? "Spawn console" : "Settings"}</h2>
+            {panel === "spawn" ? (
+              <SpawnDialog
+                fetch={fetch}
+                cwd={repo}
+                onCancel={() => setPanel(null)}
+                onSpawned={(n) => {
+                  const { board, addNode } = useBoard.getState();
+                  if (!consoles(board).some((c) => c.id === n.id)) addNode(n);
+                  setPanel(null);
+                }}
+              />
+            ) : (
+              <SettingsPanel settings={settings} onChange={saveSettings} />
+            )}
+          </div>
+        )}
       </div>
     </Api.Provider>
   );
