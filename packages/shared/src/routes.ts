@@ -32,4 +32,12 @@ export const routes = [
   { method: "POST", path: "/api/command/run", request: "RunRequestSchema", response: "RunResponseSchema" },
   // The body is raw audio (audio/webm, audio/wav or audio/ogg), so there is no JSON request schema.
   { method: "POST", path: "/api/voice/transcribe", request: null, response: "TranscribeResponseSchema" },
+  { method: "GET", path: "/api/files", request: "FilesQuerySchema", response: "FileTreeSchema" },
+  { method: "GET", path: "/api/files/read", request: "FilesQuerySchema", response: "FileContentSchema" },
+  { method: "PUT", path: "/api/files/write", request: "FileWriteRequestSchema", response: "OkSchema" },
+  { method: "POST", path: "/api/consoles/:id/input", request: "ConsoleInputSchema", response: "OkSchema" },
+  { method: "GET", path: "/api/vault/notes", request: "VaultQuerySchema", response: "VaultIndexSchema" },
+  { method: "GET", path: "/api/vault/note", request: "VaultNoteQuerySchema", response: "VaultNoteSchema" },
+  { method: "PUT", path: "/api/vault/note", request: "VaultWriteSchema", response: "VaultNoteSchema" },
+  { method: "POST", path: "/api/vault/append", request: "VaultAppendSchema", response: "VaultNoteSchema" },
 ] as const satisfies readonly Route[];
