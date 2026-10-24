@@ -62,4 +62,5 @@ export const routes = [
   { method: "DELETE", path: "/api/memory/:id", request: null, response: "OkSchema" },
   { method: "POST", path: "/api/memory/:id/push", request: "MemoryPushRequestSchema", response: "MemoryPushResponseSchema" },
   { method: "POST", path: "/api/memory/propose", request: "MemoryProposeRequestSchema", response: "MemoryItemSchema" },
+  { method: "GET", path: "/api/integrations", request: null, response: "IntegrationsSchema" },
 ] as const satisfies readonly Route[];

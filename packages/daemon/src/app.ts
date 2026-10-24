@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import { SettingsSchema, type AgentId, type Board, type ConsoleNode, type CustomAgent, type Settings, type Workspace } from "@agentboard/shared";
 import { AgentCatalog, launchArgs, resumeArgs } from "./agents/index.js";
 import { GitService, createGitHandlers } from "./git/index.js";
+import { CallLog } from "./integrations/index.js";
 import { handleOpen } from "./open/index.js";
 import { PtyManager, loginEnv } from "./pty/index.js";
 import { createServer, type RouteHandlers } from "./server/index.js";
@@ -345,7 +346,9 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     "DELETE /api/memory/:id": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "POST /api/memory/:id/push": async () => { throw new HttpError(501, "phase 4: not built yet"); },
     "POST /api/memory/propose": async () => { throw new HttpError(501, "phase 4: not built yet"); },
+    "GET /api/integrations": async () => calls.read(),
   };
+  const calls = new CallLog((id) => find(id)?.node);
 
   const server = await createServer({
     port: opts.port ?? 0,
@@ -363,6 +366,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     onResize: async ({ consoleId, cols, rows }) => {
       if (running.has(consoleId)) pty.resize(consoleId, cols, rows);
     },
+    // The Integrations page polls every 5 s; logging those would push everything else out of the ring.
+    onCall: (c) => c.route !== "GET /api/integrations" && calls.record(c),
   });
   const origin = server.origin;
   try {
