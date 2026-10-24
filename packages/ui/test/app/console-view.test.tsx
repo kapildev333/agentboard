@@ -5,14 +5,18 @@ import { App } from "../../src/app";
 import { useBoard } from "../../src/board";
 import type { SocketLike } from "../../src/console";
 
-// xterm does not run in jsdom; ConsoleNode has its own tests.
+// xterm does not run in jsdom; ConsoleNode has its own tests. The fake hands the test its onExit, keyed by node id.
+const exits = vi.hoisted(() => new Map<string, (code: number | null) => void>());
 vi.mock("../../src/console", () => ({
-  ConsoleNode: ({ data, statusBadge }: { data: { node: { title: string } }; statusBadge?: unknown }) => (
-    <div>
-      {data.node.title} {statusBadge as never}
-      <div className="console-term" tabIndex={0} data-testid="term" />
-    </div>
-  ),
+  ConsoleNode: ({ data, statusBadge, onExit }: { data: { node: { id: string; title: string } }; statusBadge?: unknown; onExit?: (code: number | null) => void }) => {
+    if (onExit) exits.set(data.node.id, onExit);
+    return (
+      <div>
+        {data.node.title} {statusBadge as never}
+        <div className="console-term" tabIndex={0} data-testid="term" />
+      </div>
+    );
+  },
 }));
 
 beforeAll(() => {
@@ -49,11 +53,13 @@ const boardWith = (...nodes: ConsoleNode[]): Board => ({
 });
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 
-function fakeApi(board: Board) {
+// `spawn` replaces the POST /api/consoles reply.
+function fakeApi(board: Board, spawn?: () => Response) {
   const calls: { url: string; method: string; body?: unknown }[] = [];
   const fetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
     const method = init?.method ?? "GET";
     calls.push({ url: String(url), method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+    if (spawn && String(url) === "/api/consoles" && method === "POST") return spawn();
     if (String(url).startsWith("/api/board") && method === "GET") return json(board);
     if (String(url) === "/api/board") return json({ ok: true, rev: 1 });
     if (String(url) === "/api/settings") return json({ fontSize: 13, customAgents: [] });
@@ -124,6 +130,63 @@ describe("ConsoleView", () => {
     fireEvent.click(node.getByRole("button", { name: "Git" }));
     // The count describes the button; its name stays exactly "Git".
     expect(await node.findByRole("button", { name: "Git", description: "3 dirty files" })).toBeTruthy();
+    // Closing the panel drops the count: nothing refreshes it while the git card is gone.
+    fireEvent.click(node.getByRole("button", { name: "Git" }));
+    expect(node.getByRole("button", { name: "Git" }).getAttribute("aria-describedby")).toBeNull();
+    expect(node.queryByText("3 dirty files")).toBeNull();
+  });
+
+  it("trailing slashes on the repo or the cwd do not defeat the relative path", async () => {
+    const board = { ...boardWith(consoleNode("c1", { cwd: "/r/packages/ui/" }), consoleNode("c2", { cwd: "/r" })), repoPath: "/r/" };
+    render(<App fetch={fakeApi(board).fetch} search="?repo=%2Fr" connect={fakeSocket} />);
+    expect(within(await screen.findByTestId("node-c1")).getByText("packages/ui")).toBeTruthy();
+    expect(within(screen.getByTestId("node-c2")).getByText(".")).toBeTruthy();
+  });
+
+  it("a spawn reply that is not a console says could not start, on the card and on the banner", async () => {
+    const replies = [json({ ok: true }), new Response("not json")];
+    const api = fakeApi(boardWith(consoleNode("c1", { status: "stopped", session: { provider: "custom", id: "s1" } })), () => replies.shift() ?? json({ ok: true }));
+    render(<App fetch={api.fetch} search="?repo=%2Fr" connect={fakeSocket} />);
+    const node = within(await screen.findByTestId("node-c1"));
+    fireEvent.click(node.getByRole("button", { name: "Start fresh" }));
+    expect((await node.findByRole("alert")).textContent).toBe("could not start");
+    const banner = screen.getByText(/back in place as stopped/).closest("[role=status]") as HTMLElement;
+    fireEvent.click(within(banner).getByRole("button", { name: "Start all fresh" }));
+    expect((await within(banner).findByRole("alert")).textContent).toBe("could not start");
+    expect(useBoard.getState().board.workspaces[0]!.nodes.map((n) => n.id)).toEqual(["c1"]);
+  });
+
+  it("Start fresh keeps one fresh node when the old one left the board before the reply", async () => {
+    const fresh = consoleNode("fresh", { status: "starting" });
+    const api = fakeApi(boardWith(consoleNode("c1", { status: "stopped" })), () => {
+      // Meanwhile another tab closed c1 and the daemon's broadcast brought the fresh node in.
+      const { removeNode, addNode } = useBoard.getState();
+      removeNode("c1");
+      addNode(fresh);
+      return json(fresh);
+    });
+    render(<App fetch={api.fetch} search="?repo=%2Fr" connect={fakeSocket} />);
+    await act(async () => fireEvent.click(await screen.findByRole("button", { name: "Start fresh" })));
+    await waitFor(() => expect(api.calls.some((c) => c.url === "/api/consoles" && c.method === "POST")).toBe(true));
+    await act(async () => {});
+    expect(useBoard.getState().board.workspaces[0]!.nodes.map((n) => n.id)).toEqual(["fresh"]);
+  });
+
+  it("the exit code leaves the pill once the console runs again", async () => {
+    const api = fakeApi(boardWith(consoleNode("c1", { status: "exited" })));
+    render(<App fetch={api.fetch} search="?repo=%2Fr" connect={fakeSocket} />);
+    const pill = async () => (await screen.findByTestId("node-c1")).querySelector("[data-status]")!.textContent;
+    await screen.findByTestId("node-c1");
+    act(() => exits.get("c1")!(3));
+    expect(await pill()).toBe("Exited 3");
+    const setStatus = (status: ConsoleNode["status"]) =>
+      act(() => {
+        const { board } = useBoard.getState();
+        useBoard.setState({ board: { ...board, workspaces: board.workspaces.map((w) => ({ ...w, nodes: w.nodes.map((n) => ({ ...n, status }) as typeof n) })) } });
+      });
+    setStatus("starting");
+    setStatus("exited");
+    expect(await pill()).toBe("Exited");
   });
 
   it("a focused terminal rings its card, without a :has() rule re-run on every row xterm writes", async () => {

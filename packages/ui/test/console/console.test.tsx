@@ -324,6 +324,24 @@ describe("console card", () => {
     expect(a.onRemove).toHaveBeenCalled();
   });
 
+  it("a console that runs again forgets its exit: no announcement, no old code in the pill", () => {
+    const ui = (status: string) => (
+      <ReactFlowProvider>
+        <ConsoleNode {...({ data: { node: { id: "c1", title: "Claude", status } }, socketFactory: factory } as any)} />
+      </ReactFlowProvider>
+    );
+    const { rerender, container, queryByText } = render(ui("working"));
+    act(() => sockets[0]!.open());
+    act(() => sockets[0]!.receive({ t: "exit", consoleId: "c1", code: 3 }));
+    rerender(ui("exited"));
+    expect(queryByText(/exited with code 3/)).not.toBeNull();
+    expect(container.querySelector("[data-status]")!.textContent).toBe("Exited 3");
+    rerender(ui("starting"));
+    expect(queryByText(/exited/)).toBeNull();
+    rerender(ui("exited"));
+    expect(container.querySelector("[data-status]")!.textContent).toBe("Exited");
+  });
+
   it("a running console has no overlay", () => {
     const { container } = render(<ConsoleOverlay node={{ status: "working" }} {...actions()} />);
     expect(container.innerHTML).toBe("");
