@@ -56,6 +56,8 @@ export const BoardSchema = z.object({
   repoPath: z.string(),
   activeWorkspaceId: z.string(),
   workspaces: z.array(WorkspaceSchema),
+  /** Studios (phase 6): pinned file paths, and the document and diagram last opened. */
+  studio: z.object({ pins: z.array(z.string()).default([]), document: z.string().optional(), diagram: z.string().optional() }).optional(),
 });
 // SchemaName in routes.ts is keyed on this module, so the phase 3 schemas surface here too.
 export * from "./extras.js";
@@ -384,3 +386,6 @@ export const ProfileSchema = z.object({
   env: z.record(z.string(), z.string()),
   args: z.array(z.string()),
 });
+
+// Studio routes (phase 6); re-exported here so the route table can name them.
+export * from "./studios.js";
