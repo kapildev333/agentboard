@@ -122,6 +122,47 @@ export const CustomAgentSchema = z.object({
   args: z.array(z.string()),
   needsYou: z.string().optional(),
 });
+
+// Phase 5: the command bar and voice (D45 to D51).
+export const SnapshotConsoleSchema = z.object({
+  id: z.string(), title: z.string(), agent: AgentIdSchema, customId: z.string().optional(),
+  status: ConsoleStatusSchema, branch: z.string().optional(), cwd: z.string(),
+  workspaceId: z.string(), idleSeconds: z.number().int().nonnegative(),
+});
+export const BoardSnapshotSchema = z.object({
+  repoPath: z.string(), activeWorkspaceId: z.string(),
+  workspaces: z.array(z.object({ id: z.string(), name: z.string() })),
+  consoles: z.array(SnapshotConsoleSchema),
+  agents: z.array(AgentInfoSchema),
+});
+const step = { id: z.string(), summary: z.string(), detail: z.string().optional(), asks: z.boolean() };
+export const PlanStepSchema = z.discriminatedUnion("kind", [
+  z.object({ ...step, kind: z.literal("spawn"), agent: AgentIdSchema, customId: z.string().optional(), worktree: z.string().optional(), prompt: z.string().optional(), near: z.string().optional() }),
+  z.object({ ...step, kind: z.literal("close"), consoleIds: z.array(z.string()).min(1) }),
+  z.object({ ...step, kind: z.literal("resume"), consoleId: z.string() }),
+  z.object({ ...step, kind: z.literal("focus"), consoleId: z.string() }),
+  z.object({ ...step, kind: z.literal("fit") }),
+  z.object({ ...step, kind: z.literal("note"), text: z.string() }),
+  z.object({ ...step, kind: z.literal("input"), consoleId: z.string(), text: z.string() }),
+]);
+export const PlannedBySchema = z.union([z.literal("rules"), z.object({ model: z.string(), url: z.string() })]);
+export const PlanSchema = z.object({
+  id: z.string(), text: z.string(), steps: z.array(PlanStepSchema),
+  plannedBy: PlannedBySchema, ms: z.number().nonnegative(),
+  /** One or two spoken sentences: what will happen and what needs an OK. */
+  reply: z.string(),
+  /** Set when nothing could be planned; steps is then empty. */
+  unknown: z.string().optional(),
+});
+export const PlanRequestSchema = z.object({ text: z.string().min(1), repo: z.string() });
+export const RunRequestSchema = z.object({ plan: PlanSchema, confirmed: z.array(z.string()), skipped: z.array(z.string()) });
+export const StepResultSchema = z.object({ stepId: z.string(), status: z.enum(["done", "skipped", "failed"]), error: z.string().optional(), consoleId: z.string().optional() });
+/** focus and fit are the page's to perform; the daemon only reports them. */
+export const RunResponseSchema = z.object({ results: z.array(StepResultSchema), focus: z.string().optional(), fit: z.boolean().optional() });
+export const TranscribeResponseSchema = z.object({ text: z.string(), ms: z.number().nonnegative(), engine: z.string() });
+export const PlannerSettingsSchema = z.object({ url: z.string().url(), model: z.string() });
+export const VoiceSettingsSchema = z.object({ transcribeCommand: z.string(), holdKey: z.literal("alt+space") });
+
 // ~/.agentboard/settings.json
-export const SettingsSchema = z.object({ fontSize: z.number(), customAgents: z.array(CustomAgentSchema) });
+export const SettingsSchema = z.object({ fontSize: z.number(), customAgents: z.array(CustomAgentSchema), planner: PlannerSettingsSchema.optional(), voice: VoiceSettingsSchema.optional() });
 export const OpenRequestSchema = z.object({ editor: z.enum(["code", "zed", "finder"]), path: z.string() });

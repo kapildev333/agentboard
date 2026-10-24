@@ -1,0 +1,24 @@
+{
+  "id": "plan-1",
+  "text": "close the two idle consoles and resume the docs pass",
+  "steps": [
+    {
+      "id": "s1",
+      "kind": "close",
+      "consoleIds": ["c-ci", "c-lint"],
+      "summary": "Close CI cleanup and Lint sweep",
+      "detail": "Both are idle.",
+      "asks": true
+    },
+    {
+      "id": "s2",
+      "kind": "resume",
+      "consoleId": "c-docs",
+      "summary": "Resume Docs pass",
+      "asks": false
+    }
+  ],
+  "plannedBy": "rules",
+  "ms": 4,
+  "reply": "I will close CI cleanup and Lint sweep, which needs your OK, and resume Docs pass."
+}
