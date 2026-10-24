@@ -17,6 +17,21 @@ const team = (): Team => ({
   triggers: { handoffOnIdle: false, includeDiff: false, startStopped: false },
 });
 
+// A tracker whose status changes the test emits by hand.
+export function tracker(status: Record<string, ConsoleStatus>) {
+  const listeners = new Set<(id: string, s: ConsoleStatus, previous: ConsoleStatus) => void>();
+  return {
+    get: (id: string) => status[id] ?? "idle",
+    onChange: (cb: (id: string, s: ConsoleStatus, previous: ConsoleStatus) => void) => (listeners.add(cb), () => void listeners.delete(cb)),
+    emit: (id: string, s: ConsoleStatus) => {
+      const previous = status[id] ?? "idle";
+      status[id] = s;
+      listeners.forEach((cb) => cb(id, s, previous));
+    },
+    listeners,
+  };
+}
+
 // A home under tmp, two consoles in one team, and a ring buffer that mentions the user's home.
 export function setup(status: Record<string, ConsoleStatus> = {}, triggers: Partial<Team["triggers"]> = {}) {
   const home = mkdtempSync(join(tmpdir(), "agentboard-handoff-"));
@@ -27,13 +42,13 @@ export function setup(status: Record<string, ConsoleStatus> = {}, triggers: Part
     home: () => home,
     userHome: "/home/someone",
     console: (id: string) => (id in nodes ? { node: nodes[id as "a" | "b"], teams } : undefined),
-    tracker: { get: (id: string) => status[id] ?? "idle", onChange: () => () => {} },
+    tracker: tracker(status),
     replay: () => "I decided to keep /home/someone/notes.md as it is.\r\nWhat's left:\r\n- tidy up\r\n",
     write: vi.fn(),
-    diff: vi.fn(async () => ({ files: [], patch: "" })),
-    spawn: vi.fn(async () => "new"),
-    resume: vi.fn(async () => {}),
+    diff: vi.fn(async (): Promise<{ files: unknown[]; patch: string }> => ({ files: [], patch: "" })),
+    spawn: vi.fn(async (): Promise<string> => "new"),
+    resume: vi.fn(async (): Promise<void> => {}),
     event: vi.fn(),
   };
-  return { home, deps, teams, service: new HandoffService(deps) };
+  return { home, deps, teams, nodes, service: new HandoffService(deps) };
 }
