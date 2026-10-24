@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { afterEach, expect, test } from "vitest";
 import { CallLog, type Call } from "../src/integrations/index.js";
 import { createServer } from "../src/server/index.js";
+import { startDaemon } from "../src/app.js";
 
 const call = (over: Partial<Call> = {}): Call => ({ route: "GET /api/status", status: 200, board: false, params: {}, ...over });
 
@@ -102,4 +103,19 @@ test("seen holds the last accepted call per integration", () => {
   expect(seen.command).toBe(entries[3]!.at);
   log.record(call({ client: "claude-plugin", route: "POST /hook/:consoleId", params: { consoleId: "c1" } }));
   expect(log.read().seen.claudePlugin).toBeDefined();
+});
+
+test("GET /api/integrations answers the daemon's log and leaves its own polls out", async () => {
+  const root = mkdtempSync(join(tmpdir(), "agentboard-int-"));
+  const d = await startDaemon({ repoPath: root, home: join(root, "home"), agentPath: "" });
+  open.push(d);
+  const get = async (path: string, client?: string) =>
+    fetch(`${d.origin}${path}`, { headers: { "x-agentboard-token": d.token, ...(client && { "x-agentboard-client": client }) } });
+  expect((await get("/api/status", "cli")).status).toBe(200);
+  await new Promise((r) => setTimeout(r, 50));
+  await get("/api/integrations");
+  const body = (await (await get("/api/integrations")).json()) as { seen: Record<string, string>; log: { source: string; route: string; result: string }[] };
+  expect(body.log).toEqual([expect.objectContaining({ source: "cli", route: "GET /api/status", result: "200" })]);
+  expect(body.seen.command).toBeDefined();
+  delete process.env.AGENTBOARD_HOME;
 });
