@@ -1,0 +1,13 @@
+.tab[aria-current="page"] {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.studio {
+  overflow: auto;
+}
+
+.studio-stub {
+  padding: var(--space-4);
+}
