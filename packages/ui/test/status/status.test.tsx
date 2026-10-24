@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, renderHook, screen, within } from "@te
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { Board, ConsoleStatus } from "@agentboard/shared";
 import { useBoard } from "../../src/board";
-import { MissionMap, StatusBadge, useNotifications } from "../../src/status";
+import { AgentMark, MissionMap, StatusBadge, useNotifications } from "../../src/status";
 
 const consoleNode = (id: string, status: ConsoleStatus, agent: "claude" | "codex" = "claude") => ({
   id,
@@ -210,4 +210,40 @@ it("the map shows the active workspace only, the title counts every workspace", 
   expect(screen.queryByText(/T-far/)).toBeNull();
   expect(screen.getByText(/T-c1/)).toBeTruthy();
   expect(document.title).toBe("(1) AgentBoard");
+});
+
+it("the agent mark shows the agent's letter, and a custom agent's first letter", () => {
+  render(
+    <>
+      <AgentMark agent="claude" />
+      <AgentMark agent="codex" />
+      <AgentMark agent="Fake runner" />
+    </>,
+  );
+  const marks = [...document.querySelectorAll(".mark")];
+  expect(marks.map((m) => m.textContent)).toEqual(["C", "X", "F"]);
+  expect(marks.map((m) => m.className)).toEqual(["mark mark-claude", "mark mark-codex", "mark mark-custom"]);
+  expect(marks.every((m) => m.getAttribute("aria-hidden") === "true")).toBe(true);
+});
+
+it("the badge is a status pill", () => {
+  render(<StatusBadge status="working" />);
+  expect(document.querySelector('[data-status="working"]')!.className).toContain("pill st-working");
+});
+
+it("the rail shows the console count, each row's elapsed time and the daemon card", async () => {
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60_000).toISOString();
+  useBoard.getState().setBoard({
+    ...useBoard.getState().board,
+    workspaces: [{ id: "a", name: "A", viewport: { x: 0, y: 0, zoom: 1 }, nodes: [{ ...consoleNode("c1", "working"), lastActiveAt: fiveMinutesAgo }, consoleNode("c2", "idle")] }],
+  });
+  const fetch = vi.fn(async () => new Response(JSON.stringify({ consoles: [consoleNode("c1", "working"), consoleNode("c2", "exited")] })));
+  render(<MissionMap onFocus={() => {}} fetch={fetch} />);
+  expect(screen.getByText("2 consoles")).toBeTruthy();
+  expect(within(screen.getByRole("group", { name: "Working" })).getByRole("button").textContent).toContain("5m");
+  const card = await screen.findByRole("region", { name: "Daemon" });
+  expect(fetch).toHaveBeenCalledWith("/api/status");
+  expect(card.textContent).toContain(location.host);
+  expect(card.textContent).toContain("1 PTY");
+  expect(card.textContent).toContain("Nothing leaves this machine.");
 });
