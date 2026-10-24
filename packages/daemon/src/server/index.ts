@@ -261,6 +261,11 @@ async function handle(
   }
   const out = schema(route.response).safeParse(result);
   if (!out.success) return json(res, 500, { error: "invalid response" });
+  // A TextSchema response is a document such as a CSV export, sent as is (P4-D53).
+  if (route.response === "TextSchema") {
+    const type = route.path.endsWith(".csv") ? "text/csv" : "text/plain";
+    return void res.writeHead(200, { "content-type": `${type}; charset=utf-8` }).end(out.data as string);
+  }
   json(res, 200, out.data);
 }
 
