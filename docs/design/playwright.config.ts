@@ -8,5 +8,6 @@ export default defineConfig({
   workers: 1,
   reporter: "list",
   timeout: 120_000,
-  use: { viewport: { width: 1440, height: 900 } },
+  // Dark is the default theme; the one light shot emulates the OS preference itself.
+  use: { viewport: { width: 1440, height: 900 }, colorScheme: "dark" },
 });
