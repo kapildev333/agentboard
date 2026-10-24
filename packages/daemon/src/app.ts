@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { SettingsSchema, type AgentId, type Board, type ConsoleNode, type CustomAgent, type Settings, type Workspace } from "@agentboard/shared";
 import { AgentCatalog, launchArgs, resumeArgs } from "./agents/index.js";
-import { GitService, createGitHandlers } from "./git/index.js";
+import { HttpError } from "./files/http-error.js";
+import { createFileHandlers } from "./files/index.js";
+import { GitService, createGitHandlers, type Exec } from "./git/index.js";
 import { handleOpen } from "./open/index.js";
 import { PtyManager, loginEnv } from "./pty/index.js";
 import { createServer, type RouteHandlers } from "./server/index.js";
@@ -14,6 +16,7 @@ import { acceptHook, adoptsNextSession, sessionFromHook, sessionIdOf } from "./s
 import { DaemonFile, StateStore, agentboardHome } from "./state/index.js";
 import { StatusTracker } from "./status/index.js";
 import { transcribe } from "./voice/index.js";
+import { createVaultHandlers } from "./vault/index.js";
 
 export type DaemonOptions = {
   repoPath: string;
@@ -24,13 +27,6 @@ export type DaemonOptions = {
   agentPath?: string;
 };
 export type Daemon = { origin: string; port: number; token: string; close(): Promise<void> };
-
-/** A client error: the server answers its status and message. */
-class HttpError extends Error {
-  constructor(readonly status: number, message: string) {
-    super(message);
-  }
-}
 
 const uiDist = fileURLToPath(new URL("../../ui/dist", import.meta.url));
 const NAMES: Record<AgentId, string> = { claude: "Claude", codex: "Codex", gemini: "Gemini", opencode: "OpenCode", custom: "Custom" };
@@ -64,7 +60,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
   const store = new StateStore();
   const pty = new PtyManager();
   const tracker = new StatusTracker();
-  const git = createGitHandlers(new GitService({ exec: async (cmd, args, o) => (await run(cmd, args, o)).stdout }));
+  const exec: Exec = async (cmd, args, o) => (await run(cmd, args, o)).stdout;
+  const git = createGitHandlers(new GitService({ exec }));
   const boards = new Map<string, Board>();
   const loading = new Map<string, Promise<Board>>();
   const running = new Set<string>();
@@ -104,6 +101,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
   // The board for a cwd: the loaded repo that contains it, else the cwd itself.
   const repoFor = (cwd: string) =>
     [...boards.keys()].filter((r) => cwd === r || cwd.startsWith(r + sep)).sort((a, b) => b.length - a.length)[0] ?? cwd;
+  // Studio requests name a repo the same way GET /api/board does.
+  const repoOf = async (repo: string) => (await loadBoard(repo)).repoPath;
   const changed = (board: Board) => {
     void store.save(board);
     server.broadcast({ t: "board", board });
@@ -318,6 +317,14 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
         throw new HttpError(502, (e as Error).message);
       }
     },
+    "POST /api/consoles/:id/input": async ({ data }, { id }) => {
+      if (!running.has(id!)) throw new HttpError(404, `no running console ${id}`);
+      tracker.markInput(id!, data);
+      pty.write(id!, data);
+      return { ok: true };
+    },
+    ...createFileHandlers({ repoOf, git: exec }),
+    ...createVaultHandlers({ repoOf }),
   };
 
   const server = await createServer({
