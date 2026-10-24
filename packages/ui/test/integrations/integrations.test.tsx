@@ -59,6 +59,33 @@ test("Copy puts the registration line on the clipboard and says so", async () =>
   expect(await within(mcp).findByText("Copied")).toBeTruthy();
 });
 
+test("Copy without a clipboard, or with one that refuses, says to select the text", async () => {
+  Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });
+  page();
+  const mcp = screen.getByRole("region", { name: "MCP server" });
+  fireEvent.click(within(mcp).getByRole("button", { name: "Copy" }));
+  expect(await within(mcp).findByText("Copy failed, select the text")).toBeTruthy();
+  cleanup();
+  Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn(async () => Promise.reject(new Error("denied"))) }, configurable: true });
+  page();
+  const again = screen.getByRole("region", { name: "MCP server" });
+  fireEvent.click(within(again).getByRole("button", { name: "Copy" }));
+  expect(await within(again).findByText("Copy failed, select the text")).toBeTruthy();
+});
+
+test("only the server's own refusals, which carry a reason, count as refused", async () => {
+  const log = [
+    { at: "2026-10-23T22:03:00.000Z", source: "cli", route: "POST /api/git/push", result: "403" },
+    { at: "2026-10-23T22:03:10.000Z", source: "unknown", route: "GET /api/status", result: "401 no token" },
+  ];
+  const fetch = vi.fn(async () => new Response(JSON.stringify({ seen: {}, log })));
+  render(<IntegrationsPage fetch={fetch} onBack={vi.fn()} host="127.0.0.1:5123" now={now} />);
+  const region = screen.getByRole("region", { name: "Calls received by the daemon" });
+  expect((await within(region).findByText("401 no token")).closest("tr")!.className).toContain("refused");
+  expect(within(region).getByText("403").closest("tr")!.className).not.toContain("refused");
+  within(region).getByText(/1 refused today/);
+});
+
 test("Back and Escape return to the board", () => {
   const { onBack } = page();
   fireEvent.click(screen.getByRole("button", { name: "← Back to board" }));

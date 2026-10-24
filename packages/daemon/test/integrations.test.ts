@@ -119,3 +119,38 @@ test("GET /api/integrations answers the daemon's log and leaves its own polls ou
   expect(body.seen.command).toBeDefined();
   delete process.env.AGENTBOARD_HOME;
 });
+
+test("a refused call never takes its source from x-agentboard-client", () => {
+  const log = new CallLog();
+  log.record(call({ client: "cli", status: 401, reason: "no token" }));
+  log.record(call({ client: "mcp", status: 403, reason: "bad Origin", origin: "https://evil.example" }));
+  expect(log.read().log.map((e) => e.source)).toEqual(["unknown", "unknown"]);
+});
+
+test("a foreign page probing GET /api/integrations is itself logged", async () => {
+  const root = mkdtempSync(join(tmpdir(), "agentboard-int-"));
+  const d = await startDaemon({ repoPath: root, home: join(root, "home"), agentPath: "" });
+  open.push(d);
+  const probe = await fetch(`${d.origin}/api/integrations`, { headers: { "x-agentboard-token": d.token, origin: "https://evil.example" } });
+  expect(probe.status).toBe(403);
+  const body = (await (await fetch(`${d.origin}/api/integrations`, { headers: { "x-agentboard-token": d.token } })).json()) as { log: unknown[] };
+  expect(body.log).toEqual([expect.objectContaining({ route: "GET /api/integrations", result: "403 bad Origin", origin: "https://evil.example" })]);
+  delete process.env.AGENTBOARD_HOME;
+});
+
+test("a request the client abandons before the answer is still logged", async () => {
+  const calls: Call[] = [];
+  const s = await createServer({
+    port: 0, token, staticDir: mkdtempSync(join(tmpdir(), "agentboard-static-")),
+    routes: { "GET /api/status": () => new Promise(() => {}) },
+    onCall: (c) => calls.push(c),
+  });
+  open.push(s);
+  const abort = new AbortController();
+  const pending = fetch(`${s.origin}/api/status`, { headers: { "x-agentboard-token": token }, signal: abort.signal }).catch(() => null);
+  await new Promise((r) => setTimeout(r, 50));
+  abort.abort();
+  await pending;
+  for (let i = 0; i < 100 && !calls.length; i++) await new Promise((r) => setTimeout(r, 10));
+  expect(calls).toEqual([expect.objectContaining({ route: "GET /api/status", status: 499, reason: "client closed" })]);
+});
