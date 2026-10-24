@@ -94,6 +94,25 @@ export function GitCard({
     ) : null;
   const last = status.lastCommit;
   const commitLabel = status.dirty === 0 ? "Commit" : `Commit ${status.dirty} ${status.dirty === 1 ? "file" : "files"}`;
+  const commitForm = committing && (
+    <form
+      className="git-commit"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (await post("commit", CommitRequestSchema, CommitResponseSchema, { path, message })) {
+          setCommitting(false);
+          setMessage("");
+        }
+      }}
+    >
+      <label className="section-title" htmlFor={messageId}>Commit message</label>
+      <textarea id={messageId} required rows={3} placeholder="Describe the change" value={message} onChange={(e) => setMessage(e.target.value)} />
+      {/* The accessible name keeps "Submit", which the e2e scenario clicks by. */}
+      <button type="submit" className="btn-primary btn-sm" aria-label={`Submit: ${commitLabel}`} disabled={busyShown || status.dirty === 0}>
+        {commitLabel}
+      </button>
+    </form>
+  );
   return (
     <div className="git-card">
       <div className="git-head">
@@ -137,32 +156,15 @@ export function GitCard({
         <span className="git-divider" aria-hidden="true" />
         {openIn}
       </div>
-      {committing && (
-        <form
-          className="git-commit"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (await post("commit", CommitRequestSchema, CommitResponseSchema, { path, message })) {
-              setCommitting(false);
-              setMessage("");
-            }
-          }}
-        >
-          <label className="field-label" htmlFor={messageId}>Commit message</label>
-          <textarea id={messageId} required rows={3} placeholder="Describe the change" value={message} onChange={(e) => setMessage(e.target.value)} />
-          {/* The accessible name keeps "Submit", which the e2e scenario clicks by. */}
-          <button type="submit" className="btn-primary" aria-label={`Submit: ${commitLabel}`} disabled={busyShown || status.dirty === 0}>
-            {commitLabel}
-          </button>
-        </form>
-      )}
+      {!showDiff && commitForm}
       {prUrl && (
         <p className="git-pr">
           <a href={prUrl} target="_blank" rel="noopener noreferrer">{prUrl}</a>
         </p>
       )}
       {(error ?? statusError) && <p role="alert">{error ?? statusError}</p>}
-      {showDiff && <DiffView fetch={fetch} path={path} />}
+      {/* With the diff open, the commit form sits under the changed files. */}
+      {showDiff && <DiffView fetch={fetch} path={path} footer={commitForm} />}
     </div>
   );
 }
