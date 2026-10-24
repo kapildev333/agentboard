@@ -7,7 +7,7 @@ const plan = PlanSchema.parse(JSON.parse(readFileSync(new URL("../../../shared/s
 const node = (id: string) => ({ id }) as ConsoleNode;
 const fakeDeps = () => ({
   spawn: vi.fn(async () => node("new")),
-  close: vi.fn(async (_id: string) => {}),
+  close: vi.fn<(id: string) => Promise<void>>(async () => {}),
   resume: vi.fn(async (id: string) => node(id)),
   note: vi.fn(async () => {}),
   input: vi.fn(async () => {}),
