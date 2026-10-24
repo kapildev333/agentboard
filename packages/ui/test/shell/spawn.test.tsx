@@ -185,4 +185,14 @@ describe("SpawnDialog", () => {
     fireEvent.keyDown(screen.getByLabelText("first prompt"), { key: "Enter", metaKey: true });
     await waitFor(() => expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(true));
   });
+
+  it("⌘Enter does not submit while an IME is composing", async () => {
+    const fetch = fakeFetch();
+    render(<SpawnDialog fetch={fetch} cwd="/r" onSpawned={vi.fn()} />);
+    fireEvent.click(await screen.findByLabelText(/codex/));
+    expect(screen.getByRole("button", { name: "Spawn" }).getAttribute("aria-keyshortcuts")).toBe("Meta+Enter Control+Enter");
+    fireEvent.keyDown(screen.getByLabelText("first prompt"), { key: "Enter", metaKey: true, isComposing: true });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(false);
+  });
 });
