@@ -177,11 +177,10 @@ export const SettingsSchema = z.object({
   customAgents: z.array(CustomAgentSchema),
   planner: PlannerSettingsSchema.optional(),
   voice: VoiceSettingsSchema.optional(),
-  // Phase 4: parse fills the defaults so an old settings file loads; .optional() after .default() keeps
-  // the fields optional in the Settings type, so settings objects written before phase 4 still typecheck.
-  profiles: z.array(z.lazy(() => ProfileSchema)).default([]).optional(),
-  composerTemplates: z.array(z.lazy(() => ComposerTemplateSchema)).default([]).optional(),
-  memory: z.object({ offerAtSpawn: z.boolean() }).default({ offerAtSpawn: false }).optional(),
+  // Phase 4: absent in an old file; readers default them to [], [] and { offerAtSpawn: false }.
+  profiles: z.array(z.lazy(() => ProfileSchema)).optional(),
+  composerTemplates: z.array(z.lazy(() => ComposerTemplateSchema)).optional(),
+  memory: z.object({ offerAtSpawn: z.boolean() }).optional(),
 });
 export const OpenRequestSchema = z.object({ editor: z.enum(["code", "zed", "finder"]), path: z.string() });
 
