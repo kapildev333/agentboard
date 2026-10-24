@@ -19,7 +19,7 @@ export const StrokeSchema = z.object({
 });
 export const SavedLayoutSchema = z.object({
   name: z.string().min(1),
-  nodes: z.record(z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() })),
+  nodes: z.record(z.string(), z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() })),
 });
 export const AssetUploadResponseSchema = z.object({
   id: z.string(),
