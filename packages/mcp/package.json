@@ -1,6 +1,6 @@
 {
   "name": "@agentboard/mcp",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
@@ -10,9 +10,9 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@agentboard/cli": "0.0.0",
+    "@agentboard/cli": "0.1.0",
     "@modelcontextprotocol/sdk": "1.32.1",
-    "@agentboard/shared": "0.0.0",
+    "@agentboard/shared": "0.1.0",
     "zod": "4.6.7"
   },
   "bin": {
