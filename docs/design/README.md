@@ -1,9 +1,10 @@
 # AgentBoard design
 
-The board's look lives in three sheets under `packages/ui/src/styles`, imported once by `main.tsx` after the app so they follow React Flow's and xterm's own sheets:
+The board's look lives in the sheets under `packages/ui/src/styles`, imported once by `main.tsx` after the app so they follow React Flow's and xterm's own sheets:
 
 - `tokens.css`: every colour, space, radius and font as a CSS variable. Dark is the default; `prefers-color-scheme: light` swaps the colours.
 - `base.css`: element defaults (in `:where()`, so any class wins), buttons (`.btn-primary`, `.btn-sm`, `.btn-icon`), inputs, focus rings, chips, field labels, the path field.
+- `integrations.css`: the Integrations page, imported by its component.
 - `app.css`: one section per component: app shell and top bar, overlays (spawn modal, settings drawer), React Flow on the tokens, status badge, console card, note, mission map, settings, git card and diff.
 
 Components carry class names only; no colour or size is written inline. Roles, labels and accessible names are unchanged, so the tests and the e2e selectors still find everything.
@@ -120,3 +121,4 @@ SHOTS=before npx playwright test -c docs/design/playwright.config.ts # before-*.
 | Settings | ![](before-04-settings.png) | ![](04-settings.png) |
 | Git card | ![](before-05-git-card.png) | ![](05-git-card.png) |
 | Light theme | | ![](06-three-consoles-light.png) |
+| Integrations: the command, MCP and plugin cards and the daemon's call log, one refused Origin in the danger colour (`-g integrations` retakes it alone) | | ![](07-integrations.png) |

@@ -6,20 +6,18 @@ type Fetch = typeof globalThis.fetch;
 
 // The subcommands in packages/cli/src/commands, the lines in packages/mcp/README.md and the plugins' READMEs.
 const COMMANDS: [string, ReactNode][] = [
-  ["agentboard open [path]", "Open a repo as a board in the browser; starts the daemon if none answers"],
-  ["agentboard spawn <agent>", <><code>--worktree name</code> <code>--prompt text</code> <code>--repo path</code> <code>--id custom</code></>],
-  ["agentboard note <text>", "A note on the board of the repo you are in"],
-  ["agentboard status", <>Whether the daemon answers; <code>--json</code> adds every console and its state</>],
+  ["agentboard open [path]", "Open a repo as a board in the browser"],
+  ["agentboard spawn <agent>", <><code>--worktree</code> <code>--prompt</code> <code>--repo</code> <code>--id</code></>],
+  ["agentboard note <text>", "A note on this repo's board"],
+  ["agentboard status", <>Is the daemon up; <code>--json</code> lists consoles</>],
   ["agentboard start", "Run the daemon in this terminal"],
 ];
-const SPAWN_EXAMPLE = `$ agentboard spawn opencode --worktree feat-x --prompt "add tests"
+const SPAWN_EXAMPLE = `$ agentboard spawn opencode --worktree feat-x
 {
   "id": "8f2a51c0-…",
-  "type": "console",
   "title": "OpenCode: feat-x",
-  "agent": "opencode",
-  "worktree": { "path": "…/.worktrees/feat-x", "branch": "feat-x", "base": "main" },
-  "status": "starting"
+  "worktree": { "branch": "feat-x", … },
+  "status": "starting", …
 }`;
 const TOOLS = ["open_board", "spawn_console", "list_consoles", "add_note", "get_status"];
 const CLIS = [
@@ -127,7 +125,7 @@ export function IntegrationsPage({ fetch, onBack, host = location.host, now: clo
 
         <div className="int-grid">
           <Card title="The command">
-            <p className="muted int-note">Every subcommand prints JSON, so shell scripts and agents can parse it.</p>
+            <p className="muted int-note">spawn, note and status print JSON for scripts and agents to parse (shown here folded and trimmed); open prints the board's URL.</p>
             <dl className="int-commands">
               {COMMANDS.map(([cmd, what]) => (
                 <div key={cmd}>

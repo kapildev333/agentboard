@@ -80,11 +80,9 @@
   gap: var(--space-1);
 }
 
-.int-card-head > :first-child {
-  flex: 1;
-}
-
-.int-card-head .mark + strong {
+.int-card-head > h2,
+.int-card-head > .section-title,
+.int-card-head > .mark + strong {
   flex: 1;
 }
 
@@ -114,10 +112,10 @@
 
 .int-commands > div {
   display: grid;
-  grid-template-columns: 180px 1fr;
+  grid-template-columns: 190px 1fr;
   gap: var(--space-1);
   align-items: baseline;
-  padding: var(--space-1) 0;
+  padding: 6px 0;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -135,6 +133,10 @@
   font-size: var(--text-xs);
 }
 
+.int-commands dd code {
+  white-space: nowrap;
+}
+
 .int-code {
   margin: 0;
   padding: var(--space-1) var(--space-2);
@@ -146,7 +148,8 @@
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   line-height: 1.6;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .int-tabs {

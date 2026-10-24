@@ -118,3 +118,20 @@ test("screenshots", async ({ page }) => {
   await page.waitForTimeout(300);
   await page.screenshot({ path: out("05-git-card") });
 });
+
+// Its own test, so `-g integrations` retakes this one alone.
+test("integrations", async ({ page }) => {
+  test.skip(process.env.SHOTS === "before", "the page is new in L2C");
+  const env = { ...process.env, AGENTBOARD_HOME: h.home };
+  execFileSync(process.execPath, [cli, "status", "--json"], { env });
+  execFileSync(process.execPath, [cli, "note", "Register the MCP server in codex", "--repo", h.repo], { env });
+  const { DaemonClient } = await import("../../packages/mcp/dist/client.js");
+  await new DaemonClient(() => ({ port: d.port, token: d.token, pid: 0 })).getStatus();
+  // Another site's page trying to spawn a console: refused, and logged with its Origin.
+  await fetch(`${d.origin}/api/consoles`, { method: "POST", headers: { origin: "http://evil.example", "content-type": "application/json" }, body: "{}" });
+  await page.goto(await d.loginUrl(h.repo));
+  await page.getByRole("button", { name: "Integrations" }).click();
+  await expect(page.getByText("403 bad Origin")).toBeVisible();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: out("07-integrations") });
+});
