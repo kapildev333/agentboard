@@ -165,6 +165,21 @@ test("a loaded schedule that never runs again retires instead of failing the dae
   expect(engine.get("l1")!.state).toBe("retired");
 });
 
+test("a cron that runs out while loading retires the loop without an event before the engine exists", () => {
+  vi.setSystemTime(new Date(2026, 2, 1));
+  const loop: Loop = { id: "l2", consoleId: "c1", name: "leap", trigger: { kind: "schedule", cron: "0 0 29 2 *" }, stop: {}, prompt: "go", state: "scheduled", runs: [], createdAt: new Date().toISOString() };
+  const saved: Loop[][] = [];
+  let ready = false;
+  // app.ts broadcasts through a server declared after the engine, so an event while loading would throw
+  const event = () => {
+    if (!ready) throw new ReferenceError("server is not defined yet");
+  };
+  const engine = new LoopEngine({ write: () => {}, status: () => "idle", save: (l) => void saved.push(structuredClone(l)), event }, [loop]);
+  ready = true;
+  expect(engine.get("l2")!.state).toBe("retired");
+  expect(saved.at(-1)![0]!.state).toBe("retired");
+});
+
 test("pause, run now and a bad pattern answer with a status", () => {
   const { engine, loop, writes, set } = setup();
   expect(() => engine.runNow(loop.id)).toThrow(expect.objectContaining({ status: 409 }));
