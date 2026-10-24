@@ -254,6 +254,7 @@ export class HandoffService {
             resolve(s);
           };
           const timer = setTimeout(() => done(this.deps.tracker.get(consoleId)), SETTLE_MS);
+          timer.unref(); // a pending settle never keeps the daemon alive
           const early = seen.get(consoleId);
           if (early) done(early);
           else waiting = { id: consoleId, done };
