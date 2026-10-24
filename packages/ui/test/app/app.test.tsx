@@ -306,7 +306,8 @@ describe("App", () => {
     socket.emit({ t: "board", board: withNote(2, note("n1", "old")) });
     expect(nodeOf("n1")).toMatchObject({ x: 50, y: 60 });
     socket.emit({ t: "board", board: withNote(3, note("n1", "new text")) });
-    expect(await screen.findByText("new text")).toBeTruthy();
+    // The note is a textarea now, so its text is its value.
+    expect(await screen.findByDisplayValue("new text")).toBeTruthy();
     expect(nodeOf("n1")).toMatchObject({ x: 50, y: 60, text: "new text" });
   });
 
