@@ -150,4 +150,39 @@ describe("SpawnDialog", () => {
     const post = fetch.mock.calls.find(([, i]) => i?.method === "POST")!;
     expect(JSON.parse(post[1]!.body as string)).toEqual({ agent: "custom", customId: "b", cwd: "/r" });
   });
+  it("agents render as cards with a signal line and a readiness dot", async () => {
+    render(<SpawnDialog fetch={fakeFetch()} cwd="/r" onSpawned={vi.fn()} />);
+    const card = (await screen.findByLabelText(/claude/)).parentElement!;
+    expect(card.querySelector("[aria-hidden='true'].agent-mark")!.textContent).toBe("C");
+    expect(card.querySelector(".agent-meta")!.textContent).toBe("2.1.0 · hooks per session");
+    expect(card.querySelector(".agent-dot")!.classList.contains("is-ready")).toBe(true);
+    expect(screen.getByLabelText(/codex/).parentElement!.querySelector(".agent-meta")!.textContent).toBe("0.9.1 · notify");
+    expect(screen.getByLabelText(/opencode/).parentElement!.querySelector(".agent-meta")!.textContent).toBe("plugin");
+    const gemini = screen.getByLabelText(/gemini/).parentElement!;
+    expect(gemini.querySelector(".agent-dot")!.classList.contains("is-ready")).toBe(false);
+    expect(gemini.querySelector(".agent-status")!.textContent).toBe("not installed");
+  });
+
+  it("choosing New worktree shows the branch field and the .worktrees path preview", async () => {
+    render(<SpawnDialog fetch={fakeFetch()} cwd="/Users/someone/code/r" branch="dev" onSpawned={vi.fn()} />);
+    await screen.findByLabelText(/claude/);
+    const where = screen.getByRole("group", { name: "Where it runs" });
+    expect((screen.getByLabelText(/Repo root/) as HTMLInputElement).checked).toBe(true);
+    expect(where.textContent).toContain("~/code/r");
+    expect(where.textContent).toContain("so two agents never edit the same files");
+    expect(screen.queryByLabelText("branch name")).toBeNull();
+    fireEvent.click(screen.getByLabelText("new worktree"));
+    expect(where.querySelector(".chip")!.textContent).toBe("dev");
+    fireEvent.change(screen.getByLabelText("branch name"), { target: { value: " feat-x " } });
+    expect(where.querySelector(".wt-preview")!.textContent).toBe("→ .worktrees/feat-x");
+  });
+
+  it("⌘Enter submits the form", async () => {
+    const fetch = fakeFetch();
+    render(<SpawnDialog fetch={fetch} cwd="/r" onSpawned={vi.fn()} />);
+    fireEvent.click(await screen.findByLabelText(/codex/));
+    expect((screen.getByRole("button", { name: "Spawn" }).textContent)).toContain("⌘↵");
+    fireEvent.keyDown(screen.getByLabelText("first prompt"), { key: "Enter", metaKey: true });
+    await waitFor(() => expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(true));
+  });
 });
