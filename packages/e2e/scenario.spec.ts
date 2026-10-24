@@ -10,7 +10,7 @@ const git = (cwd: string, ...args: string[]) => execFileSync("git", ["-C", cwd, 
 
 test.beforeAll(async () => {
   h = makeHome((h) => ({
-    "spawn-b": { sh: 'agentboard spawn custom --worktree feature-b --prompt "edit README"' },
+    "spawn-b": { sh: 'agentboard spawn custom --id fake --worktree feature-b --prompt "edit README"' },
     "spawn-c": {
       mcp: [
         { name: "spawn_console", arguments: { agent: "custom", customId: "fake", cwd: h.repo, worktree: "feature-c" } },
@@ -55,11 +55,6 @@ test("a console spawns two worktree consoles through the CLI and the MCP server 
     await spawnFake(page);
     await expect(consoleNode(page, "Fake").locator(".xterm-rows")).toContainText("fake>");
   });
-
-  // Steps 1 and 2 above must pass; from here the run is red on main until L1C lands (Requests on L27): step 3,
-  // `agentboard spawn custom` sends no customId and the daemon answers "unknown custom agent: undefined"; step 6, a
-  // worktree branch has no upstream so its card says ahead 0. Delete these lines with the fix.
-  test.fail(true, "daemon: spawn custom without customId, and ahead of a worktree branch (L1C)");
 
   await test.step("(3) A runs agentboard spawn: console B in worktree feature-b", async () => {
     const [b] = (await cue(page, "Fake", "spawn-b")) as [{ stdout: string }];

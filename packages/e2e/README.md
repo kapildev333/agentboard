@@ -16,7 +16,7 @@ npm run test:e2e                 # from the repo root: builds the workspace, the
 
 - `smoke.spec.ts`: six fake consoles show live output and status (L1A).
 - `load.spec.ts`, `restart.spec.ts`, `security.spec.ts`: keystroke latency and memory, reload and restart, and origin checks (L1A).
-- `scenario.spec.ts`: the phase 2 gate (L27). Console A is spawned from the UI. From inside A the fake agent runs `agentboard spawn custom --worktree feature-b` and calls the MCP tools `spawn_console` (worktree feature-c) and `list_consoles`. Consoles B and C each commit a README.md change through their git card. Both branches show, the main checkout stays untouched, and `agentboard status --json` lists all three consoles.
+- `scenario.spec.ts`: the phase 2 gate (L27). Console A is spawned from the UI. From inside A the fake agent runs `agentboard spawn custom --id fake --worktree feature-b` and calls the MCP tools `spawn_console` (worktree feature-c) and `list_consoles`. Consoles B and C each commit a README.md change through their git card. Both branches show, the main checkout stays untouched, and `agentboard status --json` lists all three consoles.
 - `spike/l03.spec.ts`: the L03 renderer spike.
 
 ## Fake agent cues
