@@ -3,7 +3,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
-import fixtures from "../../../shared/src/fixtures/routes.json" with { type: "json" };
 import { startDaemon } from "../../src/app.js";
 
 const fake = fileURLToPath(new URL("../../../e2e/fake-transcriber/index.mjs", import.meta.url));
@@ -64,18 +63,4 @@ test("a failing transcriber answers 502 with its message", async () => {
   const res = await post("audio/ogg");
   expect(res.status).toBe(502);
   expect(await res.json()).toEqual({ error: "fake failure" });
-});
-
-test("the command routes answer 501 until L52", async () => {
-  const root = mkdtempSync(join(tmpdir(), "agentboard-stub-"));
-  const d = await startDaemon({ repoPath: root, home: root });
-  cleanup.push(() => d.close(), () => rmSync(root, { recursive: true, force: true }));
-  for (const key of ["POST /api/command/plan", "POST /api/command/run"] as const) {
-    const res = await fetch(`${d.origin}${key.slice(5)}`, {
-      method: "POST",
-      headers: { "x-agentboard-token": d.token, "content-type": "application/json" },
-      body: JSON.stringify(fixtures[key].request),
-    });
-    expect(res.status, key).toBe(501);
-  }
 });
