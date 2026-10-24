@@ -106,4 +106,52 @@ describe("useVoice", () => {
     expect(screen.getByText("Close Title c1")).toBeTruthy();
     expect(screen.queryByText("listening")).toBeNull();
   });
+
+  it("an asking step disables Run until confirmed or skipped", async () => {
+    setup();
+    await hold();
+    release();
+    await voiceDialog();
+    const run = (await screen.findByRole("button", { name: /^Run/ })) as HTMLButtonElement;
+    expect(run.disabled).toBe(true);
+    expect(screen.getByRole("button", { name: "Skip it, do step 3" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Confirm step 2" }));
+    expect(run.disabled).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: /^Skip it/ }));
+    expect(run.disabled).toBe(false);
+    expect(run.textContent).toBe("Run 2 steps");
+  });
+
+  it("the reply is spoken once per plan", async () => {
+    const { speak } = setup();
+    await hold();
+    release();
+    await screen.findByText("Spoken reply");
+    expect(screen.getAllByText("reply to close c1 and fit")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Confirm step 2" }));
+    expect(speak.mock.calls.filter(([t]) => t === "reply to close c1 and fit")).toHaveLength(1);
+  });
+
+  it("a second hold saying confirm runs the plan with the asking steps confirmed", async () => {
+    const { calls } = setup({ transcripts: ["close c1 and fit", "yes"], run: { results: [], fit: true } });
+    await hold();
+    release();
+    await screen.findByText("Close Title c1");
+    await hold();
+    release();
+    await waitFor(() => expect(calls.some((c) => c.url === "/api/command/run")).toBe(true));
+    const run = calls.find((c) => c.url === "/api/command/run")!;
+    expect(run.body).toMatchObject({ confirmed: ["s2"], skipped: [] });
+    expect(calls.filter((c) => c.url === "/api/command/plan")).toHaveLength(1);
+  });
+
+  it("412 shows the no-transcriber error with a settings button", async () => {
+    setup({ transcribeStatus: 412 });
+    await hold();
+    release();
+    await screen.findByText(/No transcriber configured\. Set one under Settings › Voice\./);
+    fireEvent.click(screen.getByRole("button", { name: "Open settings" }));
+    expect(screen.getByRole("dialog", { name: "Settings" })).toBeTruthy();
+    expect(screen.queryByRole("dialog", { name: "Voice command" })).toBeNull();
+  });
 });
