@@ -39,4 +39,12 @@ export const routes = [
   { method: "GET", path: "/api/preview", request: null, response: "PreviewInfoSchema" },
   // Also served, outside /api and not in this table: GET /preview/<key>/<percent-encoded target url>,
   // the web tile preview proxy (L32). <key> comes from GET /api/preview.
+  { method: "GET", path: "/api/files", request: "FilesQuerySchema", response: "FileTreeSchema" },
+  { method: "GET", path: "/api/files/read", request: "FilesQuerySchema", response: "FileContentSchema" },
+  { method: "PUT", path: "/api/files/write", request: "FileWriteRequestSchema", response: "OkSchema" },
+  { method: "POST", path: "/api/consoles/:id/input", request: "ConsoleInputSchema", response: "OkSchema" },
+  { method: "GET", path: "/api/vault/notes", request: "VaultQuerySchema", response: "VaultIndexSchema" },
+  { method: "GET", path: "/api/vault/note", request: "VaultNoteQuerySchema", response: "VaultNoteSchema" },
+  { method: "PUT", path: "/api/vault/note", request: "VaultWriteSchema", response: "VaultNoteSchema" },
+  { method: "POST", path: "/api/vault/append", request: "VaultAppendSchema", response: "VaultNoteSchema" },
 ] as const satisfies readonly Route[];
