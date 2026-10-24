@@ -114,6 +114,8 @@ export class HandoffService {
         ...(role && { role: role.name }),
         fromConsoleId: h.fromConsoleId,
       });
+      // A custom agent takes no prompt at launch: it gets the brief once it first settles idle.
+      if (target.agent === "custom") void this.settle(consoleId).then((s) => s === "idle" && this.deps.write(consoleId, h.promptText + "\r"));
       // The new console takes the role it was started for.
       if (role && !role.consoleId) {
         role.consoleId = consoleId;
