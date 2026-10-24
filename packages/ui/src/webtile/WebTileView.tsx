@@ -52,7 +52,6 @@ export function WebTileView(props: NodeProps & { fetch?: Fetch }) {
     return () => {
       live = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     const on = (e: MessageEvent) => {
