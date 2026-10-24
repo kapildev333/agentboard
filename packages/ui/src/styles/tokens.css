@@ -1,0 +1,117 @@
+/* Design tokens. Dark by default, light when the OS prefers it. Every colour, space and radius in the UI is one of these. */
+:root {
+  color-scheme: dark;
+
+  /* 8 px grid; half is for hairline gaps inside a control */
+  --space-half: 4px;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-6: 48px;
+
+  --radius-sm: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-lg: 16px;
+
+  --topbar-height: 44px;
+  --rail-width: 264px;
+  --drawer-width: 400px;
+
+  --color-bg: #0e1014;
+  --color-canvas-dot: #2c313c;
+  --color-surface: #161920;
+  --color-surface-raised: #1e222a;
+  --color-surface-hover: #262b35;
+  --color-border: #2b303b;
+  --color-border-strong: #404757;
+  --color-text: #e7e9ee;
+  --color-text-muted: #9ba3b4;
+  --color-accent: #7b93ff;
+  --color-accent-hover: #97aaff;
+  --color-on-accent: #0b1020;
+  --color-danger: #ff8a80;
+  --color-backdrop: rgb(4 6 10 / 0.6);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.25);
+  --shadow-overlay: 0 12px 40px rgb(0 0 0 / 0.5);
+
+  /* the terminal is dark in both themes */
+  --term-bg: #0b0d11;
+  --term-fg: #d9dee8;
+  --term-selection: #3a4a7a;
+
+  --note-bg: #3b3520;
+  --note-fg: #f4e9bf;
+  --note-border: #5a4f2c;
+
+  --diff-added-fg: #6fdc9a;
+  --diff-added-bg: #12301f;
+  --diff-removed-fg: #ff9a90;
+  --diff-removed-bg: #3a1716;
+
+  /* status pills: foreground on background */
+  --status-starting-fg: #f5d36b;
+  --status-starting-bg: #3a2f0b;
+  --status-working-fg: #9dbfff;
+  --status-working-bg: #13284d;
+  --status-idle-fg: #6fdc9a;
+  --status-idle-bg: #10331f;
+  --status-needs-you-fg: #1f0604;
+  --status-needs-you-bg: #ff6b5e;
+  --status-stopped-fg: #c0c6d1;
+  --status-stopped-bg: #2a2f39;
+  --status-exited-fg: #a3abbb;
+  --status-exited-bg: #22262e;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+
+    --color-bg: #f3f4f7;
+    --color-canvas-dot: #cdd2db;
+    --color-surface: #ffffff;
+    --color-surface-raised: #f6f7f9;
+    --color-surface-hover: #eceef2;
+    --color-border: #dcdfe6;
+    --color-border-strong: #b9bfcb;
+    --color-text: #171a21;
+    --color-text-muted: #5b6475;
+    --color-accent: #3355dd;
+    --color-accent-hover: #2846c2;
+    --color-on-accent: #ffffff;
+    --color-danger: #c62a1f;
+    --color-backdrop: rgb(15 18 25 / 0.35);
+    --shadow-card: 0 1px 2px rgb(16 24 40 / 0.08), 0 4px 12px rgb(16 24 40 / 0.06);
+    --shadow-overlay: 0 12px 40px rgb(16 24 40 / 0.18);
+
+    --note-bg: #fff4b8;
+    --note-fg: #3a3110;
+    --note-border: #ecd987;
+
+    --diff-added-fg: #116329;
+    --diff-added-bg: #dcf5e3;
+    --diff-removed-fg: #a40e26;
+    --diff-removed-bg: #ffe3e1;
+
+    --status-starting-fg: #6b4500;
+    --status-starting-bg: #fdf0c2;
+    --status-working-fg: #1d3f9e;
+    --status-working-bg: #dde7ff;
+    --status-idle-fg: #13623a;
+    --status-idle-bg: #d9f5e3;
+    --status-needs-you-fg: #ffffff;
+    --status-needs-you-bg: #c62a1f;
+    --status-stopped-fg: #3c4350;
+    --status-stopped-bg: #e6e9ee;
+    --status-exited-fg: #555e6e;
+    --status-exited-bg: #eceef2;
+  }
+}

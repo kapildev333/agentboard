@@ -1,0 +1,181 @@
+/* Element defaults sit in :where() so any component class, React Flow's included, wins without a fight. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+:where(h1, h2, h3, p, ul, dl, fieldset) {
+  margin: 0;
+  padding: 0;
+}
+
+:where(code, pre, kbd) {
+  font-family: var(--font-mono);
+}
+
+:where(a) {
+  color: var(--color-accent);
+}
+
+/* Buttons: secondary by default, .btn-primary for the one main action, .btn-sm inside cards. */
+:where(button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-half);
+  height: 32px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+:where(button:hover:not(:disabled)) {
+  background: var(--color-surface-hover);
+}
+
+:where(button:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  border-color: var(--color-accent-hover);
+  background: var(--color-accent-hover);
+}
+
+.btn-sm {
+  height: 24px;
+  padding: 0 var(--space-1);
+  font-size: var(--text-xs);
+}
+
+.btn-icon {
+  width: 32px;
+  padding: 0;
+  font-size: var(--text-lg);
+}
+
+:where(input:not([type="checkbox"], [type="radio"]), textarea, select) {
+  width: 100%;
+  min-height: 32px;
+  padding: var(--space-half) var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
+:where(textarea) {
+  resize: vertical;
+}
+
+:where(input[type="checkbox"], input[type="radio"]) {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  accent-color: var(--color-accent);
+}
+
+:where(button, input, textarea, select, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Text fields keep the ring tight to their border. */
+:where(input, textarea, select):focus-visible {
+  outline-offset: 0;
+  border-color: var(--color-accent);
+}
+
+[role="alert"] {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+/* A path reads from its end: monospace, and the overflow is cut on the left. */
+.path-field {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  direction: rtl;
+  text-align: left;
+}
+
+.path-field:focus {
+  direction: ltr;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 160px;
+  height: 20px;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field {
+  display: grid;
+  gap: var(--space-half);
+}
+
+.field-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.section-title {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.app-message {
+  padding: var(--space-2);
+}
