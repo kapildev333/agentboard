@@ -31,6 +31,7 @@ const MAX_BODY = 1 << 20;
 const AUDIO_ROUTE = "POST /api/voice/transcribe";
 const MAX_AUDIO = 10 * 1024 * 1024;
 const CODE_TTL_MS = 60_000;
+const FOREIGN = "foreign origin";
 
 export type ServerOptions = {
   port: number;
@@ -40,6 +41,8 @@ export type ServerOptions = {
   onAttach?: SocketHandler<"attach">;
   onInput?: SocketHandler<"input">;
   onResize?: SocketHandler<"resize">;
+  /** Called wherever a request is answered 401 or 403 (the daemon logs it as a security event). */
+  onRefused?: (info: { reason: string; path: string; origin?: string }) => void;
 };
 /** reply sends to the socket the message came from, e.g. the ring buffer on attach. */
 export type SocketHandler<T extends ClientMessage["t"]> =
@@ -69,8 +72,8 @@ export async function createServer(opts: ServerOptions) {
     const url = target(req);
     if (!url) return end(res, 400);
     if (req.method === "GET" && isIndex(url.pathname) && url.searchParams.has("code")) {
-      if (!sameSite(req)) return end(res, 403);
-      if (!takeCode(url.searchParams.get("code")!)) return end(res, 401);
+      if (!sameSite(req)) return end(res, deny(req, url.pathname, 403, FOREIGN));
+      if (!takeCode(url.searchParams.get("code")!)) return end(res, deny(req, url.pathname, 401, "bad or used login code"));
       url.searchParams.delete("code");
       const session = randomBytes(32).toString("base64url");
       sessions.add(session);
@@ -81,11 +84,11 @@ export async function createServer(opts: ServerOptions) {
       }).end();
       return;
     }
-    const refused = refuse(req, req.method !== "GET");
+    const refused = refuse(req, req.method !== "GET", url.pathname);
     if (refused) return end(res, refused);
     if (req.method === "POST" && url.pathname === "/auth/code") {
       // Header token only: the CLI and MCP mint codes, a page holding the cookie does not.
-      if (authOf(req) !== "header") return end(res, 401);
+      if (authOf(req) !== "header") return end(res, deny(req, url.pathname, 401, "code minting needs the header token"));
       return json(res, 200, { code: issueCode() });
     }
     const route = compiled.find((r) => r.method === req.method && r.pattern.test(url.pathname));
@@ -101,12 +104,17 @@ export async function createServer(opts: ServerOptions) {
   };
   // strict: non-GET or upgrade, where browsers always send Origin. A cookie request must prove it came
   // from the board itself: by Origin, or on a GET by Sec-Fetch-Site; only header callers may send neither.
-  const refuse = (req: http.IncomingMessage, strict: boolean): number => {
-    if (!sameSite(req)) return 403;
+  const refuse = (req: http.IncomingMessage, strict: boolean, path: string): number => {
+    if (!sameSite(req)) return deny(req, path, 403, FOREIGN);
     const auth = authOf(req);
-    if (!auth) return 401;
+    if (!auth) return deny(req, path, 401, "missing or wrong token");
     const proven = req.headers.origin !== undefined || (!strict && req.headers["sec-fetch-site"] !== undefined);
-    return auth === "cookie" && !proven ? 403 : 0;
+    return auth === "cookie" && !proven ? deny(req, path, 403, "cookie request without proof of origin") : 0;
+  };
+  const deny = (req: http.IncomingMessage, path: string, status: number, reason: string): number => {
+    const origin = req.headers.origin;
+    opts.onRefused?.({ reason, path, ...(origin !== undefined && { origin }) });
+    return status;
   };
   const authOf = (req: http.IncomingMessage): "header" | "cookie" | null => {
     const header = headerToken(req);
@@ -133,7 +141,7 @@ export async function createServer(opts: ServerOptions) {
     socket.on("error", () => socket.destroy());
     const url = target(req);
     if (!url) return void socket.destroy();
-    const status = url.pathname !== "/ws" ? 404 : refuse(req, true);
+    const status = url.pathname !== "/ws" ? 404 : refuse(req, true, url.pathname);
     if (status) {
       // A half-open client would otherwise keep the socket, and close(), waiting forever.
       socket.once("finish", () => socket.destroy());
