@@ -1,1 +1,1 @@
-export { AssetError, AssetStore, MAX_ASSET, imageSize } from "./store.js";
+export { AssetError, AssetStore, ASSET_TYPES, MAX_ASSET, imageSize } from "./store.js";

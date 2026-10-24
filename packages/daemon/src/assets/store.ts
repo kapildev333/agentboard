@@ -1,9 +1,10 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, rename, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" };
 const TYPE = Object.fromEntries(Object.entries(EXT).map(([mime, ext]) => [ext, mime]));
+export const ASSET_TYPES = Object.keys(EXT);
 export const MAX_ASSET = 10 * 1024 * 1024;
 const ID = /^[0-9a-f]{64}$/;
 
@@ -64,8 +65,10 @@ export class AssetStore {
     const file = join(this.dir, `${id}.${ext}`);
     if (!(await stat(file).catch(() => null))) {
       await mkdir(this.dir, { recursive: true, mode: 0o700 });
-      await writeFile(`${file}.tmp`, bytes);
-      await rename(`${file}.tmp`, file);
+      // A random suffix, so two uploads of the same bytes at once never write one temp file.
+      const tmp = `${file}.${randomUUID()}.tmp`;
+      await writeFile(tmp, bytes);
+      await rename(tmp, file);
     }
     return { id, ...dims };
   }

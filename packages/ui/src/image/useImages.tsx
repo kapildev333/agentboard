@@ -22,9 +22,15 @@ export function useImages(fetch: Fetch, pane: RefObject<HTMLElement | null>): {
   // Reassigned every render, so the listeners below register once and still see the latest fetch.
   const add = useRef<(file: File, at: At) => Promise<void>>(undefined);
   add.current = async (file, at) => {
-    const res = await fetch("/api/assets", { method: "POST", headers: { "content-type": file.type }, body: file }).catch(() => null);
-    if (!res?.ok) return console.warn(`agentboard: could not upload ${file.name} (${res?.status ?? "no answer"})`);
-    const { id, width, height } = AssetUploadResponseSchema.parse(await res.json());
+    let uploaded;
+    try {
+      const res = await fetch("/api/assets", { method: "POST", headers: { "content-type": file.type }, body: file });
+      if (!res.ok) throw new Error(String(res.status));
+      uploaded = AssetUploadResponseSchema.parse(await res.json());
+    } catch (e) {
+      return console.warn(`agentboard: could not upload ${file.name} (${(e as Error).message})`);
+    }
+    const { id, width, height } = uploaded;
     const { board, addNode } = useBoard.getState();
     const { x: vx, y: vy, zoom } = board.workspaces.find((w) => w.id === board.activeWorkspaceId)?.viewport ?? { x: 0, y: 0, zoom: 1 };
     const rect = pane.current?.getBoundingClientRect();

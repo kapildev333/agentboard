@@ -71,6 +71,12 @@ test("a body that is not the image it claims is 400", async () => {
   expect(res.status).toBe(400);
 });
 
+test("a 20-byte truncated PNG header is 400", async () => {
+  const { call } = await boot();
+  const res = await call("/api/assets", { method: "POST", headers: { "content-type": "image/png" }, body: png(8, 8).subarray(0, 20) });
+  expect(res.status).toBe(400);
+});
+
 test("a bad id is 404 without touching the disk", async () => {
   const { root, call } = await boot();
   for (const id of ["abc", "..%2F..%2Fdaemon.json", "A".repeat(64)]) expect((await call(`/api/assets/${id}`)).status).toBe(404);
