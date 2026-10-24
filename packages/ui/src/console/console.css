@@ -189,6 +189,11 @@
 }
 
 .console-card .console-icon-btn,
+.restart-banner .console-icon-btn {
+  width: 24px;
+  padding: 0;
+}
+
 /* ---- footer menus ---- */
 .console-card .console-menu-wrap {
   position: relative;
