@@ -5,8 +5,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
 import WebSocket from "ws";
-import type { Board, ConsoleNode, DaemonMessage } from "@agentboard/shared";
-import { startDaemon } from "../src/app.js";
+import type { Board, ConsoleNode, DaemonMessage, UsageReport } from "@agentboard/shared";
+import { startDaemon, type DaemonOptions } from "../src/app.js";
 
 const fakeAgent = fileURLToPath(new URL("../../e2e/fake-agent/index.mjs", import.meta.url));
 const cleanup: (() => Promise<void> | void)[] = [];
@@ -30,8 +30,8 @@ function setup() {
   return { home, repo, path };
 }
 
-async function start(s: ReturnType<typeof setup>) {
-  const d = await startDaemon({ repoPath: s.repo, home: s.home, agentPath: s.path });
+async function start(s: ReturnType<typeof setup>, extra: Partial<DaemonOptions> = {}) {
+  const d = await startDaemon({ repoPath: s.repo, home: s.home, agentPath: s.path, ...extra });
   cleanup.push(() => d.close());
   const call = async (method: string, path: string, body?: unknown) => {
     const res = await fetch(`${d.origin}${path}`, {
@@ -495,4 +495,20 @@ test("a note step with repo lands on that repo's board, not the start board", as
   };
   expect(await notes(other)).toHaveLength(1);
   expect(await notes(s.repo)).toHaveLength(0);
+});
+
+test("GET /api/usage and /api/usage.csv report the sessions under a fixture root", async () => {
+  const s = setup();
+  const claude = fileURLToPath(new URL("usage/fixtures/claude", import.meta.url));
+  const d = await start(s, { usageRoots: { claude: [claude], codex: [], gemini: [], opencode: [] } });
+  const r = await d.call("GET", "/api/usage?range=all&group=repo");
+  expect(r.status).toBe(200);
+  const report = r.body as UsageReport;
+  expect(report.totals).toMatchObject({ input: 545, output: 450, cacheRead: 1000, sessions: 3 });
+  expect(report.groups.map((g) => g.label)).toEqual(["shop", "api"]);
+  expect(report.sources).toEqual([{ agent: "claude", path: claude, files: 3 }]);
+  expect(existsSync(join(s.home, "usage.json"))).toBe(true);
+  const csv = await fetch(`${d.origin}/api/usage.csv?range=all`, { headers: { "x-agentboard-token": d.token } });
+  expect(csv.headers.get("content-type")).toBe("text/csv; charset=utf-8");
+  expect((await csv.text()).split("\n")[1]).toBe("claude,claude,claude,3,545,450,1000");
 });
