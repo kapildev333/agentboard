@@ -82,6 +82,37 @@ test("renderMarkdown sends script-scheme links and inline-data images nowhere", 
   expect(html).toContain('src="#"');
 });
 
+test("entity-encoded script schemes are neutralised in links and images", () => {
+  const html = renderMarkdown(
+    "[a](&#106;avascript:alert(1)) [b](javascript&colon;alert(1)) [c](javascript&#58;alert(1)) [d](&amp;#106;avascript:x) ![e](&#x64;ata:image/svg+xml,x)",
+  );
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const targets = [...doc.querySelectorAll("a, img")].map((e) => e.getAttribute("href") ?? e.getAttribute("src"));
+  expect(targets).toEqual(["#", "#", "#", "#", "#"]);
+});
+
+test("safe link targets are kept", () => {
+  const html = renderMarkdown("[a](https://x.dev/?a=1&b=2) [b](mailto:me@x.dev) [c](#top) [d](/docs/a.md) [e](./b.md) [f](notes/c.md) ![g](img/p.png)");
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  expect([...doc.querySelectorAll("a, img")].map((e) => e.getAttribute("href") ?? e.getAttribute("src"))).toEqual([
+    "https://x.dev/?a=1&b=2",
+    "mailto:me@x.dev",
+    "#top",
+    "/docs/a.md",
+    "./b.md",
+    "notes/c.md",
+    "img/p.png",
+  ]);
+});
+
+test("headings keeps a trailing # that is part of the text and only closes a fence with its own marker", () => {
+  expect(headings("## C#\n## D ##\n````\n```\n# in\n````\n~~~\n```\n~~~\n# E")).toEqual([
+    { level: 2, text: "C#", line: 1 },
+    { level: 2, text: "D", line: 2 },
+    { level: 1, text: "E", line: 10 },
+  ]);
+});
+
 test("headings lists levels, text and 1-based lines, skipping fenced code", () => {
   expect(headings("# A\n\n## B\n```\n# not\n```\n### C")).toEqual([
     { level: 1, text: "A", line: 1 },
