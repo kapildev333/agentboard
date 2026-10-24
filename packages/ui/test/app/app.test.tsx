@@ -109,6 +109,19 @@ describe("App", () => {
     await waitFor(() => expect(screen.queryByText(/Spawn a console or run/)).toBeNull());
   });
 
+  it("a backdrop click and Escape each close the spawn modal without posting", async () => {
+    const api = fakeApi(boardWith());
+    const { container } = render(<App fetch={api.fetch} search="?repo=%2Fr" connect={fakeSocket} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Spawn console" }));
+    expect(screen.getByRole("dialog", { name: "Spawn console" })).toBeTruthy();
+    fireEvent.click(container.querySelector(".backdrop")!);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Spawn console" }));
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(api.calls.some((c) => c.url === "/api/consoles" && c.method === "POST")).toBe(false);
+  });
+
   it("a board message from the daemon patches a console's status without saving the board", async () => {
     const api = fakeApi(boardWith(consoleNode("c1", "idle")));
     const socket = fakeSocket();

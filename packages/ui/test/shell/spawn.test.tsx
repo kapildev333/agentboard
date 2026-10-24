@@ -117,6 +117,12 @@ describe("SpawnDialog", () => {
     expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(false);
   });
 
+  it("the first installed agent takes focus when the list arrives", async () => {
+    const list = [agents[3], agents[1], agents[0]];
+    render(<SpawnDialog fetch={vi.fn(async () => json(list))} cwd="/r" onSpawned={vi.fn()} />);
+    expect(document.activeElement).toBe(await screen.findByLabelText(/codex/));
+  });
+
   it("agents sit in a fieldset legend Agent", async () => {
     render(<SpawnDialog fetch={fakeFetch()} cwd="/r" onSpawned={vi.fn()} />);
     await screen.findByLabelText(/claude/);
